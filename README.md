@@ -1,6 +1,4 @@
-# Bapple
-
-## Dev-Frontend 브랜치
+# Bapple: Dev-Frontend 브랜치
 - Login
 - Fridge
 - Recipe
