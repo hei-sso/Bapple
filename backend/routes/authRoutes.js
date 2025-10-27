@@ -8,7 +8,7 @@ import { kakaoCallback, sendVerificationEmail, verifyEmailCode} from "../control
 
 const router = express.Router();
 
-router.post("/kakao/login", kakaoCallback);
+router.post("/kakao/callback", kakaoCallback);
 router.post("send_verification_code", sendVerificationEmail);
 router.post("/verify_code", verifyEmailCode);
 
