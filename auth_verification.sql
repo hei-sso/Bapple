@@ -1,5 +1,5 @@
 CREATE TABLE auth_verification (
-    auth_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    verification_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(100) NOT NULL,
     code CHAR(6) NOT NULL, 
     
