@@ -21,7 +21,7 @@ export const kakaoCallback = async (req, res) => {
 
   try {
     // Authorization Code로 Access Token 요청
-    const tokenResponse = await axios.post("https://kauth.kakao.com/oauth/token", null, {
+    const tokenResponse = await axios.post("https://bapple-production.up.railway.app/api/auth/kakao/callback", null, {
       params: {
         grant_type: "authorization_code",
         client_id: KAKAO_REST_API_KEY,
@@ -34,7 +34,7 @@ export const kakaoCallback = async (req, res) => {
     const { access_token } = tokenResponse.data;
 
     // 사용자 정보 요청
-    const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
+    const userResponse = await axios.get("https://bapple-production.up.railway.app/api/auth/kakao/callback", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
 
