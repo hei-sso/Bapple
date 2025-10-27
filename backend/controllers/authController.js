@@ -7,57 +7,57 @@ import crypto from 'crypto';
 
 // 카카오 로그인 1단계 (수정됨)
 // 인가 코드로 "카카오 토큰" 받기
-export const kakaoCallback = async (req, res) => {
-  const { code } = req.body;
+// export const kakaoCallback = async (req, res) => {
+//   const { code } = req.body;
 
-  // 환경 변수를 함수 내에 직접 참조
-  const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
-  const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
+//   // 환경 변수를 함수 내에 직접 참조
+//   const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
+//   const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
-  if (!code) {
-    return res.status(400).json({message: '인가 코드가 누락됨.'});
-  }
+//   if (!code) {
+//     return res.status(400).json({message: '인가 코드가 누락됨.'});
+//   }
 
-  try {
-    // Authorization Code로 Access Token 요청
-    const tokenResponse = await axios.post("https://kauth.kakao.com/oauth/token", null, {
-      params: {
-        grant_type: "authorization_code",
-        client_id: KAKAO_REST_API_KEY,
-        redirect_uri: KAKAO_REDIRECT_URI,
-        code,
-      },
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
+//   try {
+//     // Authorization Code로 Access Token 요청
+//     const tokenResponse = await axios.post("https://kauth.kakao.com/oauth/token", null, {
+//       params: {
+//         grant_type: "authorization_code",
+//         client_id: KAKAO_REST_API_KEY,
+//         redirect_uri: KAKAO_REDIRECT_URI,
+//         code,
+//       },
+//       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//     });
 
-    const { access_token } = tokenResponse.data;
-    res.json({
-      message: "카카오 토큰 발급 성공",
-      kakao_access_token: access_token // 클라이언트는 이 토큰을 받아 /token_exchange로 다시 보냅니다.
-    });
+//     const { access_token } = tokenResponse.data;
+//     res.json({
+//       message: "카카오 토큰 발급 성공",
+//       kakao_access_token: access_token // 클라이언트는 이 토큰을 받아 /token_exchange로 다시 보냅니다.
+//     });
 
-  } catch (error) {
-    console.error(" 카카오 콜백(토큰 발급) 실패:", error.response?.data || error.message);
-    res.status(500).json({ message: "카카오 토큰 발급 실패" });
-  }
-};
+//   } catch (error) {
+//     console.error(" 카카오 콜백(토큰 발급) 실패:", error.response?.data || error.message);
+//     res.status(500).json({ message: "카카오 토큰 발급 실패" });
+//   }
+// };
 
 // 카카오 로그인 2단계 (신규 추가)
 // "카카오 토큰"으로 "우리 서비스 JWT" 받기
 
 export const kakaoTokenExchange = async (req, res) => {
   // 1. [추가] 클라이언트가 보낸 카카오 access_token 받기
-  const { access_token } = req.body; 
+  const { KAKAO_ACCESS_TOKEN } = req.body; 
   const JWT_SECRET = process.env.JWT_SECRET; // [추가] JWT 시크릿 로드
 
-  if (!access_token) {
-    return res.status(400).json({ message: "카카오 access_token이 누락되었습니다." });
+  if (!KAKAO_ACCESS_TOKEN) {
+    return res.status(400).json({ message: "카카오 KAKAO_ACCESS_TOKEN이 누락되었습니다." });
   }
 
   try {
     // 3. 사용자 정보 요청 (기존 로직)
     const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
-      headers: { Authorization: `Bearer ${access_token}` },
+      headers: { Authorization: `Bearer ${KAKAO_ACCESS_TOKEN}` },
     });
 
     const kakao_id = userResponse.data.id;
