@@ -5,15 +5,14 @@ import nodemailer from 'nodemailer';
 import sgTransport from 'nodemailer-sendgrid-transport';
 import crypto from 'crypto';
 
-
-// 카카오 로그인 완료 후 Redirect URI로 돌아오면 실행
+// 카카오 로그인 1단계 (수정됨)
+// 인가 코드로 "카카오 토큰" 받기
 export const kakaoCallback = async (req, res) => {
   const { code } = req.body;
 
   // 환경 변수를 함수 내에 직접 참조
   const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
   const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
-  const JWT_SECRET = process.env.JWT_SECRET; // JWT Secret 불러오기
 
   if (!code) {
     return res.status(400).json({message: '인가 코드가 누락됨.'});
@@ -21,7 +20,7 @@ export const kakaoCallback = async (req, res) => {
 
   try {
     // Authorization Code로 Access Token 요청
-    const tokenResponse = await axios.post("https://bapple-production.up.railway.app/api/auth/kakao/callback", null, {
+    const tokenResponse = await axios.post("https://kauth.kakao.com/oauth/token", null, {
       params: {
         grant_type: "authorization_code",
         client_id: KAKAO_REST_API_KEY,
@@ -32,9 +31,32 @@ export const kakaoCallback = async (req, res) => {
     });
 
     const { access_token } = tokenResponse.data;
+    res.json({
+      message: "카카오 토큰 발급 성공",
+      kakao_access_token: access_token // 클라이언트는 이 토큰을 받아 /token_exchange로 다시 보냅니다.
+    });
 
-    // 사용자 정보 요청
-    const userResponse = await axios.get("https://bapple-production.up.railway.app/api/auth/kakao/callback", {
+  } catch (error) {
+    console.error(" 카카오 콜백(토큰 발급) 실패:", error.response?.data || error.message);
+    res.status(500).json({ message: "카카오 토큰 발급 실패" });
+  }
+};
+
+// 카카오 로그인 2단계 (신규 추가)
+// "카카오 토큰"으로 "우리 서비스 JWT" 받기
+
+export const kakaoTokenExchange = async (req, res) => {
+  // 1. [추가] 클라이언트가 보낸 카카오 access_token 받기
+  const { access_token } = req.body; 
+  const JWT_SECRET = process.env.JWT_SECRET; // [추가] JWT 시크릿 로드
+
+  if (!access_token) {
+    return res.status(400).json({ message: "카카오 access_token이 누락되었습니다." });
+  }
+
+  try {
+    // 3. 사용자 정보 요청 (기존 로직)
+    const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
 
@@ -43,23 +65,7 @@ export const kakaoCallback = async (req, res) => {
     const email = kakaoAccount.email || `kakao_${userResponse.data.id}@noemail.com`;
     const nickname = kakaoAccount.profile.nickname || "카카오사용자";
 
-    // DB 연동 (지금은 임시로 콘솔 출력)
-//     console.log(" 카카오 사용자 정보:", { email, nickname });
-
-//     // JWT 발급 (7일 유효)
-//     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-//     // 성공 응답
-//     res.json({
-//       message: "카카오 로그인 성공",
-//       token, //프론트엔드님이 이 토큰을 받아 저장하시면 됩니다.
-//       user: { email, nickname },
-//     });
-//   } catch (error) {
-//     console.error(" 카카오 로그인 실패:", error.response?.data || error.message);
-//     res.status(500).json({ message: "카카오 로그인 실패" });
-//   }
-// };
+    // 4. DB 연동 (기존 로직)
     let [rows] = await db.query('SELECT * FROM users WHERE kakao_id = ?', [kakao_id]);
     let user = rows[0];
 
@@ -78,14 +84,14 @@ export const kakaoCallback = async (req, res) => {
       );
     }
 
-    // 4. JWT 발급 (우리 서비스 user_id 사용)
+    // 5. JWT 발급 (기존 로직)
     const token = jwt.sign(
       { userId: user.user_id }, //핵심: 우리 DB ID
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // 5. 성공 응답 (앱으로 토큰과 유저 정보 전송)
+    // 6. 성공 응답 (기존 로직)
     res.json({
       message: "카카오 로그인 성공",
       token, // 프론트엔드가 이 토큰을 저장합니다.
@@ -96,14 +102,19 @@ export const kakaoCallback = async (req, res) => {
       },
     });
 
-  } catch (error) {
-    console.error(" 카카오 로그인 실패:", error.response?.data || error.message);
+  } catch (error) { // 7. [수정] 에러 처리
+    // 카카오 토큰이 유효하지 않거나 만료된 경우 (401)
+    if (error.response && error.response.status === 401) {
+      console.error("유효하지 않은 카카오 토큰:", error.response.data);
+      return res.status(401).json({ message: "유효하지 않은 카카오 토큰입니다." });
+    }
+    console.error(" 카카오 로그인(토큰 교환) 실패:", error.response?.data || error.message);
     res.status(500).json({ message: "카카오 로그인 실패" });
   }
 };
 
-@returns {nodemailer.transporter}
-@throw {Error}
+// 이메일 인증 (변경 없음, 502 오류 해결됨)
+
 const getTransporter = () => {
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey) {
@@ -122,7 +133,6 @@ return nodemailer.createTransport(sgTransport(sendgridOptions));
 }
 
 // 이메일 인증 컨트롤러 (DB 사용)
-
 export const sendVerificationEmail = async (req, res) => {
   const { email } = req.body;
   if (!email) {
