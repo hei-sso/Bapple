@@ -9,7 +9,6 @@ import { kakaoCallback, kakaoTokenExchage, sendVerificationEmail, verifyEmailCod
 const router = express.Router();
 
 router.post("/kakao/login", kakaoCallback);
-router.post("/api/auth/kakao/token_exchange", kakaoTokenExchange);
 router.post("send_verification_code", sendVerificationEmail);
 router.post("/verify_code", verifyEmailCode);
 
