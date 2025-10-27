@@ -47,19 +47,24 @@ import crypto from 'crypto';
 
 export const kakaoTokenExchange = async (req, res) => {
   // 1. [추가] 클라이언트가 보낸 카카오 access_token 받기
+  console.log("--- KAKAO TOKEN EXCHANGE 시작 ---");
   const { KAKAO_ACCESS_TOKEN } = req.body; 
   const JWT_SECRET = process.env.JWT_SECRET; // [추가] JWT 시크릿 로드
 
   if (!KAKAO_ACCESS_TOKEN) {
+    console.log("ERROR: KAKAO_ACCESS_TOKEN 누락");
     return res.status(400).json({ message: "카카오 KAKAO_ACCESS_TOKEN이 누락되었습니다." });
   }
-
+  console.log(DEBUG: KAKAO 토큰 길이: ${KAKAO_ACCESS_TOKEN.length});
+  
   try {
     // 3. 사용자 정보 요청 (기존 로직)
+    console.log("DEBUG: 카카오 사용자 정보 요청 중...");
     const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
       headers: { Authorization: `Bearer ${KAKAO_ACCESS_TOKEN}` },
     });
-
+    console.log("DEBUG: 카카오 사용자 정보 획득 완료.");
+    
     const kakao_id = userResponse.data.id;
     const kakaoAccount = userResponse.data.kakao_account;
     const email = kakaoAccount.email || `kakao_${userResponse.data.id}@noemail.com`;
@@ -103,7 +108,7 @@ export const kakaoTokenExchange = async (req, res) => {
         email: user.email,
       },
     });
-
+  console.log("--- KAKAO TOKEN EXCHANGE 성공적으로 응답 완료 ---");
   } catch (error) { // 7. [수정] 에러 처리
     // 카카오 토큰이 유효하지 않거나 만료된 경우 (401)
     if (error.response && error.response.status === 401) {
