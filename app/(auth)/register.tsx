@@ -1,6 +1,6 @@
 // app/(auth)/register.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -10,12 +10,37 @@ import {
   Platform,
   ScrollView,
   StyleSheet, 
-  Alert 
+  Alert,
+  Modal 
 } from 'react-native';
 import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authStyles } from './styles';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import FontAwesome from '@expo/vector-icons/FontAwesome'; 
+import * as WebBrowser from 'expo-web-browser'; 
+import axios from 'axios';
+import qs from 'qs';
+
+WebBrowser.maybeCompleteAuthSession(); 
+
+// 환경 변수 및 상수 (WebView REST API 방식)
+const KAKAO_REST_API_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY!;
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL!; 
+
+// 카카오 디벨로퍼에 등록된 Redirect URI여야 함 (테스트 용)
+const REDIRECT_URI_WEB = process.env.EXPO_PUBLIC_BACKEND_URL; 
+
+// 카카오 인가 요청 URL
+const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI_WEB}&scope=profile,account_email`;
+
+// WebView에서 실행될 JavaScript (URL에 code가 포함되면 메시지 전송)
+// 인가 코드(code)가 포함된 최종 Redirect URI로 이동했을 때, URL 전체를 Native로 전달
+const INJECTED_JAVASCRIPT = `
+  if (window.location.href.includes('code=')) {
+    window.ReactNativeWebView.postMessage(window.location.href);
+  }
+  true;
+`;
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -30,8 +55,65 @@ export default function RegisterScreen() {
   
   // 이메일 인증 플로우 상태 관리
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [verificationCodeSent, setVerificationCodeSent] = useState(false); // 인증번호 발송 여부
-  const [verificationCode, setVerificationCode] = useState(''); // 인증번호 입력 값
+  const [verificationCodeSent, setVerificationCodeSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState(''); 
+  const [isWebViewVisible, setIsWebViewVisible] = useState(false); // WebView 표시 상태
+
+  // 카카오 로그인 핵심 로직 (참고: https://kong-dev.tistory.com/163)
+  // WebView에서 받은 URL에서 인가 코드(code)를 추
+  const getCode = (url: string) => {
+    setIsWebViewVisible(false);
+    
+    const exp = 'code=';
+    const condition = url.indexOf(exp);
+    
+    if (condition !== -1) {
+      const requestCode = url.substring(condition + exp.length);
+      requestToken(requestCode); // 인가 코드를 이용해 토큰 요청
+    } else {
+        Alert.alert('오류', '카카오 인증 코드 추출 실패.');
+    }
+  };
+
+  // 인가 코드를 이용해 카카오 ACCESS_TOKEN을 받고, 백엔드에 전달
+  const requestToken = async (code: string) => {
+    const requestTokenUrl = 'https://kauth.kakao.com/oauth/token';
+
+    const options = qs.stringify({
+      grant_type: 'authorization_code',
+      client_id: KAKAO_REST_API_KEY,
+      redirect_uri: REDIRECT_URI_WEB,
+      code,
+    });
+
+    try {
+      // 1. 카카오로부터 ACCESS_TOKEN 획득 (Front-end가 직접 처리)
+      const tokenResponse = await axios.post(requestTokenUrl, options, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+      });
+      const KAKAO_ACCESS_TOKEN = tokenResponse.data.access_token;
+      
+      // 2. Back-end로 KAKAO_ACCESS_TOKEN 전달 (사용자 정보 요청 및 JWT 획득)
+      const BACKEND_API_URL = `${BACKEND_URL}/api/auth/kakao/token_exchange`; 
+
+      const body = {
+        KAKAO_ACCESS_TOKEN,
+      };
+      
+      // 3. 백엔드와 통신하여 서비스 JWT 토큰 획득 및 로그인 처리
+      const response = await axios.post(BACKEND_API_URL, body);
+      const serviceToken = response.data.token; // 백엔드에서 받은 최종 JWT 토큰
+
+      // 4. 로그인 완료 처리 (useAuth의 signIn 함수가 없으므로 임시로 router.replace 사용)
+      router.replace('/(auth)/login'); 
+
+    } catch (e) {
+      console.error("카카오 로그인 (WebView) 실패:", e);
+      Alert.alert('로그인 실패', '다시 시도해 주세요.');
+    }
+  };
+  // ------------------------------------------------------------
+
 
   const handleGoBack = () => {
     router.back(); 
@@ -43,72 +125,45 @@ export default function RegisterScreen() {
       return;
     }
     
-    // 💡 [추후 구현] 이메일 인증 필수 체크
     if (!isEmailVerified) {
        Alert.alert("경고", "이메일 인증을 완료해야 합니다.");
        return;
     }
 
-    // ... (로직 생략) ...
-    
     Alert.alert("성공", "회원가입 성공 (임시)");
-    // 회원가입 성공 후 로그인 화면으로 이동하는 것이 일반적이라고 함
     router.replace('/(auth)/login' as RedirectProps['href']); 
   };
 
-  // 인증번호 발송 핸들러
+  // 인증번호 발송 핸들러 (로직 유지)
   const handleSendVerificationCode = async () => {
-    if (!email) {
-        Alert.alert("알림", "이메일을 입력해 주세요.");
-        return;
-    }
-
-    // =========================================================
-    // 💡 [백엔드 연동 필요] 이메일 인증번호 발송 로직
-    // 1. /services/authService.ts 에 인증번호 발송 API 함수 구현
-    // 2. 서버가 이메일로 인증번호를 전송하고, 성공 응답을 받습니다.
-    // =========================================================
-    
-    // 💡 [추후 구현] API 호출 성공 가정
+    if (!email) { Alert.alert("알림", "이메일을 입력해 주세요."); return; }
     setVerificationCodeSent(true); 
     Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
   };
   
-  // 인증번호 확인 핸들러
+  // 인증번호 확인 핸들러 (로직 유지)
   const handleVerifyCode = async () => {
-    if (!verificationCode) {
-        Alert.alert("알림", "인증번호를 입력해 주세요.");
-        return;
-    }
-    
-    // =========================================================
-    // 💡 [백엔드 연동 필요] 인증번호 확인 로직
-    // 1. /services/authService.ts 에 인증번호 확인 API 함수 구현
-    // 2. 서버에 이메일, verificationCode 값을 전송하여 확인
-    // 3. (로딩 UI 표시 권장)
-    // =========================================================
-    
-    // 💡 [추후 구현] 서버로부터 인증 성공 응답 가정
+    if (!verificationCode) { Alert.alert("알림", "인증번호를 입력해 주세요."); return; }
     setIsEmailVerified(true);
-    setVerificationCodeSent(false); // 인증 완료 후 입력 필드 숨김
+    setVerificationCodeSent(false);
     Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다.");
   };
   
-  // 약관/정책 모달 띄우기 핸들러
+  // 약관/정책 모달 띄우기 핸들러 (로직 유지)
   const handlePolicyLink = (type: 'privacy' | 'terms') => {
     if (type === 'privacy') {
-        router.push('/(auth)/privacy-policy' as RedirectProps['href']);
+      router.push('/(auth)/privacy-policy' as RedirectProps['href']);
     } else {
-        router.push('/(auth)/terms-of-use' as RedirectProps['href']);
+      router.push('/(auth)/terms-of-use' as RedirectProps['href']);
     }
   };
 
-  // 💡 카카오 로그인 핸들러 (임시)
-  const handleKakaoLogin = () => {
-    Alert.alert("알림", "카카오 연동 준비 중입니다.");
+  // 카카오 로그인 버튼 핸들러: WebView 스택 페이지로 이동
+  const handleKakaoLogin = async () => {
+      router.push('/(auth)/kakao-webview' as RedirectProps['href']);
   };
   
-  // 💡 로그인 링크 핸들러
+  // 로그인 링크 핸들러
   const handleLoginLink = () => {
     router.replace('/(auth)/login' as RedirectProps['href']);
   };
@@ -129,7 +184,7 @@ export default function RegisterScreen() {
 
         <View style={authStyles.form}>
           
-          <Text style={authStyles.label}>별명</Text>
+          <Text style={authStyles.label}>닉네임</Text>
           <TextInput
             style={authStyles.input}
             placeholder="bapple"
@@ -172,6 +227,7 @@ export default function RegisterScreen() {
                   value={verificationCode}
                   onChangeText={setVerificationCode}
                   keyboardType="numeric"
+                  placeholderTextColor="#A9A9A9"
                 />
                 <TouchableOpacity style={[localStyles.verificationButton, localStyles.unverifiedButton]} onPress={handleVerifyCode}>
                   <Text style={localStyles.verificationButtonText}>확인</Text>
@@ -235,10 +291,12 @@ export default function RegisterScreen() {
            <Text style={localStyles.orText}>또는</Text>
         </View>
 
-        {/*  카카오 로그인 버튼 */}
-        <TouchableOpacity style={authStyles.kakaoButton} onPress={handleKakaoLogin}>
+        {/* 카카오 로그인 버튼: WebView 표시 트리거 */}
+        <TouchableOpacity 
+          style={authStyles.kakaoButton} 
+          onPress={handleKakaoLogin}
+        >
           <View style={localStyles.kakaoButtonContent}>
-            {/* 💡 카카오 로고 대신 임시 아이콘 사용 */}
             <FontAwesome name="comment" size={20} color="#000" style={localStyles.kakaoIcon} />
             <Text style={authStyles.kakaoButtonText}>로그인</Text>
           </View>
@@ -252,16 +310,16 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </View>
 
-      </ScrollView>
+      </ScrollView>     
     </KeyboardAvoidingView>
   );
 }
 
 // 💡 register.tsx에만 필요한 추가 스타일
 const localStyles = StyleSheet.create({
-  // 인증번호 입력 그룹 스타일
+  // 인증번호 입력 그룹
   verificationInputGroup: {
-    marginTop: -5, // 이메일 필드와 라벨 간격 조정
+    marginTop: -5, 
     marginBottom: 5,
   },
   // 입력 필드와 버튼을 한 줄에 배치하기 위한 컨테이너
@@ -275,7 +333,7 @@ const localStyles = StyleSheet.create({
     flex: 1, 
     marginRight: 10, 
   },
-  // 인증 버튼 스타일
+  // 인증 버튼
   verificationButton: {
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -284,11 +342,11 @@ const localStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // 미인증 상태 버튼 스타일
+  // 미인증 상태 버튼
   unverifiedButton: {
     backgroundColor: '#000',
   },
-  // 인증 완료 시 버튼 스타일
+  // 인증 완료 시 버튼
   verifiedButton: {
     backgroundColor: '#ccc',
   },
