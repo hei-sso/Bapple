@@ -65,28 +65,30 @@ export const kakaoTokenExchange = async (req, res) => {
     const email = kakaoAccount.email || `kakao_${userResponse.data.id}@noemail.com`;
     const nickname = kakaoAccount.profile.nickname || "카카오사용자";
 
-    // 4. DB 연동 (기존 로직)
-    let [rows] = await db.query('SELECT * FROM users WHERE kakao_id = ?', [kakao_id]);
-    let user = rows[0];
+    // // 4. DB 연동 (기존 로직)
+    // let [rows] = await db.query('SELECT * FROM users WHERE kakao_id = ?', [kakao_id]);
+    // let user = rows[0];
 
-    if (!user) {
-      // 신규 유저 -> DB에 회원가입
-      const [insertResult] = await db.query(
-        'INSERT INTO users (kakao_id, email, nickname, provider) VALUES (?, ?, ?, ?)',
-        [kakao_id, email, nickname, 'kakao']
-      );
-      [rows] = await db.query('SELECT * FROM users WHERE user_id = ?', [insertResult.insertId]);
-      user = rows[0];
-    } else {
-      // (선택) 기존 유저 정보 업데이트
-      await db.query('UPDATE users SET nickname = ?, email = ? WHERE kakao_id = ?', 
-        [nickname, email, kakao_id]
-      );
-    }
+    // if (!user) {
+    //   // 신규 유저 -> DB에 회원가입
+    //   const [insertResult] = await db.query(
+    //     'INSERT INTO users (kakao_id, email, nickname, provider) VALUES (?, ?, ?, ?)',
+    //     [kakao_id, email, nickname, 'kakao']
+    //   );
+    //   [rows] = await db.query('SELECT * FROM users WHERE user_id = ?', [insertResult.insertId]);
+    //   user = rows[0];
+    // } else {
+    //   // (선택) 기존 유저 정보 업데이트
+    //   await db.query('UPDATE users SET nickname = ?, email = ? WHERE kakao_id = ?', 
+    //     [nickname, email, kakao_id]
+    //   );
+    const service_kakao_id = `KAKAO_${kakao_id}`;    
+  
+  }
 
     // 5. JWT 발급 (기존 로직)
     const token = jwt.sign(
-      { userId: user.user_id }, //핵심: 우리 DB ID
+      { userId: service_kakao_id, isGuest: true }, //핵심: 우리 DB ID
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -96,7 +98,7 @@ export const kakaoTokenExchange = async (req, res) => {
       message: "카카오 로그인 성공",
       token, // 프론트엔드가 이 토큰을 저장합니다.
       user: {
-        userId: user.user_id,
+        userId: service_kakao_id,
         nickname: user.nickname,
         email: user.email,
       },
