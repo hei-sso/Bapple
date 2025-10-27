@@ -84,7 +84,7 @@ export const kakaoTokenExchange = async (req, res) => {
     //   );
     const service_kakao_id = `KAKAO_${kakao_id}`;    
   
-  }
+  
 
     // 5. JWT 발급 (기존 로직)
     const token = jwt.sign(
