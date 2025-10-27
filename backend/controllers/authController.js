@@ -102,15 +102,24 @@ export const kakaoCallback = async (req, res) => {
   }
 };
 
+@returns {nodemailer.transporter}
+@throw {Error}
+const getTransporter = () => {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (!apiKey) {
+    console.error("SENDGRID_API_KEY 환경 변수 설정 안됨");
+    throw new Error("이메일 서비스 설정 누락되어 요청을 처리 X");
+  }
 
-// SendGrid 설정 
+  // SendGrid 설정 
 const sendgridOptions = {
     auth: {
-        api_key: process.env.SENDGRID_API_KEY
+        api_key: apiKey
     }
 };
-const transporter = nodemailer.createTransport(sgTransport(sendgridOptions));
 
+return nodemailer.createTransport(sgTransport(sendgridOptions));
+}
 
 // 이메일 인증 컨트롤러 (DB 사용)
 
@@ -124,6 +133,7 @@ export const sendVerificationEmail = async (req, res) => {
   const expirationTime = new Date(Date.now() + 5 * 60 * 1000); // 5분 뒤
 
   try {
+    const transport = getTransporter();
     // DB에 코드 저장 (UPSERT: 없으면 생성, 있으면 덮어쓰기)
     await db.query(
       'INSERT INTO email_verifications (email, code, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE code = ?, expires_at = ?',
@@ -137,7 +147,7 @@ export const sendVerificationEmail = async (req, res) => {
       html: `<h1>인증 코드: ${verificationCode}</h1><p>5분 내에 입력해주세요.</p>`,
     };
 
-    await transporter.sendMail(mailOption);
+    await transport.sendMail(mailOption);
     
     res.json({
       success: true,
@@ -145,7 +155,7 @@ export const sendVerificationEmail = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('인증 코드 발송 중 오류 발생: ', err);
+    console.error('인증 코드 발송 중 오류 발생: ', err.message);
     res.status(500).json({ success: false, message: '인증코드 발송 실패' });
   }
 };

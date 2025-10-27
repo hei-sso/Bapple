@@ -1,5 +1,5 @@
 import express from "express";
-import { kakaoCallback, sendVerificationEmail, verifyEmailCode} from "../controllers/authController.js";
+import { kakaoCallback, kakaoTokenExchage, sendVerificationEmail, verifyEmailCode} from "../controllers/authController.js";
 // import nodemailer from 'nodemailer';
 // import crypto from 'crypto';
 // import db from './db.js';
@@ -9,6 +9,7 @@ import { kakaoCallback, sendVerificationEmail, verifyEmailCode} from "../control
 const router = express.Router();
 
 router.post("/kakao/login", kakaoCallback);
+router.post("/api/auth/kakao/token_exchange", kakaoTokenExchange);
 router.post("send_verification_code", sendVerificationEmail);
 router.post("/verify_code", verifyEmailCode);
 
