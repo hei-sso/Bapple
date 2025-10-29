@@ -29,7 +29,6 @@ export default function WelcomeScreen() {
         
         {/* 중앙 로고 */}
         <View style={styles.logoContainer}>
-          {/* 💡 로고 텍스트 대신 Image 컴포넌트 사용 */}
           <Image 
             source={require('../assets/images/splash-icon.png')} // 로고 이미지 경로 설정
             style={styles.logoImage}
@@ -61,7 +60,7 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-    // 💡 safeArea 대신 전체 화면을 덮도록 container 스타일 조정
+    // safeArea 대신 전체 화면을 덮도록 container 스타일 조정
     container: { 
         flex: 1,
         backgroundColor: '#fff',

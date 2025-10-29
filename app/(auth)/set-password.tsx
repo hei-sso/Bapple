@@ -20,7 +20,7 @@ export default function SetPasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
-  // 💡 [추가] 인증 및 새 비밀번호 상태 관리
+  // 인증 및 새 비밀번호 상태 관리
   const [email, setEmail] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [verificationCodeSent, setVerificationCodeSent] = useState(false);
@@ -33,23 +33,23 @@ export default function SetPasswordScreen() {
     router.back(); 
   };
 
-  // 💡 [추가] 인증번호 발송 핸들러 (register.tsx와 동일)
+  // 인증번호 발송 핸들러 (register.tsx와 동일)
   const handleSendVerificationCode = async () => {
     if (!email) {
         Alert.alert("알림", "이메일을 입력해 주세요.");
         return;
     }
 
-    // =========================================================
-    // 💡 [백엔드 연동 필요] 이메일 인증번호 발송 로직
+    // ===============================================
+    // [백엔드 연동 필요] 이메일 인증번호 발송 로직
     // (비밀번호 재설정용 토큰/세션 발급 로직 포함)
-    // =========================================================
+    // ===============================================
     
     setVerificationCodeSent(true); 
     Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
   };
   
-  // 💡 [추가] 인증번호 확인 핸들러 (register.tsx와 동일)
+  // 인증번호 확인 핸들러 (register.tsx와 동일)
   const handleVerifyCode = async () => {
     if (!verificationCode) {
         Alert.alert("알림", "인증번호를 입력해 주세요.");
@@ -57,18 +57,18 @@ export default function SetPasswordScreen() {
     }
     
     // =========================================================
-    // 💡 [백엔드 연동 필요] 인증번호 확인 로직
+    // [백엔드 연동 필요] 인증번호 확인 로직
     // (서버에서 인증번호 일치 확인 및 비밀번호 변경 권한 부여)
     // =========================================================
     
-    // 💡 [추후 구현] 서버로부터 인증 성공 응답 가정
+    // [추후 구현] 서버로부터 인증 성공 응답 가정
     setIsEmailVerified(true);
     setVerificationCodeSent(false);
     Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다. 이제 새 비밀번호를 설정할 수 있습니다.");
   };
 
   const handleChangePassword = async () => {
-    // 💡 [수정] 이메일 인증 필수 체크
+    // 이메일 인증 필수 체크
     if (!isEmailVerified) {
         Alert.alert("경고", "이메일 인증을 먼저 완료해 주세요.");
         return;
@@ -79,10 +79,10 @@ export default function SetPasswordScreen() {
       return;
     }
     
-    // =========================================================
-    // 💡 [백엔드 연동 필요] 비밀번호 변경 API 호출
+    // ===================================================
+    // [백엔드 연동 필요] 비밀번호 변경 API 호출
     // (새 비밀번호, 인증 토큰/세션 ID 등을 서버로 전송)
-    // =========================================================
+    // ===================================================
 
     Alert.alert("성공", "비밀번호가 성공적으로 변경되었습니다.");
     router.replace('/(auth)/login' as RedirectProps['href']);

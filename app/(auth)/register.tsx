@@ -20,9 +20,7 @@ import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession(); 
 
-// register.tsx에서는 카카오 로그인 로직을 kakao-webview.tsx로 모두 이관했으므로,
-// 카카오 관련 상수와 로직을 제거합니다. (UI 유지를 위해 RegisterScreen은 유지)
-
+// 카카오 관련 상수와 로직을 제거 (UI 유지를 위해 RegisterScreen은 유지)
 export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -38,8 +36,6 @@ export default function RegisterScreen() {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [verificationCodeSent, setVerificationCodeSent] = useState(false);
   const [verificationCode, setVerificationCode] = useState(''); 
-
-  // 카카오 로그인 관련 중복 로직 제거
   
   const handleGoBack = () => {
     router.back(); 

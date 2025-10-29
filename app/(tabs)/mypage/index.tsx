@@ -15,10 +15,7 @@ import { useRouter, RedirectProps } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
-// -----------------------------------------------------------
 // Mock 데이터 및 상수
-// -----------------------------------------------------------
-
 const MOCK_USER = {
     nickname: "Bapple",
     followers: 22,
@@ -34,10 +31,7 @@ const INFO_MENUS = [
     { label: "냉장고 공개 범위", path: "/mypage/fridge-setting" },
 ];
 
-// -----------------------------------------------------------
-// 💡 메인 컴포넌트
-// -----------------------------------------------------------
-
+// 메인 컴포넌트
 export default function MyPageScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -48,7 +42,7 @@ export default function MyPageScreen() {
 
     // 설정/정보 페이지 이동 핸들러
     const handleNavigation = useCallback((path: string) => {
-        // 💡 app/mypage/[filename].tsx 경로로 이동
+        // app/mypage/[filename].tsx 경로로 이동
         router.push(path as RedirectProps['href']);
     }, [router]);
 
@@ -132,10 +126,7 @@ export default function MyPageScreen() {
     );
 }
 
-// -----------------------------------------------------------
-// 💡 스타일 시트
-// -----------------------------------------------------------
-
+// 스타일 시트
 const PROFILE_SIZE = 90;
 const EDIT_BUTTON_SIZE = 35;
 const EDIT_BUTTON_OFFSET = 5; // 프로필 사진 모서리에 겹치는 정도
@@ -181,7 +172,7 @@ const styles = StyleSheet.create({
     editButton: {
         position: 'absolute',
         bottom: 0,
-        right: -EDIT_BUTTON_OFFSET, // 💡 [핵심] 프로필 오른쪽 모서리로 이동
+        right: -EDIT_BUTTON_OFFSET, // 프로필 오른쪽 모서리로 이동
         width: EDIT_BUTTON_SIZE,
         height: EDIT_BUTTON_SIZE,
         borderRadius: EDIT_BUTTON_SIZE / 2,

@@ -17,9 +17,6 @@ import { useAuth } from '../../context/authContext';
 
 WebBrowser.maybeCompleteAuthSession(); 
 
-// 💡 카카오 로그인 관련 상수 및 로직은 
-// 💡 /auth/kakao-webview.tsx로 책임을 이관했으므로 모두 제거합니다.
-
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -54,7 +51,6 @@ export default function LoginScreen() {
   
   const handleSetPassword = () => { router.push('/(auth)/set-password' as RedirectProps['href']); };
   const handleRegisterLink = () => { router.replace('/(auth)/register' as RedirectProps['href']); };
-  // ------------------------------------------------------------
 
   return (
     <KeyboardAvoidingView

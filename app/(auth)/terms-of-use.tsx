@@ -30,7 +30,7 @@ export default function TermsOfUseScreen() {
     </View>
   );
 }
-// 💡 스타일은 privacy-policy.tsx와 동일하게 사용 (필요시 별도 styles.ts 파일로 통합 가능)
+// 스타일은 privacy-policy.tsx와 동일하게 사용 (필요시 별도 styles.ts 파일로 통합 가능)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
