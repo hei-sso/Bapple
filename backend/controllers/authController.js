@@ -55,7 +55,7 @@ export const kakaoTokenExchange = async (req, res) => {
     console.log("ERROR: KAKAO_ACCESS_TOKEN 누락");
     return res.status(400).json({ message: "카카오 KAKAO_ACCESS_TOKEN이 누락되었습니다." });
   }
-  console.log(DEBUG: KAKAO 토큰 길이: ${KAKAO_ACCESS_TOKEN.length});
+  console.log(`DEBUG: KAKAO 토큰 길이: ${KAKAO_ACCESS_TOKEN.length}`);
   
   try {
     // 3. 사용자 정보 요청 (기존 로직)
