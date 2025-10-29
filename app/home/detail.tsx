@@ -1,11 +1,13 @@
 // app/(tabs)/home/detail.tsx
 
-// 💡 [수정] useState와 useCallback을 React에서 명시적으로 임포트합니다.
-import React, { useMemo, useState, useCallback } from 'react'; 
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+// 💡 [추가] 주 단위 이동을 위한 date-fns 임포트
+import { format, addDays, subWeeks, addWeeks, startOfWeek } from 'date-fns';
+import { ko } from 'date-fns/locale'; 
 
 const { width } = Dimensions.get('window');
 
@@ -19,25 +21,33 @@ interface RecipeItem {
     recipe: string;
 }
 
-const GROUP_COLORS: Record<string, string> = {
-  '그룹 1': '#F07575', 
-  '그룹 2': '#FDE2A1',
-  '그룹 3': '#B8E998',
-  '그룹 4': '#C0C0C0', 
-};
+const GROUP_COLORS: Record<string, string> = { 
+    '그룹 1': '#F07575', 
+    '그룹 2': '#FDE2A1', 
+    '그룹 3': '#B8E998', 
+    '그룹 4': '#C0C0C0', 
+}; 
 
-const MOCK_RECIPES: Record<string, RecipeItem[]> = {
-  '2025-10-20': [ 
-    { id: 1, group: '그룹 1', recipe: 'Is this wher' },
-    { id: 2, group: '그룹 2', recipe: 'Budget for' },
-  ],
-  '2025-10-22': [
-    { id: 3, group: '그룹 3', recipe: 'St. Patrick' },
-  ],
-  '2025-10-27': [
-    { id: 4, group: '그룹 4', recipe: 'Dinner will' },
-  ],
-};
+const MOCK_RECIPES: Record<string, RecipeItem[]> = { 
+    '2025-10-20': [ 
+        { id: 1, group: '그룹 1', recipe: 'Is this wher' },
+        { id: 2, group: '그룹 2', recipe: 'Budget for' },
+        { id: 5, group: '그룹 2', recipe: 'Take Jake ti' }, 
+    ],
+    '2025-10-21': [
+        { id: 3, group: '그룹 3', recipe: 'Vaccine app' },
+        { id: 4, group: '그룹 3', recipe: 'Take Jake ti' },
+        { id: 6, group: '그룹 3', recipe: 'DMV appoi' }, 
+    ],
+    '2025-10-23': [
+        { id: 7, group: '그룹 1', recipe: 'St. Patrick\'s' },
+        { id: 8, group: '그룹 2', recipe: 'PTO day' },
+    ],
+    '2025-10-27': [
+        { id: 7, group: '그룹 1', recipe: 'St. Patrick\'s' },
+        { id: 8, group: '그룹 2', recipe: 'PTO day' },
+    ],
+}; 
 
 const TODAY_STRING = new Date().toISOString().split('T')[0];
 
@@ -59,10 +69,8 @@ const getWeekDays = (weekStartString: string, currentSelectedDateString: string)
     const days: DayData[] = [];
     
     for (let i = 0; i < 7; i++) {
-        const day = new Date(startDay);
-        day.setDate(startDay.getDate() + i);
-
-        const dateString = day.toISOString().split('T')[0];
+        const day = addDays(startDay, i);
+        const dateString = dateToDateString(day);
         
         days.push({
             date: day.getDate(),
@@ -76,7 +84,7 @@ const getWeekDays = (weekStartString: string, currentSelectedDateString: string)
     return days;
 };
 
-const dateToDateString = (date: Date): string => date.toISOString().split('T')[0];
+const dateToDateString = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 // -----------------------------------------------------------
 // 💡 메인 컴포넌트
@@ -89,25 +97,37 @@ export default function DateDetailScreen() {
 
     const initialDateString = date || dateToDateString(new Date());
 
-    const [currentDateString, setCurrentDateString] = useState(initialDateString); // 💡 useState 사용
-    
-    const currentSelectedDate = new Date(currentDateString);
-    const dayOfWeek = currentSelectedDate.getDay();
-    const currentWeekStart = new Date(currentSelectedDate);
-    currentWeekStart.setDate(currentSelectedDate.getDate() - dayOfWeek);
-    const currentWeekStartString = dateToDateString(currentWeekStart);
+    const initialWeekStart = weekStart ? new Date(weekStart) : startOfWeek(new Date(), { weekStartsOn: 0 }); 
 
-    const weekDays = useMemo(() => getWeekDays(currentWeekStartString, currentDateString), [currentWeekStartString, currentDateString]);
+    const [currentDateString, setCurrentDateString] = useState(initialDateString);
+    const [currentWeekStartDate, setCurrentWeekStartDate] = useState(initialWeekStart);
+
+    const weekDays = useMemo(() => getWeekDays(dateToDateString(currentWeekStartDate), currentDateString), [currentWeekStartDate, currentDateString]);
     
+    // ------------------------- 로직 ---------------------------
+
     const handleGoBack = () => {
         router.back();
     };
+    
+    // 주 단위 이동 핸들러
+    const changeWeek = useCallback((delta: number) => {
+        setCurrentWeekStartDate(prev => {
+            const newWeekStart = delta > 0 ? addWeeks(prev, 1) : subWeeks(prev, 1);
+            
+            // 주의 시작일을 변경할 때, 선택된 날짜도 해당 주의 날짜로 조정 (선택 유지 목적)
+            const newSelectedDate = addDays(newWeekStart, new Date(currentDateString).getDay());
+            setCurrentDateString(dateToDateString(newSelectedDate));
+
+            return newWeekStart;
+        });
+    }, [currentDateString]);
 
     // ------------------------- UI 렌더링 ---------------------------
     
     const WEEK_CALENDAR_PADDING_H = 24;
     const BORDER_WIDTH = 1;
-    const recipeItem = (MOCK_RECIPES[currentDateString] || [])[0]; // 대표 레시피 1개 (UI 표시용)
+    const recipeItem = (MOCK_RECIPES[currentDateString] || [])[0];
 
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -125,6 +145,17 @@ export default function DateDetailScreen() {
                 
                 {/* 2. 주간 달력 표시 (상세 뷰) */}
                 <View style={styles.calendarArea}>
+                    
+                    {/* 💡 [수정] 달력 상단 우측 주 이동 버튼 */}
+                    <View style={styles.weekNavContainer}>
+                        <TouchableOpacity onPress={() => changeWeek(-1)} style={styles.navButton}>
+                            <Text style={styles.navArrow}>{'<  '}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => changeWeek(1)} style={styles.navButton}>
+                            <Text style={styles.navArrow}>{'  >'}</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <View style={styles.dayOfWeekHeader}>
                         {['일', '월', '화', '수', '목', '금', '토'].map(day => (
                             <Text key={day} style={styles.dayOfWeekText}>{day}</Text>
@@ -132,30 +163,34 @@ export default function DateDetailScreen() {
                     </View>
                     <View style={styles.weekCalendarGrid}>
                         {weekDays.map(dayData => {
-                            const cellWidth = (width - (WEEK_CALENDAR_PADDING_H * 2) - BORDER_WIDTH * 2) / 7;
-                            
+                            // 💡 [찌부 해결] 너비 계산
+                            const cellWidth = (width - (WEEK_CALENDAR_PADDING_H * 2) - BORDER_WIDTH) / 7;
+
                             return (
                                 <TouchableOpacity 
                                     key={dayData.dateString}
                                     style={[
                                         styles.weekCalendarCell,
                                         { width: cellWidth },
-                                        dayData.isSelected && styles.weekSelectedCell, // 선택된 날짜 강조
-                                        dayData.isToday && styles.weekTodayCell,
+                                        dayData.isSelected && styles.weekSelectedCell,
+                                        // 토요일 borderRightWidth 제거
+                                        dayData.dayOfWeek === 6 && { borderRightWidth: 0 } 
                                     ]}
-                                    onPress={() => setCurrentDateString(dayData.dateString)} // 날짜 선택 시 업데이트
+                                    onPress={() => setCurrentDateString(dayData.dateString)}
                                 >
-                                    <View style={[ // 선택한 날짜 동그라미 강조
+                                    <View style={[ 
                                         styles.dayNumberContainer,
-                                        dayData.isSelected && styles.SelectedIndicator
+                                        // 💡 [수정] 오늘일 때와 선택됐을 때 검은 동그라미
+                                        dayData.isSelected && styles.todayIndicator, 
                                     ]}>
                                         <Text style={[
                                             styles.weekDayNumber,
-                                            dayData.isSelected && styles.todayAndSelectedText
+                                            // 💡 [수정] 오늘이거나 선택된 날짜는 흰색 글씨
+                                            dayData.isSelected && styles.todayText, 
                                         ]}>{dayData.date}</Text>
                                     </View>
                                     
-                                    {/* 레시피 카운트 (디자인상 없음, Mock 데이터 유무만 확인) */}
+                                    {/* 레시피 카운트 */}
                                     {dayData.recipes.length > 0 && (
                                         <View style={styles.weekRecipeCount}>
                                             <Text style={styles.weekRecipeCountText}>{dayData.recipes.length}</Text>
@@ -177,6 +212,8 @@ export default function DateDetailScreen() {
                             <View style={styles.recipeCardContent}>
                                 <Text style={styles.recipeName}>
                                     {recipeItem.recipe}
+                                    {'\n'}
+                                    케이준 치킨 샐러드
                                 </Text>
                                 <View style={styles.recipeImagePlaceholder} />
                             </View>
@@ -196,13 +233,8 @@ export default function DateDetailScreen() {
 // -----------------------------------------------------------
 
 const styles = StyleSheet.create({
-    container: { 
-        flex: 1, 
-        backgroundColor: '#fff', 
-    },
-    scrollContent: { 
-        paddingBottom: 50, 
-    },
+    container: { flex: 1, backgroundColor: '#fff', },
+    scrollContent: { paddingBottom: 50, },
     
     // 1. 독립적인 Header 영역
     appHeader: {
@@ -217,6 +249,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 24,
         padding: 5,
+        zIndex: 10,
     },
     backText: {
         fontSize: 28,
@@ -224,16 +257,37 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     headerTitle: {
-        fontSize: 24,
+        fontSize: 24, // 큼직한 글꼴 유지
         fontWeight: 'bold',
         color: '#000',
+        marginLeft: 10,
     },
 
     // 2. 주간 달력 표시 영역
     calendarArea: {
         paddingHorizontal: 24,
         marginBottom: 30,
+        position: 'relative',
+        marginTop: 15, // 💡 [수정] 달력 영역과 헤더 날짜 사이 여백
     },
+    
+    // 💡 [추가] 주 이동 버튼 컨테이너 (우측 상단)
+    weekNavContainer: {
+        position: 'absolute',
+        top: -35, // 💡 [수정] 위치를 조정하여 날짜 제목과 겹치지 않게 함
+        right: 24,
+        flexDirection: 'row',
+        zIndex: 5,
+    },
+    navButton: {
+        paddingHorizontal: 5,
+    },
+    navArrow: {
+        fontSize: 21,
+        color: '#000',
+    },
+
+
     dayOfWeekHeader: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -253,7 +307,7 @@ const styles = StyleSheet.create({
         borderColor: '#eee',
     },
     weekCalendarCell: {
-        width: (width - 48 - 2) / 7, 
+        // width는 동적으로 계산됨
         paddingVertical: 10,
         alignItems: 'center',
         borderRightWidth: 1,
@@ -269,21 +323,21 @@ const styles = StyleSheet.create({
     weekSelectedCell: {
         backgroundColor: '#f0f0f0', 
     },
-    weekTodayCell: {
-        // 오늘 날짜 표시 스타일
+    
+    // 💡 [수정] 오늘/선택 시 검은색 동그라미와 흰색 텍스트
+    todayIndicator: {
+        backgroundColor: '#000', // 검은색 동그라미
     },
-    SelectedIndicator: {
-        backgroundColor: '#000', // 선택 시 검은 동그라미
-    },
-    todayAndSelectedText: {
-        color: '#fff',
+    todayText: {
+        color: '#fff', // 흰색 글씨
+        fontWeight: 'bold',
     },
     weekDayNumber: {
-        fontSize: 16,
+        fontSize: 16, 
         fontWeight: 'bold',
     },
     weekRecipeCount: {
-        backgroundColor: '#f0f0f0', // 약한 배경색
+        backgroundColor: '#f0f0f0',
         borderRadius: 10,
         paddingHorizontal: 6,
         paddingVertical: 2,
@@ -329,11 +383,11 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     recipeName: {
-        fontSize: 20,
+        fontSize: 22, 
         fontWeight: 'bold',
         flex: 1,
         marginRight: 15,
-        lineHeight: 28,
+        lineHeight: 30,
     },
     recipeImagePlaceholder: {
         width: 120,

@@ -11,36 +11,17 @@ import {
   ScrollView,
   StyleSheet, 
   Alert,
-  Modal 
 } from 'react-native';
 import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authStyles } from './styles';
 import FontAwesome from '@expo/vector-icons/FontAwesome'; 
 import * as WebBrowser from 'expo-web-browser'; 
-import axios from 'axios';
-import qs from 'qs';
 
 WebBrowser.maybeCompleteAuthSession(); 
 
-// 환경 변수 및 상수 (WebView REST API 방식)
-const KAKAO_REST_API_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY!;
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL!; 
-
-// 카카오 디벨로퍼에 등록된 Redirect URI여야 함 (테스트 용)
-const REDIRECT_URI_WEB = process.env.EXPO_PUBLIC_BACKEND_URL; 
-
-// 카카오 인가 요청 URL
-const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI_WEB}&scope=profile,account_email`;
-
-// WebView에서 실행될 JavaScript (URL에 code가 포함되면 메시지 전송)
-// 인가 코드(code)가 포함된 최종 Redirect URI로 이동했을 때, URL 전체를 Native로 전달
-const INJECTED_JAVASCRIPT = `
-  if (window.location.href.includes('code=')) {
-    window.ReactNativeWebView.postMessage(window.location.href);
-  }
-  true;
-`;
+// register.tsx에서는 카카오 로그인 로직을 kakao-webview.tsx로 모두 이관했으므로,
+// 카카오 관련 상수와 로직을 제거합니다. (UI 유지를 위해 RegisterScreen은 유지)
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -57,64 +38,9 @@ export default function RegisterScreen() {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [verificationCodeSent, setVerificationCodeSent] = useState(false);
   const [verificationCode, setVerificationCode] = useState(''); 
-  const [isWebViewVisible, setIsWebViewVisible] = useState(false); // WebView 표시 상태
 
-  // 카카오 로그인 핵심 로직 (참고: https://kong-dev.tistory.com/163)
-  // WebView에서 받은 URL에서 인가 코드(code)를 추
-  const getCode = (url: string) => {
-    setIsWebViewVisible(false);
-    
-    const exp = 'code=';
-    const condition = url.indexOf(exp);
-    
-    if (condition !== -1) {
-      const requestCode = url.substring(condition + exp.length);
-      requestToken(requestCode); // 인가 코드를 이용해 토큰 요청
-    } else {
-        Alert.alert('오류', '카카오 인증 코드 추출 실패.');
-    }
-  };
-
-  // 인가 코드를 이용해 카카오 ACCESS_TOKEN을 받고, 백엔드에 전달
-  const requestToken = async (code: string) => {
-    const requestTokenUrl = 'https://kauth.kakao.com/oauth/token';
-
-    const options = qs.stringify({
-      grant_type: 'authorization_code',
-      client_id: KAKAO_REST_API_KEY,
-      redirect_uri: REDIRECT_URI_WEB,
-      code,
-    });
-
-    try {
-      // 1. 카카오로부터 ACCESS_TOKEN 획득 (Front-end가 직접 처리)
-      const tokenResponse = await axios.post(requestTokenUrl, options, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
-      });
-      const KAKAO_ACCESS_TOKEN = tokenResponse.data.access_token;
-      
-      // 2. Back-end로 KAKAO_ACCESS_TOKEN 전달 (사용자 정보 요청 및 JWT 획득)
-      const BACKEND_API_URL = `${BACKEND_URL}/api/auth/kakao/token_exchange`; 
-
-      const body = {
-        KAKAO_ACCESS_TOKEN,
-      };
-      
-      // 3. 백엔드와 통신하여 서비스 JWT 토큰 획득 및 로그인 처리
-      const response = await axios.post(BACKEND_API_URL, body);
-      const serviceToken = response.data.token; // 백엔드에서 받은 최종 JWT 토큰
-
-      // 4. 로그인 완료 처리 (useAuth의 signIn 함수가 없으므로 임시로 router.replace 사용)
-      router.replace('/(auth)/login'); 
-
-    } catch (e) {
-      console.error("카카오 로그인 (WebView) 실패:", e);
-      Alert.alert('로그인 실패', '다시 시도해 주세요.');
-    }
-  };
-  // ------------------------------------------------------------
-
-
+  // 카카오 로그인 관련 중복 로직 제거
+  
   const handleGoBack = () => {
     router.back(); 
   };
@@ -158,7 +84,7 @@ export default function RegisterScreen() {
     }
   };
 
-  // 카카오 로그인 버튼 핸들러: WebView 스택 페이지로 이동
+  // 카카오 로그인 버튼 핸들러: WebView 스택 페이지로 이동 (로직 유지)
   const handleKakaoLogin = async () => {
       router.push('/(auth)/kakao-webview' as RedirectProps['href']);
   };

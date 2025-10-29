@@ -18,7 +18,7 @@ export const authStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 20,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   backButtonContainer: {
     paddingHorizontal: 10,

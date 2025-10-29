@@ -76,8 +76,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logoImage: {
-        width: 200,
-        height: 100,
+        width: 300,
+        height: 200,
     },
     buttonGroup: {
         width: '100%',

@@ -37,6 +37,7 @@ export default function TabLayout() {
         options={{
           title: '레시피',
           tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
+          headerShown: false,
         }}
       />
       
@@ -46,6 +47,7 @@ export default function TabLayout() {
         options={{
           title: '냉장고',
           tabBarIcon: ({ color }) => <TabBarIcon name="archive" color={color} />, 
+          headerShown: false,
         }}
       />
       
@@ -55,6 +57,7 @@ export default function TabLayout() {
         options={{
           title: '홈',
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          headerShown: false,
         }}
       />
 
@@ -64,6 +67,7 @@ export default function TabLayout() {
         options={{
           title: '그룹',
           tabBarIcon: ({ color }) => <TabBarIcon name="users" color={color} />,
+          headerShown: false,
         }}
       />
 
@@ -73,6 +77,7 @@ export default function TabLayout() {
         options={{
           title: '마이페이지',
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          headerShown: false,
         }}
       />
     </Tabs>

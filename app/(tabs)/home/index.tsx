@@ -14,6 +14,9 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, RedirectProps } from 'expo-router';
+// 💡 [수정] date-fns 임포트: format, addDays, subWeeks, addWeeks, startOfWeek
+import { format, addDays, subWeeks, addWeeks, startOfWeek } from 'date-fns';
+import { ko } from 'date-fns/locale'; 
 
 // -----------------------------------------------------------
 // 💡 Mock 데이터 및 상수
@@ -21,7 +24,7 @@ import { useRouter, RedirectProps } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 const TODAY = new Date();
-const TODAY_STRING = TODAY.toISOString().split('T')[0];
+const TODAY_STRING = format(TODAY, 'yyyy-MM-dd'); // 💡 [수정] date-fns 형식으로 통일
 const SIDE_MENU_WIDTH = width * 0.55;
 
 interface RecipeItem {
@@ -37,35 +40,41 @@ const GROUP_COLORS: Record<string, string> = {
   '그룹 4': '#C0C0C0', 
 };
 
-const MOCK_RECIPES: Record<string, RecipeItem[]> = {
-  '2025-10-20': [ 
-    { id: 1, group: '그룹 1', recipe: 'Is this wher' },
-    { id: 2, group: '그룹 2', recipe: 'Budget for' },
-  ],
-  '2025-10-22': [
-    { id: 3, group: '그룹 3', recipe: 'St. Patrick' },
-  ],
-  '2025-10-27': [
-    { id: 4, group: '그룹 4', recipe: 'Dinner will' },
-  ],
-};
+const MOCK_RECIPES: Record<string, RecipeItem[]> = { 
+    '2025-10-20': [ 
+        { id: 1, group: '그룹 1', recipe: 'Is this wher' },
+        { id: 2, group: '그룹 2', recipe: 'Budget for' },
+        { id: 5, group: '그룹 2', recipe: 'Take Jake ti' }, 
+    ],
+    '2025-10-21': [
+        { id: 3, group: '그룹 3', recipe: 'Vaccine app' },
+        { id: 4, group: '그룹 3', recipe: 'Take Jake ti' },
+        { id: 6, group: '그룹 3', recipe: 'DMV appoi' }, 
+    ],
+    '2025-10-23': [
+        { id: 7, group: '그룹 1', recipe: 'St. Patrick\'s' },
+        { id: 8, group: '그룹 2', recipe: 'PTO day' },
+    ],
+    '2025-10-27': [
+        { id: 7, group: '그룹 1', recipe: 'St. Patrick\'s' },
+        { id: 8, group: '그룹 2', recipe: 'PTO day' },
+    ],
+}; 
 
 const ALL_GROUPS = ['그룹 1', '그룹 2', '그룹 3', '그룹 4', '새 그룹 추가'];
 
-// 달력 유틸리티 (2주 범위) ---------------------------------
+// 💡 [수정] 달력 유틸리티 (2주 범위) ---------------------------------
 const getCalendarDays = (date: Date) => {
-  const startDay = new Date(date);
-  // 이번 주 일요일(0)을 시작일로 설정
-  startDay.setDate(date.getDate() - date.getDay()); 
+  // 💡 [수정] date-fns의 startOfWeek을 사용하여 이번 주의 일요일(0)을 시작일로 설정
+  const startDay = startOfWeek(date, { weekStartsOn: 0 }); 
   
   const days = [];
   const totalDays = 14; 
 
   for (let i = 0; i < totalDays; i++) {
-    const day = new Date(startDay);
-    day.setDate(startDay.getDate() + i);
-
-    const dateString = day.toISOString().split('T')[0];
+    // 💡 date-fns의 addDays 사용
+    const day = addDays(startDay, i);
+    const dateString = format(day, 'yyyy-MM-dd');
     const isCurrentMonth = day.getMonth() === date.getMonth(); 
     
     days.push({
@@ -88,6 +97,7 @@ interface GroupSideMenuProps {
 }
 
 const GroupSideMenu: React.FC<GroupSideMenuProps> = ({ isMenuOpen, onClose, insets }) => {
+    // ... (로직 및 UI 유지) ...
     const slideAnim = React.useRef(new Animated.Value(0)).current;
 
     React.useEffect(() => {
@@ -100,20 +110,17 @@ const GroupSideMenu: React.FC<GroupSideMenuProps> = ({ isMenuOpen, onClose, inse
 
     const translateX = slideAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [-SIDE_MENU_WIDTH, 0], // 닫혔을 때 숨김, 열렸을 때 0
+        outputRange: [-SIDE_MENU_WIDTH, 0],
     });
 
     const panResponder = PanResponder.create({
         onMoveShouldSetPanResponder: (evt, gestureState) => {
-            // 메뉴가 열려있고, 왼쪽으로 스와이프할 때만 응답
             return isMenuOpen && gestureState.dx < 0 && Math.abs(gestureState.dx) > 5;
         },
         onPanResponderRelease: (evt, gestureState) => {
-            // 왼쪽으로 빠르게 스와이프하면 닫기
             if (gestureState.vx < -0.5 || gestureState.dx < -50) {
                 onClose();
             } else {
-                // 다시 열기
                 Animated.timing(slideAnim, {
                     toValue: 1,
                     duration: 150,
@@ -176,11 +183,11 @@ export default function HomeScreen() {
     );
   };
   
-  const changeMonth = (delta: number) => { 
+  // 💡 [수정] 주 이동 로직으로 대체
+  const changeWeek = (delta: number) => { 
     setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + delta);
-      return newDate;
+      // date-fns의 subWeeks 또는 addWeeks 사용
+      return delta < 0 ? subWeeks(prev, 1) : addWeeks(prev, 1);
     });
   };
 
@@ -188,15 +195,15 @@ export default function HomeScreen() {
     const dayOfWeek = new Date(dayData.dateString).getDay(); 
     const weekStartDate = new Date(dayData.dateString);
     weekStartDate.setDate(weekStartDate.getDate() - dayOfWeek);
-    const weekStartDateString = weekStartDate.toISOString().split('T')[0];
+    const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd'); // 💡 date-fns 형식으로 통일
     
-    router.push({
-      pathname: '/home/detail', 
-      params: { 
-          date: dayData.dateString, 
-          weekStart: weekStartDateString 
-      } 
-    } as RedirectProps['href']); 
+  router.push({
+      pathname: '/home/detail',
+      params: {
+          date: dayData.dateString,
+          weekStart: weekStartDateString
+      }
+    } as RedirectProps['href']);
   };
 
   const getFilteredRecipes = (recipes: RecipeItem[]) => {
@@ -245,7 +252,8 @@ export default function HomeScreen() {
 
         {/* 2. 레시피 아이템 목록 (색상 점) */}
         <View style={styles.recipeList}>
-          {filteredRecipes.map((recipe, index) => (
+          {/* 💡 [수정] 3개까지만 보여줍니다. */}
+          {filteredRecipes.slice(0, 3).map((recipe, index) => (
             <View key={index} style={styles.recipeItem}>
               <View 
                 style={[
@@ -258,8 +266,8 @@ export default function HomeScreen() {
               </Text>
             </View>
           ))}
-          {/* view more (3개 초과 시) */}
-          {dayData.recipes.length > 2 && (
+          {/* 💡 [수정] 3개 초과 시에만 'view more'를 렌더링합니다. */}
+          {filteredRecipes.length > 3 && ( 
              <Text style={styles.viewMoreText}>view more</Text>
           )}
         </View>
@@ -291,7 +299,10 @@ export default function HomeScreen() {
     );
   };
 
-  // 메인 뷰 ---------------------------------------------------
+  // -----------------------------------------------------------
+  // 💡 메인 뷰
+  // -----------------------------------------------------------
+
   return (
     <View style={styles.rootContainer}>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -320,12 +331,13 @@ export default function HomeScreen() {
             
             {/* 월 표시 및 네비게이션 */}
             <View style={styles.monthHeader}>
-              <Text style={styles.monthText}>{currentDate.toLocaleDateString('ko-KR', { month: 'long' })}</Text>
+              {/* 💡 [수정] 주 이동 로직으로 변경 */}
+              <Text style={styles.monthText}>{format(currentDate, 'M월', { locale: ko })}</Text>
               <View style={styles.monthNav}>
-                <TouchableOpacity onPress={() => changeMonth(-1)}>
+                <TouchableOpacity onPress={() => changeWeek(-1)}>
                   <Text style={[styles.navArrow, styles.navArrowSize]}>{'<'}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => changeMonth(1)}>
+                <TouchableOpacity onPress={() => changeWeek(1)}>
                   <Text style={[styles.navArrow, styles.navArrowSize]}>{'>'}</Text>
                 </TouchableOpacity>
               </View>
@@ -369,7 +381,10 @@ export default function HomeScreen() {
   );
 }
 
-// 스타일 시트 -------------------------------------------
+// -----------------------------------------------------------
+// 💡 스타일 시트 (유지)
+// -----------------------------------------------------------
+
 const styles = StyleSheet.create({
   rootContainer: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, backgroundColor: '#fff', },
@@ -513,7 +528,7 @@ const styles = StyleSheet.create({
   recipeList: {
     marginTop: 2,
     width: '100%',
-    maxHeight: 40,
+    maxHeight: 45,
     overflow: 'hidden',
   },
   recipeItem: {
