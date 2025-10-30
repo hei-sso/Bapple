@@ -1,0 +1,22 @@
+DELIMITER //
+
+CREATE TRIGGER trg_auth_account_set_exp
+BEFORE INSERT ON auth_account
+FOR EACH ROW
+BEGIN
+  IF NEW.token_expires_at IS NULL THEN
+    SET NEW.token_expires_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE);
+  END IF;
+END//
+
+CREATE TRIGGER trg_auth_account_rotate_exp
+BEFORE UPDATE ON auth_account
+FOR EACH ROW
+BEGIN
+  IF (NEW.access_token IS NOT NULL
+      AND (OLD.access_token IS NULL OR NEW.access_token <> OLD.access_token)) THEN
+    SET NEW.token_expires_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE);
+  END IF;
+END//
+
+DELIMITER ;
