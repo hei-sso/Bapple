@@ -1,5 +1,6 @@
 DELIMITER //
 
+
 CREATE TRIGGER trg_auth_account_set_exp
 BEFORE INSERT ON auth_account
 FOR EACH ROW
