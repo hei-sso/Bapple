@@ -3,7 +3,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-// Redirect는 JSX에서 사용하지 않지만, 타입 RedirectProps는 유지
+// Redirect는 JSX에서 사용하지 않지만, 타입 RedirectProps는 유지 (오류 방지)
 import { Stack, RedirectProps, useRouter } from 'expo-router'; 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,7 +15,7 @@ import * as Linking from 'expo-linking';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '../context/authContext';
 
-// ErrorBoundary를 사용하여 상위 컴포넌트(여기서는 _layout.tsx)에서 발생하는 렌더링 오류 등을 처리
+// ErrorBoundary를 사용하여 상위 컴포넌트(_layout.tsx)에서 발생하는 렌더링 오류 등을 처리
 export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
@@ -87,7 +87,7 @@ export default function RootLayout() {
         const handleDeepLink = ({ url }: { url: string }) => {
             const urlObj = Linking.parse(url);
             
-            // 💡 백엔드가 토큰을 성공적으로 반환했을 때의 경로 확인
+            // 백엔드가 토큰을 성공적으로 반환했을 때의 경로 확인
             if (urlObj.path === 'auth/kakao/success') {
                 const token = urlObj.queryParams?.token as string | undefined;
                 
@@ -163,7 +163,11 @@ function RootLayoutNav({ isAuthenticated, onLayout }: { isAuthenticated: boolean
                 {/* home */}
                 <Stack.Screen name="home/detail" options={{ headerShown: false, animation: 'slide_from_right' }} />
 
-                {/* mypage */}
+                {/* mypage - friends, setting 구현 중*/}
+                <Stack.Screen name="mypage/profile" options={{ headerShown: false, animation: 'slide_from_right' }} />
+                <Stack.Screen name="mypage/friends" options={{ headerShown: false, animation: 'slide_from_right' }} />
+                <Stack.Screen name="mypage/setting" options={{ headerShown: false, animation: 'slide_from_right' }} />
+                
                 <Stack.Screen name="mypage/allergy" options={{ headerShown: false, animation: 'slide_from_right' }} />
                 <Stack.Screen name="mypage/health" options={{ headerShown: false, animation: 'slide_from_right' }} />
                 <Stack.Screen name="mypage/dislikes" options={{ headerShown: false, animation: 'slide_from_right' }} />

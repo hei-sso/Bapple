@@ -20,7 +20,7 @@ const MOCK_USER = {
     nickname: "Bapple",
     followers: 22,
     following: 22,
-    // 💡 [추후 구현] 실제 DB에서 가져올 데이터
+    // 💡[추후 구현] 실제 DB에서 가져올 데이터
 };
 
 // 하단 설정/정보 메뉴 목록
@@ -35,10 +35,8 @@ const INFO_MENUS = [
 export default function MyPageScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    // 💡 [추후 구현] useAuth 훅 등으로 사용자 정보 관리
-    const [user, setUser] = useState(MOCK_USER); 
-
-    // ------------------------- 로직 ---------------------------
+    // 💡[추후 구현] useAuth 훅 등으로 사용자 정보 관리
+    const [user, setUser] = useState(MOCK_USER);
 
     // 설정/정보 페이지 이동 핸들러
     const handleNavigation = useCallback((path: string) => {
@@ -48,17 +46,14 @@ export default function MyPageScreen() {
 
     // 프로필 수정 버튼 핸들러
     const handleEditProfile = useCallback(() => {
-        // 💡 [추후 구현] 프로필 수정 화면으로 이동
-        console.log("프로필 수정 버튼 클릭");
-    }, []);
+        router.push('/mypage/profile' as RedirectProps['href']);
+    }, [router]);
 
     // 친구 추가 버튼 핸들러
     const handleAddFriend = useCallback(() => {
-        // 💡 [추후 구현] 친구 추가/검색 화면으로 이동
+        // 💡[추후 구현] 친구 추가/검색 화면으로 이동
         console.log("친구 추가하기 버튼 클릭");
     }, []);
-
-    // ------------------------- UI 렌더링 ---------------------------
 
     const renderInfoItem = (item: (typeof INFO_MENUS)[0], index: number) => (
         <TouchableOpacity 
@@ -79,14 +74,14 @@ export default function MyPageScreen() {
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 
-                {/* 1. 상단 설정 아이콘 */}
+                {/* 상단 설정 아이콘 */}
                 <View style={styles.settingsHeader}>
                     <TouchableOpacity onPress={() => handleNavigation('/mypage/settings')}>
                         <FontAwesome name="cog" size={24} color="#000" />
                     </TouchableOpacity>
                 </View>
 
-                {/* 2. 프로필 정보 영역 */}
+                {/* 프로필 정보 영역 */}
                 <View style={styles.profileArea}>
                     
                     {/* 프로필 이미지 및 수정 버튼 (겹치게 처리) */}
@@ -111,12 +106,12 @@ export default function MyPageScreen() {
                     </View>
                 </View>
 
-                {/* 3. 친구 추가 버튼 */}
+                {/* 친구 추가 버튼 */}
                 <TouchableOpacity style={styles.addFriendButton} onPress={handleAddFriend}>
                     <Text style={styles.addFriendButtonText}>+  친구 추가하기</Text>
                 </TouchableOpacity>
 
-                {/* 4. 정보/설정 목록 */}
+                {/* 정보/설정 목록 */}
                 <View style={styles.infoSection}>
                     {INFO_MENUS.map(renderInfoItem)}
                 </View>
@@ -126,7 +121,7 @@ export default function MyPageScreen() {
     );
 }
 
-// 스타일 시트
+// 💡스타일 시트💡
 const PROFILE_SIZE = 90;
 const EDIT_BUTTON_SIZE = 35;
 const EDIT_BUTTON_OFFSET = 5; // 프로필 사진 모서리에 겹치는 정도
@@ -142,7 +137,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
     },
     
-    // 1. 상단 설정 아이콘
+    // 상단 설정 아이콘
     settingsHeader: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
@@ -151,7 +146,7 @@ const styles = StyleSheet.create({
         height: 44,
     },
 
-    // 2. 프로필 정보 영역
+    // 프로필 정보 영역
     profileArea: {
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -202,7 +197,7 @@ const styles = StyleSheet.create({
         color: '#666',
     },
 
-    // 3. 친구 추가 버튼
+    // 친구 추가 버튼
     addFriendButton: {
         backgroundColor: '#000',
         paddingVertical: 14,
@@ -217,7 +212,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 
-    // 4. 정보/설정 목록
+    // 정보/설정 목록
     infoSection: {
         borderTopWidth: 1,
         borderColor: '#eee',
