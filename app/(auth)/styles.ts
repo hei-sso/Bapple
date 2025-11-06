@@ -13,7 +13,7 @@ export const authStyles = StyleSheet.create({
     paddingBottom: 30,
   },
   
-  // 공통 헤더 스타일: 뒤로 가기 버튼과 제목을 포함하는 영역
+  // 공통 헤더 (뒤로 가기 버튼, 제목)
   header: {
     flexDirection: 'row',
     alignItems: 'center',

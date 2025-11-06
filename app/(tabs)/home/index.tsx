@@ -14,17 +14,13 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, RedirectProps } from 'expo-router';
-// 💡 [수정] date-fns 임포트: format, addDays, subWeeks, addWeeks, startOfWeek
 import { format, addDays, subWeeks, addWeeks, startOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale'; 
 
-// -----------------------------------------------------------
-// 💡 Mock 데이터 및 상수
-// -----------------------------------------------------------
-
+// Mock 데이터 및 상수
 const { width } = Dimensions.get('window');
 const TODAY = new Date();
-const TODAY_STRING = format(TODAY, 'yyyy-MM-dd'); // 💡 [수정] date-fns 형식으로 통일
+const TODAY_STRING = format(TODAY, 'yyyy-MM-dd');
 const SIDE_MENU_WIDTH = width * 0.55;
 
 interface RecipeItem {
@@ -63,16 +59,15 @@ const MOCK_RECIPES: Record<string, RecipeItem[]> = {
 
 const ALL_GROUPS = ['그룹 1', '그룹 2', '그룹 3', '그룹 4', '새 그룹 추가'];
 
-// 💡 [수정] 달력 유틸리티 (2주 범위) ---------------------------------
+// 달력 유틸리티 (2주 범위)
 const getCalendarDays = (date: Date) => {
-  // 💡 [수정] date-fns의 startOfWeek을 사용하여 이번 주의 일요일(0)을 시작일로 설정
+  // 일요일(0)이 주의 시작일
   const startDay = startOfWeek(date, { weekStartsOn: 0 }); 
   
   const days = [];
   const totalDays = 14; 
 
   for (let i = 0; i < totalDays; i++) {
-    // 💡 date-fns의 addDays 사용
     const day = addDays(startDay, i);
     const dateString = format(day, 'yyyy-MM-dd');
     const isCurrentMonth = day.getMonth() === date.getMonth(); 
@@ -89,7 +84,7 @@ const getCalendarDays = (date: Date) => {
   return days;
 };
 
-// 그룹 사이드 메뉴 컴포넌트 --------------------------
+// 그룹 사이드 메뉴 컴포넌트
 interface GroupSideMenuProps {
     isMenuOpen: boolean;
     onClose: () => void;
@@ -97,7 +92,6 @@ interface GroupSideMenuProps {
 }
 
 const GroupSideMenu: React.FC<GroupSideMenuProps> = ({ isMenuOpen, onClose, insets }) => {
-    // ... (로직 및 UI 유지) ...
     const slideAnim = React.useRef(new Animated.Value(0)).current;
 
     React.useEffect(() => {
@@ -164,7 +158,7 @@ const GroupSideMenu: React.FC<GroupSideMenuProps> = ({ isMenuOpen, onClose, inse
     );
 };
 
-// 💡 메인 컴포넌트 -------------------------------------------
+// 메인 컴포넌트
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -175,15 +169,13 @@ export default function HomeScreen() {
   
   const calendarDays = useMemo(() => getCalendarDays(currentDate), [currentDate]);
 
-  // ------------------------- 로직 ---------------------------
-
   const toggleGroup = (group: string) => {
     setActiveGroups(prev => 
       prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]
     );
   };
   
-  // 💡 [수정] 주 이동 로직으로 대체
+  // 주 이동 로직
   const changeWeek = (delta: number) => { 
     setCurrentDate(prev => {
       // date-fns의 subWeeks 또는 addWeeks 사용
@@ -195,7 +187,7 @@ export default function HomeScreen() {
     const dayOfWeek = new Date(dayData.dateString).getDay(); 
     const weekStartDate = new Date(dayData.dateString);
     weekStartDate.setDate(weekStartDate.getDate() - dayOfWeek);
-    const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd'); // 💡 date-fns 형식으로 통일
+    const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
     
   router.push({
       pathname: '/home/detail',
@@ -218,8 +210,6 @@ export default function HomeScreen() {
     setIsMenuOpen(false);
   }, []);
 
-  // ------------------------- UI 렌더링 ---------------------------
-
   const CALENDAR_PADDING_H = 20;
   const BORDER_WIDTH = 1;
 
@@ -236,7 +226,7 @@ export default function HomeScreen() {
         ]}
         onPress={() => handleDatePress(dayData)}
       >
-        {/* 1. 날짜 번호 */}
+        {/* 날짜 번호 */}
         <View style={[
           styles.dayNumberContainer,
           dayData.isToday && styles.todayIndicator, 
@@ -250,9 +240,9 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* 2. 레시피 아이템 목록 (색상 점) */}
+        {/* 레시피 아이템 목록 (색상 점) */}
         <View style={styles.recipeList}>
-          {/* 💡 [수정] 3개까지만 보여줍니다. */}
+          {/* 3개까지만 보여주기 */}
           {filteredRecipes.slice(0, 3).map((recipe, index) => (
             <View key={index} style={styles.recipeItem}>
               <View 
@@ -266,7 +256,7 @@ export default function HomeScreen() {
               </Text>
             </View>
           ))}
-          {/* 💡 [수정] 3개 초과 시에만 'view more'를 렌더링합니다. */}
+          {/* 3개 초과 시에는 'view more' 렌더링 */}
           {filteredRecipes.length > 3 && ( 
              <Text style={styles.viewMoreText}>view more</Text>
           )}
@@ -299,16 +289,13 @@ export default function HomeScreen() {
     );
   };
 
-  // -----------------------------------------------------------
-  // 💡 메인 뷰
-  // -----------------------------------------------------------
-
+  // 메인 뷰
   return (
     <View style={styles.rootContainer}>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           
-          {/* 1. 상단 검색 및 설정 영역 */}
+          {/* 상단 검색 및 설정 영역 */}
           <View style={styles.header}>
             <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
                <FontAwesome name="user-circle" size={32} color="#ccc" /> 
@@ -321,17 +308,17 @@ export default function HomeScreen() {
             <FontAwesome name="cog" size={24} color="#000" style={styles.settingsIcon} />
           </View>
 
-          {/* 2. 그룹 활성화/비활성화 버튼 영역 */}
+          {/* 그룹 활성화/비활성화 버튼 영역 */}
           <View style={styles.groupFilterContainer}>
             {ALL_GROUPS.filter(g => g !== '새 그룹 추가').map(renderGroupButton)}
           </View>
 
-          {/* 3. 달력 영역 */}
+          {/* 달력 영역 */}
           <View style={styles.calendarContainer}>
             
             {/* 월 표시 및 네비게이션 */}
             <View style={styles.monthHeader}>
-              {/* 💡 [수정] 주 이동 로직으로 변경 */}
+              {/* 주 이동 로직 */}
               <Text style={styles.monthText}>{format(currentDate, 'M월', { locale: ko })}</Text>
               <View style={styles.monthNav}>
                 <TouchableOpacity onPress={() => changeWeek(-1)}>
@@ -356,7 +343,7 @@ export default function HomeScreen() {
             </View>
           </View>
           
-          {/* 4. 레시피 추천 영역 (냉장고 기반) */}
+          {/* 레시피 추천 영역 (냉장고 기반) */}
           <View style={styles.recommendationContainer}>
             <Text style={styles.recommendationTitle}>냉장고 기반 추천 레시피</Text>
             
@@ -381,16 +368,13 @@ export default function HomeScreen() {
   );
 }
 
-// -----------------------------------------------------------
-// 💡 스타일 시트 (유지)
-// -----------------------------------------------------------
-
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
   rootContainer: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, backgroundColor: '#fff', },
   scrollContent: { paddingBottom: 50, },
   
-  // 1. 헤더 (검색 및 설정)
+  // 헤더 (검색 및 설정)
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -421,7 +405,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
 
-  // 2. 그룹 필터
+  // 그룹 필터
   groupFilterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 24,
@@ -442,7 +426,7 @@ const styles = StyleSheet.create({
     color: '#ccc',
   },
 
-  // 3. 달력
+  // 달력
   calendarContainer: {
     paddingHorizontal: 20,
   },
@@ -557,7 +541,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  // 4. 레시피 추천 영역
+  // 레시피 추천 영역
   recommendationContainer: {
     paddingHorizontal: 24,
     marginTop: 30,

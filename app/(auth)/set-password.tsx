@@ -61,7 +61,7 @@ export default function SetPasswordScreen() {
     // (서버에서 인증번호 일치 확인 및 비밀번호 변경 권한 부여)
     // =========================================================
     
-    // [추후 구현] 서버로부터 인증 성공 응답 가정
+    // 서버로부터 인증 성공 응답 가정
     setIsEmailVerified(true);
     setVerificationCodeSent(false);
     Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다. 이제 새 비밀번호를 설정할 수 있습니다.");
@@ -185,7 +185,7 @@ export default function SetPasswordScreen() {
   );
 }
 
-// 💡 set-password.tsx에만 필요한 추가 스타일
+// 💡스타일 시트💡
 const localStyles = StyleSheet.create({
     // 인증 필드 관련 스타일 (register.tsx랑 같음)
     verificationInputGroup: {

@@ -1,13 +1,10 @@
 // app/context/authContext.tsx
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store'; // 💡 [추가] 보안 저장소 사용
+import * as SecureStore from 'expo-secure-store'; // 보안 저장소 사용
 import { useRouter } from 'expo-router';
 
-// --------------------------------------------------------
-// 💡 타입 정의
-// --------------------------------------------------------
-
+// 타입 정의
 interface AuthContextType {
   isAuthenticated: boolean;
   accessToken: string | null;
@@ -16,13 +13,10 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-// 💡 기본값 (초기 로딩 상태는 true)
+// 기본값 (초기 로딩 상태는 true)
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// --------------------------------------------------------
-// 💡 Context Provider
-// --------------------------------------------------------
-
+// Context Provider
 export const AUTH_TOKEN_KEY = 'user_access_token';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -36,7 +30,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
         if (token) {
-          // 💡 [백엔드 연동] 여기서 토큰 유효성 검사 API 호출 필요
+          // 💡 [추후 구현] 여기서 토큰 유효성 검사 API 호출 필요
           setAccessToken(token);
         }
       } catch (e) {
@@ -75,10 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// --------------------------------------------------------
-// 💡 Custom Hook
-// --------------------------------------------------------
-
+// Custom Hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

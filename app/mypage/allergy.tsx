@@ -16,7 +16,7 @@ export default function AllergyScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            {/* Header 영역: 뒤로가기 버튼과 제목 */}
+            {/* Header 영역 */}
             <View style={styles.appHeader}>
                 <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
                     <Text style={styles.backText}>{'<'}</Text>
@@ -32,6 +32,7 @@ export default function AllergyScreen() {
     );
 }
 
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
     container: {
         flex: 1,

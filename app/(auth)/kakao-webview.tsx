@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
 import axios from 'axios'; 
 import qs from 'qs'; 
-import { authStyles } from './styles';
+import { authStyles } from './styles'; // 공통 스타일 임포트
 import { useAuth } from '../../context/authContext'; // Context 사용
 
 // 카카오 로그인 상수
@@ -35,8 +35,6 @@ export default function KakaoWebViewScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { signIn } = useAuth(); // 토큰 저장을 위해 useAuth 사용
-
-    // ------------------------- 로직 ---------------------------
 
     const handleGoBack = () => {
         router.back();
@@ -107,8 +105,8 @@ export default function KakaoWebViewScreen() {
             router.replace('/(tabs)/home'); // 안전장치!
 
         } catch (e) {
-            // 예상치 못한 전반적인 오류
-            console.error("카카오 로그인 (WebView) 전반적인 실패:", e);
+            // 예상치 못한 오류 처리
+            console.error("카카오 로그인 (WebView) 실패:", e);
             Alert.alert('로그인 실패', '알 수 없는 오류가 발생했습니다. 다시 시도해 주세요.');
             router.back();
         }
@@ -141,6 +139,7 @@ export default function KakaoWebViewScreen() {
     );
 }
 
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
     container: {
         flex: 1,

@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { authStyles } from './styles';
+import { authStyles } from './styles'; // 공통 스타일 임포트
 import FontAwesome from '@expo/vector-icons/FontAwesome'; 
 import * as WebBrowser from 'expo-web-browser';
 
@@ -24,8 +24,6 @@ export default function LoginScreen() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  // ------------------------- 핸들러 로직 ---------------------------
 
   // 카카오 로그인 버튼 핸들러: WebView 스택 페이지로 이동만 담당
   const handleKakaoLogin = async () => {
@@ -136,7 +134,7 @@ export default function LoginScreen() {
   );
 }
 
-// 💡 login.tsx에만 필요한 추가 스타일
+// 💡스타일 시트💡
 const localStyles = StyleSheet.create({
   // 비밀번호 재설정 링크
   setPasswordLinkContainer: {
@@ -150,7 +148,7 @@ const localStyles = StyleSheet.create({
     textDecorationLine: 'underline', 
   },
   
-  // 이메일로로 로그인 버튼
+  // 이메일로 로그인 버튼
   emailLoginButton: {
     width: '100%',
     paddingVertical: 16, 

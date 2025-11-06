@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { authStyles } from './styles';
+import { authStyles } from './styles'; // 공통 스타일 임포트
 import FontAwesome from '@expo/vector-icons/FontAwesome'; 
 import * as WebBrowser from 'expo-web-browser'; 
 
@@ -56,14 +56,14 @@ export default function RegisterScreen() {
     router.replace('/(auth)/login' as RedirectProps['href']); 
   };
 
-  // 인증번호 발송 핸들러 (로직 유지)
+  // 인증번호 발송 핸들러
   const handleSendVerificationCode = async () => {
     if (!email) { Alert.alert("알림", "이메일을 입력해 주세요."); return; }
     setVerificationCodeSent(true); 
     Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
   };
   
-  // 인증번호 확인 핸들러 (로직 유지)
+  // 인증번호 확인 핸들러
   const handleVerifyCode = async () => {
     if (!verificationCode) { Alert.alert("알림", "인증번호를 입력해 주세요."); return; }
     setIsEmailVerified(true);
@@ -71,7 +71,7 @@ export default function RegisterScreen() {
     Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다.");
   };
   
-  // 약관/정책 모달 띄우기 핸들러 (로직 유지)
+  // 약관/정책 모달 띄우기 핸들러
   const handlePolicyLink = (type: 'privacy' | 'terms') => {
     if (type === 'privacy') {
       router.push('/(auth)/privacy-policy' as RedirectProps['href']);
@@ -80,7 +80,7 @@ export default function RegisterScreen() {
     }
   };
 
-  // 카카오 로그인 버튼 핸들러: WebView 스택 페이지로 이동 (로직 유지)
+  // 카카오 로그인 버튼 핸들러: WebView 스택 페이지로 이동
   const handleKakaoLogin = async () => {
       router.push('/(auth)/kakao-webview' as RedirectProps['href']);
   };
@@ -237,7 +237,7 @@ export default function RegisterScreen() {
   );
 }
 
-// 💡 register.tsx에만 필요한 추가 스타일
+// 💡스타일 시트💡
 const localStyles = StyleSheet.create({
   // 인증번호 입력 그룹
   verificationInputGroup: {

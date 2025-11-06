@@ -28,7 +28,8 @@ export default function HealthScreen() {
         </View>
     );
 }
-// 💡 [참고] 스타일은 allergy.tsx와 동일합니다. 공통 스타일 파일로 분리하는 것이 좋습니다.
+
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff', },
     appHeader: {

@@ -5,16 +5,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from
 import { useLocalSearchParams, useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-// 💡 [추가] 주 단위 이동을 위한 date-fns 임포트
 import { format, addDays, subWeeks, addWeeks, startOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale'; 
 
 const { width } = Dimensions.get('window');
 
-// -----------------------------------------------------------
-// 💡 Mock 데이터 및 상수 
-// -----------------------------------------------------------
-
+// Mock 데이터 및 상수
 interface RecipeItem {
     id: number;
     group: string;
@@ -51,10 +47,7 @@ const MOCK_RECIPES: Record<string, RecipeItem[]> = {
 
 const TODAY_STRING = new Date().toISOString().split('T')[0];
 
-// -----------------------------------------------------------
-// 💡 유틸리티: 상세 화면용 7일치 데이터 생성
-// -----------------------------------------------------------
-
+// 유틸리티: 상세 화면용 7일치 데이터 생성
 interface DayData {
     date: number;
     dateString: string;
@@ -86,10 +79,7 @@ const getWeekDays = (weekStartString: string, currentSelectedDateString: string)
 
 const dateToDateString = (date: Date): string => format(date, 'yyyy-MM-dd');
 
-// -----------------------------------------------------------
-// 💡 메인 컴포넌트
-// -----------------------------------------------------------
-
+// 메인 컴포넌트
 export default function DateDetailScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -104,8 +94,6 @@ export default function DateDetailScreen() {
 
     const weekDays = useMemo(() => getWeekDays(dateToDateString(currentWeekStartDate), currentDateString), [currentWeekStartDate, currentDateString]);
     
-    // ------------------------- 로직 ---------------------------
-
     const handleGoBack = () => {
         router.back();
     };
@@ -123,8 +111,6 @@ export default function DateDetailScreen() {
         });
     }, [currentDateString]);
 
-    // ------------------------- UI 렌더링 ---------------------------
-    
     const WEEK_CALENDAR_PADDING_H = 24;
     const BORDER_WIDTH = 1;
     const recipeItem = (MOCK_RECIPES[currentDateString] || [])[0];
@@ -133,7 +119,7 @@ export default function DateDetailScreen() {
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
-                {/* 1. 독립적인 Header 영역 */}
+                {/* Header 영역 */}
                 <View style={styles.appHeader}>
                     <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
                         <Text style={styles.backText}>{'<'}</Text>
@@ -143,10 +129,10 @@ export default function DateDetailScreen() {
                     </Text>
                 </View>
                 
-                {/* 2. 주간 달력 표시 (상세 뷰) */}
+                {/* 주간 달력 표시 (상세 뷰) */}
                 <View style={styles.calendarArea}>
                     
-                    {/* 💡 [수정] 달력 상단 우측 주 이동 버튼 */}
+                    {/* 달력 상단 우측 주 이동 버튼 */}
                     <View style={styles.weekNavContainer}>
                         <TouchableOpacity onPress={() => changeWeek(-1)} style={styles.navButton}>
                             <Text style={styles.navArrow}>{'<  '}</Text>
@@ -163,7 +149,7 @@ export default function DateDetailScreen() {
                     </View>
                     <View style={styles.weekCalendarGrid}>
                         {weekDays.map(dayData => {
-                            // 💡 [찌부 해결] 너비 계산
+                            // 찌부 해결 - 너비 계산
                             const cellWidth = (width - (WEEK_CALENDAR_PADDING_H * 2) - BORDER_WIDTH) / 7;
 
                             return (
@@ -180,12 +166,12 @@ export default function DateDetailScreen() {
                                 >
                                     <View style={[ 
                                         styles.dayNumberContainer,
-                                        // 💡 [수정] 오늘일 때와 선택됐을 때 검은 동그라미
+                                        // 오늘일 때와 선택됐을 때 검은 동그라미
                                         dayData.isSelected && styles.todayIndicator, 
                                     ]}>
                                         <Text style={[
                                             styles.weekDayNumber,
-                                            // 💡 [수정] 오늘이거나 선택된 날짜는 흰색 글씨
+                                            // 오늘이거나 선택된 날짜는 흰색 글씨
                                             dayData.isSelected && styles.todayText, 
                                         ]}>{dayData.date}</Text>
                                     </View>
@@ -202,7 +188,7 @@ export default function DateDetailScreen() {
                     </View>
                 </View>
 
-                {/* 3. 레시피 상세 카드 (현재 선택된 날짜의 레시피) */}
+                {/* 레시피 상세 카드 (현재 선택된 날짜의 레시피) */}
                 <View style={styles.recipeListContainer}>
                     {recipeItem ? (
                         <View style={styles.recipeItemCard}>
@@ -228,15 +214,12 @@ export default function DateDetailScreen() {
     );
 }
 
-// -----------------------------------------------------------
-// 💡 스타일 시트 (UI 전면 수정)
-// -----------------------------------------------------------
-
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff', },
     scrollContent: { paddingBottom: 50, },
     
-    // 1. 독립적인 Header 영역
+    // Header 영역
     appHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -263,18 +246,18 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
 
-    // 2. 주간 달력 표시 영역
+    // 주간 달력 표시 영역
     calendarArea: {
         paddingHorizontal: 24,
         marginBottom: 30,
         position: 'relative',
-        marginTop: 15, // 💡 [수정] 달력 영역과 헤더 날짜 사이 여백
+        marginTop: 15, // 달력 영역과 헤더 날짜 사이 여백
     },
     
-    // 💡 [추가] 주 이동 버튼 컨테이너 (우측 상단)
+    // 주 이동 버튼 컨테이너
     weekNavContainer: {
         position: 'absolute',
-        top: -35, // 💡 [수정] 위치를 조정하여 날짜 제목과 겹치지 않게 함
+        top: -35, // 위치를 조정하여 날짜 제목과 겹치지 않게 함
         right: 24,
         flexDirection: 'row',
         zIndex: 5,
@@ -286,8 +269,6 @@ const styles = StyleSheet.create({
         fontSize: 21,
         color: '#000',
     },
-
-
     dayOfWeekHeader: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -324,7 +305,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f0f0f0', 
     },
     
-    // 💡 [수정] 오늘/선택 시 검은색 동그라미와 흰색 텍스트
+    // 오늘/선택 시 검은색 동그라미와 흰색 텍스트
     todayIndicator: {
         backgroundColor: '#000', // 검은색 동그라미
     },
@@ -348,8 +329,7 @@ const styles = StyleSheet.create({
         color: '#000',
     },
 
-
-    // 3. 레시피 상세 카드
+    // 레시피 상세 카드
     recipeListContainer: {
         paddingHorizontal: 24,
     },

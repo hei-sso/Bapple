@@ -11,6 +11,7 @@ export default function GroupScreen() {
   );
 }
 
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
   container: {
     flex: 1,

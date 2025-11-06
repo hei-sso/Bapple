@@ -29,6 +29,7 @@ export default function DislikesScreen() {
     );
 }
 
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff', },
     appHeader: {

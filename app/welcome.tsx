@@ -4,7 +4,6 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
-// import { COLORS } from '../constants/colors';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -59,6 +58,7 @@ export default function WelcomeScreen() {
   );
 }
 
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
     // safeArea 대신 전체 화면을 덮도록 container 스타일 조정
     container: { 

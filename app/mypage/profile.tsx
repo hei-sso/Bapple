@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
 
-  // 공통 헤더: (뒤로 가기 버튼, 제목)
+  // 공통 헤더 (뒤로 가기 버튼, 제목)
   header: {
     flexDirection: 'row',
     alignItems: 'center',

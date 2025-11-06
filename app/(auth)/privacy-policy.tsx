@@ -32,6 +32,7 @@ export default function PrivacyPolicyScreen() {
   );
 }
 
+// 💡스타일 시트💡
 const styles = StyleSheet.create({
   container: {
     flex: 1,
