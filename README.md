@@ -21,3 +21,7 @@
 1. 엔티티 확정 + 정규화 설계
 
 2. DDL 설계 (테이블 정의서 + SQL생성)
+
+
+---- 지금 까지 완료 한것! LIST ----
+1. 필수 인증 + 개인정보 테이블 생성완료! ( User, AuthAccount, UserProfile, UserPreference, PasswordResetToken, AuthSession )
