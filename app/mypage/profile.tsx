@@ -98,7 +98,7 @@ export default function ProfileScreen() {
                             onChangeText={setEmail}
                             keyboardType="email-address"
                             autoCapitalize="none"
-                            editable={false} // 수정 불가 설정
+                            editable={!isEmailVerified} // 인증 완료 시 수정 불가
                         />
                         <TouchableOpacity 
                             style={[localStyles.verificationButton, isEmailVerified ? localStyles.verifiedButton : localStyles.unverifiedButton]}
