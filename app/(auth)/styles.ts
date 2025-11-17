@@ -5,12 +5,13 @@ import { StyleSheet } from 'react-native';
 export const authStyles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 30,
     backgroundColor: '#fff',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 30,
+    paddingHorizontal: 5,
   },
   
   // 공통 헤더 (뒤로 가기 버튼, 제목)
@@ -36,11 +37,7 @@ export const authStyles = StyleSheet.create({
     marginRight: 38, // backButtonContainer 패딩만큼 상쇄
   },
   
-  // 폼 및 기타 스타일
-  form: {
-    width: '100%',
-    marginBottom: 30,
-  },
+  // 기타 스타일
   label: {
     fontSize: 14,
     fontWeight: '600',

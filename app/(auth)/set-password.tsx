@@ -2,13 +2,10 @@
 
 import React, { useState } from 'react';
 import { 
-  View, 
-  Text, 
-  TextInput, 
+  View,
+  Text,
+  TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView, 
-  Platform,
-  ScrollView,
   StyleSheet,
   Alert
 } from 'react-native';
@@ -89,157 +86,149 @@ export default function SetPasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={authStyles.scrollContent}>
+    <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         
-        {/* 헤더 */}
-        <View style={authStyles.header}>
-          <TouchableOpacity onPress={handleGoBack} style={authStyles.backButtonContainer}>
-             <Text style={authStyles.backButton}>{'<'}</Text>
-          </TouchableOpacity>
-          <Text style={authStyles.title}>비밀번호 재설정</Text>
-        </View>
+      {/* 헤더 */}
+      <View style={authStyles.header}>
+        <TouchableOpacity onPress={handleGoBack} style={authStyles.backButtonContainer}>
+          <Text style={authStyles.backButton}>{'<'}</Text>
+        </TouchableOpacity>
+        <Text style={authStyles.title}>비밀번호 재설정</Text>
+      </View>
 
-        <View style={authStyles.form}>
-          {/* 이메일 입력 및 인증 버튼 */}
-          <Text style={authStyles.label}>이메일</Text>
+      {/* 이메일 입력 및 인증 버튼 */}
+      <Text style={authStyles.label}>이메일</Text>
+      <View style={localStyles.inputWithButtonContainer}>
+        <TextInput
+          style={[authStyles.input, localStyles.inputField]}
+          placeholder="bapple@bapple.com"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          editable={!isEmailVerified} // 인증 완료 시 수정 불가
+          placeholderTextColor="#A9A9A9"
+        />
+        <TouchableOpacity 
+          style={[localStyles.verificationButton, isEmailVerified ? localStyles.verifiedButton : localStyles.unverifiedButton]}
+          onPress={handleSendVerificationCode}
+          disabled={isEmailVerified}
+        >
+          <Text style={localStyles.verificationButtonText}>{isEmailVerified ? '인증 완료' : '인증'}</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* 인증번호 입력 필드 */}
+      {verificationCodeSent && !isEmailVerified && (
+        <View style={localStyles.verificationInputGroup}>
+          <Text style={authStyles.label}>인증번호</Text>
           <View style={localStyles.inputWithButtonContainer}>
             <TextInput
               style={[authStyles.input, localStyles.inputField]}
-              placeholder="bapple@bapple.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isEmailVerified} // 인증 완료 시 수정 불가
+              placeholder="인증번호 6자리 입력"
+              value={verificationCode}
+              onChangeText={setVerificationCode}
+              keyboardType="numeric"
               placeholderTextColor="#A9A9A9"
             />
             <TouchableOpacity 
-              style={[localStyles.verificationButton, isEmailVerified ? localStyles.verifiedButton : localStyles.unverifiedButton]}
-              onPress={handleSendVerificationCode}
-              disabled={isEmailVerified}
+              style={[localStyles.verificationButton, localStyles.unverifiedButton]} 
+              onPress={handleVerifyCode}
             >
-              <Text style={localStyles.verificationButtonText}>{isEmailVerified ? '인증 완료' : '인증'}</Text>
+              <Text style={localStyles.verificationButtonText}>확인</Text>
             </TouchableOpacity>
           </View>
-          
-          {/* 인증번호 입력 필드 */}
-          {verificationCodeSent && !isEmailVerified && (
-            <View style={localStyles.verificationInputGroup}>
-              <Text style={authStyles.label}>인증번호</Text>
-              <View style={localStyles.inputWithButtonContainer}>
-                <TextInput
-                  style={[authStyles.input, localStyles.inputField]}
-                  placeholder="인증번호 6자리 입력"
-                  value={verificationCode}
-                  onChangeText={setVerificationCode}
-                  keyboardType="numeric"
-                  placeholderTextColor="#A9A9A9"
-                />
-                <TouchableOpacity 
-                  style={[localStyles.verificationButton, localStyles.unverifiedButton]} 
-                  onPress={handleVerifyCode}
-                >
-                  <Text style={localStyles.verificationButtonText}>확인</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          <Text style={authStyles.label}>새 비밀번호</Text>
-          <TextInput
-            style={authStyles.input}
-            placeholder="***********"
-            value={newPassword}
-            onChangeText={setNewPassword}
-            secureTextEntry
-            editable={isEmailVerified} // 인증 완료 후에만 활성화
-            placeholderTextColor="#A9A9A9"
-          />
-          <Text style={authStyles.label}>새 비밀번호 확인</Text>
-          <TextInput
-            style={authStyles.input}
-            placeholder="***********"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            editable={isEmailVerified} // 인증 완료 후에만 활성화
-            placeholderTextColor="#A9A9A9"
-          />
         </View>
-        
-        {/* 비밀번호 변경 버튼 */}
-        <TouchableOpacity 
-            style={[localStyles.changePasswordButton, !isEmailVerified && localStyles.disabledButton]} 
-            onPress={handleChangePassword}
-            disabled={!isEmailVerified} // 인증 완료 후에만 활성화
-        >
-          <Text style={localStyles.changePasswordButtonText}>비밀번호 변경</Text>
-        </TouchableOpacity>
+      )}
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <Text style={authStyles.label}>새 비밀번호</Text>
+      <TextInput
+        style={authStyles.input}
+        placeholder="**********"
+        value={newPassword}
+        onChangeText={setNewPassword}
+        secureTextEntry
+        editable={isEmailVerified} // 인증 완료 후에만 활성화
+        placeholderTextColor="#A9A9A9"
+      />
+      <Text style={authStyles.label}>새 비밀번호 확인</Text>
+      <TextInput
+        style={authStyles.input}
+        placeholder="**********"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+        editable={isEmailVerified} // 인증 완료 후에만 활성화
+        placeholderTextColor="#A9A9A9"
+      />
+
+      {/* 비밀번호 변경 버튼 */}
+      <TouchableOpacity 
+        style={[localStyles.changePasswordButton, !isEmailVerified && localStyles.disabledButton]} 
+        onPress={handleChangePassword}
+        disabled={!isEmailVerified} // 인증 완료 후에만 활성화
+      >
+        <Text style={localStyles.changePasswordButtonText}>비밀번호 변경</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 // 💡스타일 시트💡
 const localStyles = StyleSheet.create({
-    // 인증 필드 관련 스타일 (register.tsx랑 같음)
-    verificationInputGroup: {
-        marginTop: -5, 
-        marginBottom: 5,
-    },
-    inputWithButtonContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-        marginBottom: 10, 
-    },
-    inputField: {
-        flex: 1, 
-        marginRight: 10, 
-    },
-    verificationButton: {
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 8,
-        height: 50, 
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    unverifiedButton: {
-        backgroundColor: '#000',
-    },
-    verifiedButton: {
-        backgroundColor: '#ccc',
-    },
-    verificationButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
+  // 인증 필드 관련 스타일 (register.tsx랑 같음)
+  verificationInputGroup: {
+    marginTop: -5, 
+    marginBottom: 5,
+  },
+  inputWithButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 10, 
+  },
+  inputField: {
+    flex: 1, 
+    marginRight: 10, 
+  },
+  verificationButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+    height: 50, 
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unverifiedButton: {
+    backgroundColor: '#000',
+  },
+  verifiedButton: {
+    backgroundColor: '#ccc',
+  },
+  verificationButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
 
-    // 비활성화 버튼 스타일
-    disabledButton: {
-        backgroundColor: '#ccc',
-    },
+  // 비활성화 버튼 스타일
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
 
-    // 비밀번호 변경 버튼 (기존 스타일)
-    changePasswordButton: {
-        width: '100%',
-        paddingVertical: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#000', 
-        marginTop: 30,
-    },
-    changePasswordButtonText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
+  // 비밀번호 변경 버튼 (기존 스타일)
+  changePasswordButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000', 
+    marginTop: 30,
+  },
+  changePasswordButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  }
 });

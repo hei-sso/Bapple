@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, TextInput, TouchableOpacity, 
-  KeyboardAvoidingView, Platform, ScrollView, 
-  StyleSheet, Alert
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert
 } from 'react-native';
 import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,86 +54,69 @@ export default function LoginScreen() {
   const handleRegisterLink = () => { router.replace('/(auth)/register' as RedirectProps['href']); };
 
   return (
-    <KeyboardAvoidingView
-      style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={authStyles.scrollContent}>
+    <View style={[authStyles.container, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
         
-        {/* Header 영역 */}
-        <View style={authStyles.header}>
-          <TouchableOpacity onPress={handleGoBack} style={authStyles.backButtonContainer}>
-             <Text style={authStyles.backButton}>{'<'}</Text>
-          </TouchableOpacity>
-          <Text style={authStyles.title}>로그인</Text>
-        </View>
+      {/* Header 영역 */}
+      <View style={authStyles.header}>
+        <TouchableOpacity onPress={handleGoBack} style={authStyles.backButtonContainer}>
+          <Text style={authStyles.backButton}>{'<'}</Text>
+        </TouchableOpacity>
+        <Text style={authStyles.title}>로그인</Text>
+      </View>
 
-        {/* 폼 영역 */}
-        <View style={authStyles.form}>
-          <Text style={authStyles.label}>이메일</Text>
-          <TextInput
-            style={authStyles.input}
-            placeholder="bapple@bapple.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            placeholderTextColor="#A9A9A9"
-            autoCapitalize="none"
-          />
-          <Text style={authStyles.label}>비밀번호</Text>
-          <TextInput
-            style={authStyles.input}
-            placeholder="***********"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholderTextColor="#A9A9A9"
-          />
-          {/* 비밀번호 재설정 링크 */}
-          <TouchableOpacity 
-            style={localStyles.setPasswordLinkContainer} 
-            onPress={handleSetPassword}
-          >
-            <Text style={localStyles.setPasswordLinkText}>비밀번호 재설정</Text>
-          </TouchableOpacity>
-        </View>
+      <Text style={authStyles.label}>이메일</Text>
+      <TextInput
+        style={authStyles.input}
+        placeholder="Bapple@example.com"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        placeholderTextColor="#A9A9A9"
+        autoCapitalize="none"
+      />
+
+      <Text style={authStyles.label}>비밀번호</Text>
+      <TextInput
+        style={authStyles.input}
+        placeholder="**********"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        placeholderTextColor="#A9A9A9"
+      />
+
+      {/* 비밀번호 재설정 링크 */}
+      <TouchableOpacity style={localStyles.setPasswordLinkContainer} onPress={handleSetPassword}>
+        <Text style={localStyles.setPasswordLinkText}>비밀번호 재설정</Text>
+      </TouchableOpacity>
         
-        {/* 이메일 로그인 버튼 */}
-        <TouchableOpacity 
-          style={localStyles.emailLoginButton}
-          onPress={handleLogin}
-        >
+      {/* 이메일 로그인 버튼 */}
+      <TouchableOpacity style={localStyles.emailLoginButton} onPress={handleLogin}>
           <Text style={authStyles.secondaryButtonText}>이메일로 로그인</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
 
-        {/* '또는' 구분선 영역 */}
-        <View style={localStyles.orContainer}>
-          <Text style={localStyles.orDividerText}>
-            또는
-          </Text>
+      {/* '또는' 구분선 영역 */}
+      <View style={localStyles.orContainer}>
+        <Text style={localStyles.orDividerText}>또는</Text>
+      </View>
+
+      {/* 카카오 로그인 버튼 (handleKakaoLogin 연결) */}
+      <TouchableOpacity style={localStyles.kakaoButton} onPress={handleKakaoLogin}>
+        <View style={localStyles.kakaoButtonContent}>
+          <FontAwesome name="comment" size={20} color="#000" style={localStyles.kakaoIcon} />
+          <Text style={localStyles.kakaoButtonText}>로그인</Text>
         </View>
-
-        {/* 카카오 로그인 버튼 (handleKakaoLogin 연결) */}
-        <TouchableOpacity 
-          style={localStyles.kakaoButton} 
-          onPress={handleKakaoLogin}
-        >
-          <View style={localStyles.kakaoButtonContent}>
-            <FontAwesome name="comment" size={20} color="#000" style={localStyles.kakaoIcon} />
-            <Text style={localStyles.kakaoButtonText}>로그인</Text>
-          </View>
-        </TouchableOpacity>
+      </TouchableOpacity>
         
-        {/* 하단 회원가입 링크 */}
-        <View style={localStyles.registerLinkContainer}>
-          <Text style={localStyles.registerLinkTextBase}>Bapple이 처음이신가요? </Text>
-          <TouchableOpacity onPress={handleRegisterLink}>
-            <Text style={localStyles.registerLinkText}>회원가입</Text>
-          </TouchableOpacity>
-        </View>
+      {/* 하단 회원가입 링크 */}
+      <View style={localStyles.registerLinkContainer}>
+        <Text style={localStyles.registerLinkTextBase}>Bapple이 처음이신가요? </Text>
+        <TouchableOpacity onPress={handleRegisterLink}>
+          <Text style={localStyles.registerLinkText}>회원가입</Text>
+        </TouchableOpacity>
+      </View>
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
   TextInput,
   ScrollView,
-  Alert,
+  Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,158 +18,153 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const PROFILE_IMAGE_SIZE = 120; // 프로필 사진 크기
 
 export default function ProfileScreen() {
-    const router = useRouter();
-    const insets = useSafeAreaInsets();
-    // 폼 상태 (임시)
-    const [nickname, setNickname] = useState('bapple');
-    const [email, setEmail] = useState('example@example.com');
-    const [phoneNumber, setPhoneNumber] = useState('010-1234-5678');
-    const [birthdate, setBirthdate] = useState('DD / MM / YYYY');
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  // 폼 상태 (임시)
+  const [nickname, setNickname] = useState('apple');
+  const [email, setEmail] = useState('apple@imsi.com');
+  const [phoneNumber, setPhoneNumber] = useState('010-4568-5678');
+  const [birthdate, setBirthdate] = useState('1999/11/17');
 
-    // 이메일 인증 플로우 상태 관리
-    const [isEmailVerified, setIsEmailVerified] = useState(false);
-    const [verificationCodeSent, setVerificationCodeSent] = useState(false);
-    const [verificationCode, setVerificationCode] = useState(''); 
+  // 이메일 인증 플로우 상태 관리
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [verificationCodeSent, setVerificationCodeSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState(''); 
 
-    const handleSaveProfile = () => {
-        // 💡[추후 구현] 프로필 변경 사항 저장 로직
-        console.log("프로필 저장");
-        router.back();
-    };
+  const handleSaveProfile = () => {
+      // 💡[추후 구현] 프로필 변경 사항 저장 로직
+      console.log("프로필 저장");
+      router.back();
+  };
 
-    // 인증번호 발송 핸들러
-    const handleSendVerificationCode = async () => {
-        if (!email) { Alert.alert("알림", "이메일을 입력해 주세요."); return; }
-        setVerificationCodeSent(true); 
-        Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
-    };
-      
-    // 인증번호 확인 핸들러
-    const handleVerifyCode = async () => {
-        if (!verificationCode) { Alert.alert("알림", "인증번호를 입력해 주세요."); return; }
-        setIsEmailVerified(true);
-        setVerificationCodeSent(false);
-        Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다.");
-    };
+  // 인증번호 발송 핸들러
+  const handleSendVerificationCode = async () => {
+      if (!email) { Alert.alert("알림", "이메일을 입력해 주세요."); return; }
+      setVerificationCodeSent(true); 
+      Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
+  };
 
-    return (
-        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                
-                {/* Header 영역 */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButtonContainer}>
-                        <Text style={styles.backButton}>{'<'}</Text>
-                    </TouchableOpacity>
-                        <Text style={styles.title}>프로필</Text>
-                    <TouchableOpacity onPress={handleSaveProfile}>
-                        <Text style={styles.saveButton}>저장</Text>
-                    </TouchableOpacity>
-                </View>
+  // 인증번호 확인 핸들러
+  const handleVerifyCode = async () => {
+      if (!verificationCode) { Alert.alert("알림", "인증번호를 입력해 주세요."); return; }
+      setIsEmailVerified(true);
+      setVerificationCodeSent(false);
+      Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다.");
+  };
 
-                {/* 프로필 사진 영역 */}
-                <View style={styles.profileImageArea}>
-                    <View style={styles.profileImagePlaceholder} />
-                    <TouchableOpacity>
-                        <Text style={styles.changePhotoButton}>사진 변경하기</Text>
-                    </TouchableOpacity>
-                </View>
+  return (
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
 
-                {/* 폼 영역 (회원가입 스타일 재활용) */}
-                <View style={styles.form}>
-                    
-                    {/* 닉네임 */}
-                    <Text style={styles.label}>닉네임</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="닉네임을 입력하세요"
-                        placeholderTextColor="#A9A9A9"
-                        // value={nickname}
-                        onChangeText={setNickname}
-                        autoCapitalize="none"
-                    />
+      {/* Header 영역 */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButtonContainer}>
+          <Text style={styles.backButton}>{'<'}</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>프로필</Text>
+        <TouchableOpacity onPress={handleSaveProfile}>
+          <Text style={styles.saveButton}>저장</Text>
+        </TouchableOpacity>
+      </View>
 
-                    {/* 이메일 입력 및 인증 버튼 컨테이너 */}
-                    <Text style={styles.label}>이메일</Text>
-                    <View style={localStyles.inputWithButtonContainer}>
-                        <TextInput
-                            style={[styles.input, localStyles.inputField]}
-                            placeholder="bapple@bapple.com"
-                            placeholderTextColor="#A9A9A9"
-                            // value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            editable={!isEmailVerified} // 인증 완료 시 수정 불가
-                        />
-                        <TouchableOpacity 
-                            style={[localStyles.verificationButton, isEmailVerified ? localStyles.verifiedButton : localStyles.unverifiedButton]}
-                            onPress={handleSendVerificationCode}
-                            disabled={isEmailVerified}
-                        >
-                            <Text style={localStyles.verificationButtonText}>{isEmailVerified ? '인증 완료' : '인증'}</Text>
-                        </TouchableOpacity>
-                    </View>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+              
+          {/* 프로필 사진 영역 */}
+          <View style={styles.profileImageArea}>
+            <View style={styles.profileImagePlaceholder} />
+            <TouchableOpacity>
+              <Text style={styles.changePhotoButton}>사진 변경하기</Text>
+            </TouchableOpacity>
+          </View>
 
-                    {/* 인증번호 입력 필드 (발송 후에만 표시) */}
-                    {verificationCodeSent && !isEmailVerified && (
-                    <View style={localStyles.verificationInputGroup}>
-                        <Text style={styles.label}>인증번호</Text>
-                        <View style={localStyles.inputWithButtonContainer}>
-                        <TextInput
-                            style={[styles.input, localStyles.inputField]}
-                            placeholder="인증번호 6자리 입력"
-                            value={verificationCode}
-                            onChangeText={setVerificationCode}
-                            keyboardType="numeric"
-                            placeholderTextColor="#A9A9A9"
-                        />
-                        <TouchableOpacity style={[localStyles.verificationButton, localStyles.unverifiedButton]} onPress={handleVerifyCode}>
-                            <Text style={localStyles.verificationButtonText}>확인</Text>
-                        </TouchableOpacity>
-                        </View>
-                    </View>
-                    )}
-                    
-                    {/* 전화번호 */}
-                    <Text style={styles.label}>전화번호</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="010-1234-5678"
-                        placeholderTextColor="#A9A9A9"
-                        // value={phoneNumber}
-                        onChangeText={setPhoneNumber}
-                        keyboardType="phone-pad"
-                    />
+          {/* 폼 영역 (회원가입 스타일 재활용) */}
 
-                    {/* 생년월일 */}
-                    <Text style={styles.label}>생년월일</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="DD / MM / YYYY"
-                        placeholderTextColor="#A9A9A9"
-                        // value={birthdate}
-                        onChangeText={setBirthdate}
-                        keyboardType="numbers-and-punctuation"
-                    />
-                    
-                </View>
+          {/* 닉네임 */}
+          <Text style={styles.label}>닉네임</Text>
+            <TextInput
+                style={styles.input}
+                placeholder="Bapple"
+                value={nickname}
+                onChangeText={setNickname}
+                autoCapitalize="none"
+            />
 
-            </ScrollView>
-        </View>
-    );
+          {/* 이메일 입력 및 인증 버튼 컨테이너 */}
+          <Text style={styles.label}>이메일</Text>
+          <View style={localStyles.inputWithButtonContainer}>
+            <TextInput
+                style={[styles.input, localStyles.inputField]}
+                placeholder="Bapple@example.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!isEmailVerified} // 인증 완료 시 수정 불가
+            />
+            <TouchableOpacity 
+              style={[localStyles.verificationButton, isEmailVerified ? localStyles.verifiedButton : localStyles.unverifiedButton]}
+              onPress={handleSendVerificationCode}
+              disabled={isEmailVerified}
+            >
+              <Text style={localStyles.verificationButtonText}>{isEmailVerified ? '인증 완료' : '인증'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 인증번호 입력 필드 (발송 후에만 표시) */}
+          {verificationCodeSent && !isEmailVerified && (
+          <View style={localStyles.verificationInputGroup}>
+            <Text style={styles.label}>인증번호</Text>
+            <View style={localStyles.inputWithButtonContainer}>
+              <TextInput
+                style={[styles.input, localStyles.inputField]}
+                placeholder="인증번호 6자리 입력"
+                value={verificationCode}
+                onChangeText={setVerificationCode}
+                keyboardType="numeric"
+              />
+              <TouchableOpacity style={[localStyles.verificationButton, localStyles.unverifiedButton]} onPress={handleVerifyCode}>
+                <Text style={localStyles.verificationButtonText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          )}
+
+          {/* 전화번호 */}
+          <Text style={styles.label}>전화번호</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="010-1234-5678"
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            keyboardType="phone-pad"
+          />
+
+          {/* 생년월일 */}
+          <Text style={styles.label}>생년월일</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="YYYY/MM/DD"
+            value={birthdate}
+            onChangeText={setBirthdate}
+            keyboardType="numbers-and-punctuation"
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
+  );
 }
 
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 30,
     backgroundColor: '#fff',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 30,
+    paddingHorizontal:5,
   },
 
   // 공통 헤더 (뒤로 가기 버튼, 제목)
@@ -217,11 +214,7 @@ const styles = StyleSheet.create({
     color: '#000',
     textDecorationLine: 'underline',
   },
-  // 폼 및 기타 스타일
-  form: {
-    width: '100%',
-    marginBottom: 30,
-  },
+  // 기타 스타일
   label: {
     fontSize: 14,
     fontWeight: '600',
