@@ -41,19 +41,12 @@ export const kakaoTokenExchange = async (req, res) => {
         },
       }
     );
-
-<<<<<<< HEAD
   
     const { access_token: KAKAO_ACCESS_TOKEN } = tokenResponse.data;
     
     console.log("DEBUG: 카카오 토큰 교환 완료.");
     // [수정] 템플릿 리터럴(백틱) 적용
     console.log(`DEBUG: KAKAO 토큰 길이: ${KAKAO_ACCESS_TOKEN.length}`);
-=======
-      const {acceess_token:KAKAO_ACCESS_TOKEN} = tokenResponse.data;
-      console.log("DEBUG: 카카오 토큰 교환 완료.");
-      console.log(`DEBUG: KAKAO 토큰 길이: ${KAKAO_ACCESS_TOKEN.length}`);
->>>>>>> 2662230eff0b2137bee7b7a281bebc7b2cb5099a
 
     // 3. access_token으로 사용자 정보 받기
     console.log("DEBUG: 카카오 사용자 정보 요청 중...");
