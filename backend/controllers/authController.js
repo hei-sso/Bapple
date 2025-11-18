@@ -4,7 +4,6 @@ import db from '../db.js';
 import nodemailer from 'nodemailer';
 import sgTransport from 'nodemailer-sendgrid-transport';
 import crypto from 'crypto';
-import bcrypt from 'bcrypt';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
