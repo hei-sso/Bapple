@@ -1,26 +1,37 @@
 CREATE TABLE recipe (
-    -- 레시피 고유 ID
-    recipe_id CHAR(20) PRIMARY KEY,
+    -- 레시피 고유 ID (CSV가 24글자라서 이렇게)
+    recipe_id VARCHAR(50) PRIMARY KEY,
+
     -- 요리 이름
     name VARCHAR(100) NOT NULL,
-    -- 재료 리스트 (예: ["두부", "된장", "애호박"])
+
+    -- 재료 리스트
     ingredients TEXT,
-    -- 재료별 필요량 (예: {"두부":150,"된장":20})
+
+    -- 재료별 필요량
     ingredient_qty JSON,
+
     -- 조리 순서
     cooking_steps TEXT,
-    -- 조리 시간 (예: "30분")
+
+    -- 조리 시간
     cooking_time VARCHAR(50),
-    -- 난이도 (예: "쉬움", "보통", "어려움")
+
+    -- 난이도
     difficulty VARCHAR(20),
-    -- 요리 종류 (예: "한식", "양식", "중식")
+
+    -- 요리 종류
     cuisine_type VARCHAR(50),
-    -- 태그 (예: ["저염식","고단백","다이어트"])
+
+    -- 태그
     tags VARCHAR(255),
-    -- 칼로리 (예: "320 kcal")
+
+    -- 칼로리
     calories VARCHAR(20),
-    -- 영양소 정보 (예: {"탄수화물":"40g","단백질":"15g","지방":"8g"})
+
+    -- 영양소 정보
     nutrients TEXT,
+
     -- 레시피 이미지 URL
     img_url VARCHAR(255)
 ) ENGINE=InnoDB
