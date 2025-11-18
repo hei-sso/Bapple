@@ -12,45 +12,28 @@ const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
 // 카카오 토큰 교환 및 로그인/회원가입
 export const kakaoTokenExchange = async (req, res) => {
-  // 1. [추가] 클라이언트가 보낸 카카오 access_token 받기
   console.log("--- KAKAO TOKEN EXCHANGE 시작 ---");
-  const { code } = req.body; 
 
-  if (!code) {
+  // 프론트에서 보내는 값: { KAKAO_ACCESS_TOKEN }
+  const { KAKAO_ACCESS_TOKEN } = req.body;
+
+  if (!KAKAO_ACCESS_TOKEN) {
     console.log("ERROR: KAKAO_ACCESS_TOKEN 누락");
-    return res.status(400).json({ message: "카카오 KAKAO_ACCESS_TOKEN이 누락되었습니다." });
+    return res.status(400).json({ message: "카카오 액세스 토큰이 누락되었습니다." });
   }
+
   let connection;
-  console.log(`DEBUG: KAKAO 토큰 길이: ${KAKAO_ACCESS_TOKEN.length}`);
-  
+
   try {
-    // 2. code로 카카오 access token 교환 요청
-    console.log("DEBUG: 카카오 토큰 교환 요청 중...");
-    const tokenResponse = await axios.post(
-      "https://kauth.kakao.com/oauth/token",
-      null,
-      {
-        params: {
-          grant_type: "authorization_code",
-          client_id: KAKAO_REST_API_KEY,
-          redirect_uri: KAKAO_REDIRECT_URI,
-          code,
-        },  
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded"},
-        }
-      );
+    console.log(`DEBUG: KAKAO 토큰 길이: ${KAKAO_ACCESS_TOKEN.length}`);
 
-      const {KAKAO_ACCESS_TOKEN} = tokenResponse.data;
-      console.log("DEBUG: 카카오 토큰 교환 완료.");
-
-    // 3. access_token으로 사용자 정보 받기
+    // 1) 카카오 사용자 정보 가져오기
     console.log("DEBUG: 카카오 사용자 정보 요청 중...");
     const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
       headers: { Authorization: `Bearer ${KAKAO_ACCESS_TOKEN}` },
     });
     console.log("DEBUG: 카카오 사용자 정보 획득 완료.");
-    
+
     const kakao_id = userResponse.data.id;
     const kakaoAccount = userResponse.data.kakao_account;
     const email = kakaoAccount.email || `kakao_${userResponse.data.id}@noemail.com`;
