@@ -1,12 +1,20 @@
 // app/(auth)/kakao-webview.tsx
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
+import React from 'react';
+import {
+    Alert,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
-import axios from 'axios';
-import { useAuth } from '../../context/authContext'; // Context 사용
+
+// Context 훅 임포트
+import { useAuth } from '../../context/authContext';
 
 // 카카오 로그인 상수
 const KAKAO_REST_API_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY!;

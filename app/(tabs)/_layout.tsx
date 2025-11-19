@@ -1,15 +1,9 @@
 // app/(tabs)/_layout.tsx
 
-import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Tabs } from 'expo-router';
+import React from 'react';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue'; 
-
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
   color: string;
@@ -18,17 +12,14 @@ function TabBarIcon(props: {
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   
   return (
     <Tabs
       screenOptions={{
-        // 탭 바 색상 설정
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // 웹에서 헤더 렌더링 방식 설정
-        headerShown: useClientOnlyValue(false, true),
-        // 탭 바 스타일 (선택 사항)
-        tabBarStyle: { height: 100, paddingBottom: 5 }, 
+        // 탭 바 활성화 아이콘 색상
+        tabBarActiveTintColor: '#fff',
+        // 탭 바 스타일
+        tabBarStyle: { backgroundColor: '#000',height: 100, paddingBottom: 5 }, 
       }}>
       
       {/* 1. 레시피 탭 (recipe 폴더) */}

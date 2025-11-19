@@ -1,18 +1,18 @@
 // app/mypage/profile.tsx
 
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { 
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  TextInput,
   ScrollView,
-  Alert
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PROFILE_IMAGE_SIZE = 120; // 프로필 사진 크기

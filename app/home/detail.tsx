@@ -1,12 +1,17 @@
 // app/(tabs)/home/detail.tsx
 
-import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { useLocalSearchParams, useRouter, RedirectProps } from 'expo-router';
+import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { format, addDays, subWeeks, addWeeks, startOfWeek } from 'date-fns';
-import { ko } from 'date-fns/locale'; 
 
 const { width } = Dimensions.get('window');
 

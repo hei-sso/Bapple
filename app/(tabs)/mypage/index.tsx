@@ -1,17 +1,17 @@
 // app/(tabs)/mypage/index.tsx
 
-import React, { useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { RedirectProps, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import {
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, RedirectProps } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 

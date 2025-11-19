@@ -1,21 +1,21 @@
 // app/(tabs)/home/index.tsx
 
-import React, { useState, useMemo, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity,
-  Dimensions,
-  Animated,
-  PanResponder,
-} from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { RedirectProps, useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  PanResponder,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, RedirectProps } from 'expo-router';
-import { format, addDays, subWeeks, addWeeks, startOfWeek } from 'date-fns';
-import { ko } from 'date-fns/locale'; 
 
 // Mock 데이터 및 상수
 const { width } = Dimensions.get('window');

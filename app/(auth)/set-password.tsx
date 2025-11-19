@@ -1,17 +1,19 @@
 // app/(auth)/set-password.tsx
 
+import { RedirectProps, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { 
-  View,
+import {
+  Alert,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert
+  View
 } from 'react-native';
-import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { authStyles } from './styles'; // 공통 스타일 임포트
+
+// Style 임포트
+import { authStyles } from '../../constants/styles'; // 공통
 
 export default function SetPasswordScreen() {
   const router = useRouter();

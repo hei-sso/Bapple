@@ -1,18 +1,17 @@
 // app/_layout.tsx
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-// Redirect는 JSX에서 사용하지 않지만, 타입 RedirectProps는 유지 (오류 방지)
-import { Stack, RedirectProps, useRouter } from 'expo-router'; 
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState, useCallback } from 'react';
-import 'react-native-reanimated';
-import { View } from 'react-native';
 import * as Linking from 'expo-linking';
+// Redirect는 JSX에서 사용하지 않지만, 타입 RedirectProps는 유지 (오류 방지)
+import { RedirectProps, Stack, useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { useCallback, useEffect, useState } from 'react';
+import { View } from 'react-native';
+import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { useColorScheme } from '@/components/useColorScheme';
+// Context 훅 임포트
 import { AuthProvider, useAuth } from '../context/authContext';
 
 // ErrorBoundary를 사용하여 상위 컴포넌트(_layout.tsx)에서 발생하는 렌더링 오류 등을 처리
@@ -129,7 +128,7 @@ export default function RootLayout() {
 
 // RootLayoutNav 컴포넌트를 분리하여 onLayout prop과 isAuthenticated prop을 받도록 수정
 function RootLayoutNav({ isAuthenticated, onLayout }: { isAuthenticated: boolean, onLayout: () => Promise<void> }) {
-  const colorScheme = useColorScheme();
+  // const colorScheme = useColorScheme();
   const router = useRouter(); 
   
   // useEffect로 네비게이션 강제
@@ -144,13 +143,11 @@ function RootLayoutNav({ isAuthenticated, onLayout }: { isAuthenticated: boolean
   return (
     <SafeAreaProvider> 
         <View style={{ flex: 1 }} onLayout={onLayout}>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
               <Stack>
 
                 {/* Redirect가 동작하면 아래의 스크린 정의 중 해당 경로로 이동함 */}
                 <Stack.Screen name="welcome" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
 
                 {/* 그룹 내 개별 파일을 Stack.Screen으로 등록 */}
                 <Stack.Screen name="(auth)/login" options={{ headerShown: false, animation: 'slide_from_right' }} />
@@ -174,7 +171,6 @@ function RootLayoutNav({ isAuthenticated, onLayout }: { isAuthenticated: boolean
                 <Stack.Screen name="mypage/fridge-setting" options={{ headerShown: false, animation: 'slide_from_right' }} />
 
               </Stack>
-            </ThemeProvider>
         </View>
     </SafeAreaProvider>
   );

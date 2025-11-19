@@ -1,9 +1,15 @@
 // app/welcome.tsx
 
+import { RedirectProps, useRouter } from 'expo-router';
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { useRouter, RedirectProps } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import {
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function WelcomeScreen() {
   const router = useRouter();

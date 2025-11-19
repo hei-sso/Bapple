@@ -1,22 +1,25 @@
 // app/(auth)/register.tsx
 
-import React, { useState, useEffect } from 'react';
-import { 
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { RedirectProps, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  Alert
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { authStyles } from './styles'; // 공통 스타일 임포트
-import FontAwesome from '@expo/vector-icons/FontAwesome'; 
-import * as WebBrowser from 'expo-web-browser'; 
+
+// Style 임포트
+import { authStyles } from '../../constants/styles'; // 공통
+import { KakaoLogin } from '../../components/kakao-login-btn'; // Kakao 로그인 버튼
 
 WebBrowser.maybeCompleteAuthSession(); 
 
@@ -207,11 +210,11 @@ export default function RegisterScreen() {
             <Text style={localStyles.orText}>또는</Text>
           </View>
 
-          {/* 카카오 로그인 버튼: WebView 표시 트리거 */}
-          <TouchableOpacity style={authStyles.kakaoButton} onPress={handleKakaoLogin}>
-            <View style={localStyles.kakaoButtonContent}>
-              <FontAwesome name="comment" size={20} color="#000" style={localStyles.kakaoIcon} />
-              <Text style={authStyles.kakaoButtonText}>로그인</Text>
+          {/* 카카오 로그인 버튼 */}
+          <TouchableOpacity style={KakaoLogin.ButtonBackground} onPress={handleKakaoLogin}>
+            <View style={KakaoLogin.ButtonContent}>
+              <FontAwesome name="comment" size={20} color="#000" style={KakaoLogin.Icon} />
+              <Text style={KakaoLogin.ButtonText}>로그인</Text>
             </View>
           </TouchableOpacity>
 
@@ -301,18 +304,6 @@ const localStyles = StyleSheet.create({
     color: '#999',
   },
 
-  // 카카오 버튼 내부 아이콘/텍스트 배치
-  kakaoButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%', 
-  },
-  kakaoIcon: {
-    position: 'absolute', 
-    left: 15,
-  },
-  
   // 이미 계정이 있으신가요? 로그인
   linkBaseText: {
     fontSize: 14,

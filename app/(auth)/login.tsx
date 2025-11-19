@@ -1,24 +1,27 @@
 // app/(auth)/login.tsx
 
-import React, { useState, useEffect } from 'react';
-import { 
-  View,
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { RedirectProps, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import React, { useState } from 'react';
+import {
+  Alert,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert
+  View
 } from 'react-native';
-import { useRouter, RedirectProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { authStyles } from './styles'; // 공통 스타일 임포트
-import FontAwesome from '@expo/vector-icons/FontAwesome'; 
-import * as WebBrowser from 'expo-web-browser';
+
+// Style 임포트
+import { authStyles } from '../../constants/styles'; // 공통
+import { KakaoLogin } from '../../components/kakao-login-btn'; // Kakao 로그인 버튼
 
 // Context 훅 임포트
-import { useAuth } from '../../context/authContext'; 
+import { useAuth } from '../../context/authContext';
 
-WebBrowser.maybeCompleteAuthSession(); 
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -92,7 +95,7 @@ export default function LoginScreen() {
         
       {/* 이메일 로그인 버튼 */}
       <TouchableOpacity style={localStyles.emailLoginButton} onPress={handleLogin}>
-          <Text style={authStyles.secondaryButtonText}>이메일로 로그인</Text>
+          <Text style={authStyles.emailButtonText}>이메일로 로그인</Text>
       </TouchableOpacity>
 
       {/* '또는' 구분선 영역 */}
@@ -101,10 +104,10 @@ export default function LoginScreen() {
       </View>
 
       {/* 카카오 로그인 버튼 (handleKakaoLogin 연결) */}
-      <TouchableOpacity style={localStyles.kakaoButton} onPress={handleKakaoLogin}>
-        <View style={localStyles.kakaoButtonContent}>
-          <FontAwesome name="comment" size={20} color="#000" style={localStyles.kakaoIcon} />
-          <Text style={localStyles.kakaoButtonText}>로그인</Text>
+      <TouchableOpacity style={KakaoLogin.ButtonBackground} onPress={handleKakaoLogin}>
+        <View style={KakaoLogin.ButtonContent}>
+          <FontAwesome name="comment" size={20} color="#000" style={KakaoLogin.Icon} />
+          <Text style={KakaoLogin.ButtonText}>로그인</Text>
         </View>
       </TouchableOpacity>
         
@@ -153,32 +156,7 @@ const localStyles = StyleSheet.create({
   orDividerText: {
     fontSize: 14,
     color: '#999',
-    textAlign: 'center',
-  },
-
-  // 카카오 로그인 버튼
-  kakaoButton: {
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 8,
-    backgroundColor: '#FFD100',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  kakaoButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  kakaoIcon: {
-    position: 'absolute', 
-    left: 15,
-  },
-  kakaoButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
+    textAlign: 'center'
   },
   
   // 하단 회원가입 링크
