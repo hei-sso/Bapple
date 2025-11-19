@@ -11,6 +11,10 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
 const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
+console.log(`[DEBUG] JWT_SECRET 로드 여부: ${JWT_SECRET ? 'OK' : 'UNDEFINED (누락됨!)'}`);
+console.log(`[DEBUG] KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY}`); 
+console.log(`[DEBUG] KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}`);
+
 // 카카오 토큰 교환 및 로그인/회원가입
 export const kakaoTokenExchange = async (req, res) => {
   console.log("--- KAKAO TOKEN EXCHANGE 시작 ---");
