@@ -15,15 +15,19 @@ const PORT = process.env.PORT || 3000;
 const allowedOrigins = [
   'http://localhost:8081', 
   'http://localhost:8080',
+  'http://localhost:3000',
+  'https://bapple-production.up.railway.app'
   ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.some(o => origin.startsWith(o)) || 
+        if (!origin || allowedOrigins.includes(origin) || 
+            allowedOrigins.some(o => origin.startsWith(o)) || 
         origin.includes('192.168.') || origin.includes('10.')) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+          console.log("🚫 CORS Blocked:", origin);
+          callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true // Expo에서 헤더를 주고받으려면 필요할 수 있음
