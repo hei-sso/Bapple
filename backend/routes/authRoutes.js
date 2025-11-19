@@ -8,6 +8,9 @@ import {  kakaoTokenExchange, sendVerificationEmail, verifyEmailCode} from "../c
 
 const router = express.Router();
 
+router.get('/kakao/callback', (req, res) => {
+  res.send("Kakao code received. Please close this window."); 
+});
 // router.post("/api/auth/kakao/callback", kakaoCallback);
 router.post('/kakao/token_exchange', kakaoTokenExchange);
 router.post("/send_email", sendVerificationEmail);
