@@ -1,13 +1,11 @@
 // app/(auth)/kakao-webview.tsx
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
-import axios from 'axios'; 
-import qs from 'qs'; 
-import { authStyles } from './styles'; // 공통 스타일 임포트
+import axios from 'axios';
 import { useAuth } from '../../context/authContext'; // Context 사용
 
 // 카카오 로그인 상수
@@ -40,7 +38,7 @@ export default function KakaoWebViewScreen() {
         router.back();
     };
 
-    // WebView에서 받은 URL에서 인가 코드(code)를 추출
+    // URL에서 인가 코드(code)를 추출
     const getCode = (url: string) => {
         const exp = 'code=';
         const condition = url.indexOf(exp);
@@ -54,60 +52,40 @@ export default function KakaoWebViewScreen() {
         }
     };
 
-    // 인가 코드를 이용해 토큰 교환 및 백엔드에 전달 (디버깅 로직 강화)
+    // 인가 코드를 백엔드로 바로 전달
     const requestToken = async (code: string) => {
-        const requestTokenUrl = 'https://kauth.kakao.com/oauth/token';
-
-        const options = qs.stringify({
-            grant_type: 'authorization_code',
-            client_id: KAKAO_REST_API_KEY,
-            redirect_uri: REDIRECT_URI_WEB,
-            code,
-        });
 
         try {
-            // 1. 카카오로부터 ACCESS_TOKEN 획득 (Front-end가 직접 처리)
-            let KAKAO_ACCESS_TOKEN = '';
-            try {
-                const tokenResponse = await axios.post(requestTokenUrl, options, {
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" }
-                });
-                KAKAO_ACCESS_TOKEN = tokenResponse.data.access_token;
-                console.log("✅ 1단계 성공: 카카오 액세스 토큰 획득.");
-            } catch (e: any) {
-                console.error("❌ 1단계 실패: 카카오 토큰 획득 오류", e.response?.data || e.message);
-                Alert.alert('로그인 실패', '카카오 인증 후 토큰을 받지 못했습니다. (1단계 오류)');
-                router.back();
-                return;
-            }
-            
-            // 2. Back-end로 KAKAO_ACCESS_TOKEN 전달
+            // 바로 백엔드로 직행!
             const BACKEND_API_URL = `${RAILWAY_BASE_URL}/api/auth/kakao/token_exchange`; 
 
-            const body = { KAKAO_ACCESS_TOKEN, };
+            // 백엔드가 req.body.code를 기다리므로 키 이름을 'code'로 백엔드랑 맞춤
+            const body = { code: code };
             
-            // 3. 백엔드와 통신하여 서비스 JWT 토큰 획득
-            let serviceToken = '';
-            try {
-                console.log("➡ 2단계 요청: 백엔드에 카카오 토큰 전달 중...");
-                const response = await axios.post(BACKEND_API_URL, body);
-                serviceToken = response.data.token; 
-                console.log("✅ 2단계 성공: 서비스 JWT 획득.");
-            } catch (e: any) {
-                console.error("❌ 2단계 실패: 백엔드 토큰 교환 오류:", e.response?.data || e.message);
-                Alert.alert('로그인 실패', `백엔드 처리 중 오류가 발생했습니다. (2단계 오류: ${e.response?.status || '네트워크'})`);
-                router.back();
-                return;
+            console.log("백엔드로 인가 코드 전송 중...", BACKEND_API_URL);
+
+            // 백엔드와 통신하여 서비스 JWT 토큰 획득
+            const response = await axios.post(BACKEND_API_URL, body);
+            
+            const serviceToken = response.data.token; 
+            const isNewUser = response.data.isNewUser; // 신규 유저 여부 (필요 시 사용)
+
+            console.log("✅ 로그인 성공: JWT 획득 완료.");
+
+            // 로그인 완료 처리
+            await signIn(serviceToken); // 토큰 저장 및 Context 업데이트
+            router.replace('/(tabs)/home'); // 홈으로 이동
+
+        } catch (e: any) {
+            // 에러 처리 강화
+            console.error("❌ 로그인 실패 (백엔드 통신 오류):", e.response?.data || e.message);
+            
+            // 400 or 401 오류: 백엔드 측의 통신 거부
+            if (e.response && (e.response.status === 400 || e.response.status === 401)) {
+                 Alert.alert('로그인 실패', e.response.data.message || '인증 정보가 올바르지 않습니다.');
+            } else {
+                 Alert.alert('서버 오류', '로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.');
             }
-
-            // 4. 로그인 완료 처리
-            await signIn(serviceToken); // 토큰 저장 및 홈 이동
-            router.replace('/(tabs)/home'); // 안전장치!
-
-        } catch (e) {
-            // 예상치 못한 오류 처리
-            console.error("카카오 로그인 (WebView) 실패:", e);
-            Alert.alert('로그인 실패', '알 수 없는 오류가 발생했습니다. 다시 시도해 주세요.');
             router.back();
         }
     };
@@ -115,11 +93,11 @@ export default function KakaoWebViewScreen() {
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             {/* Header 영역*/}
-            <View style={authStyles.header}>
-                <TouchableOpacity onPress={handleGoBack} style={authStyles.backButtonContainer}>
-                    <Text style={authStyles.backButton}>{'<'}</Text>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={handleGoBack} style={styles.backButtonContainer}>
+                    <Text style={styles.backButton}>{'<'}</Text>
                 </TouchableOpacity>
-                <Text style={authStyles.title}>카카오로 로그인</Text>
+                <Text style={styles.title}>카카오로 로그인</Text>
             </View>
 
             {/* WebView 컴포넌트 */}
@@ -144,6 +122,27 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 20,
+        marginBottom: 10,
+    },
+    backButtonContainer: {
+        paddingHorizontal: 30,
+    },
+    backButton: {
+        fontSize: 28,
+        fontWeight: '300',
+        color: '#000',
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        flex: 1, 
+        marginRight: 75, // backButtonContainer 패딩만큼 상쇄
     },
     webView: {
         flex: 1,
