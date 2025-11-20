@@ -1,0 +1,26 @@
+USE railway;
+
+SET @OLD_FK_CHECKS = @@FOREIGN_KEY_CHECKS;
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS user_group;
+
+SET FOREIGN_KEY_CHECKS = @OLD_FK_CHECKS;
+
+CREATE TABLE user_group (
+  group_id      BIGINT AUTO_INCREMENT PRIMARY KEY,
+  name          VARCHAR(100) NOT NULL,             -- 그룹명
+  description   VARCHAR(255) NULL,                 -- 소개글
+  owner_user_id BIGINT NOT NULL,                   -- 생성자
+  visibility    ENUM('PRIVATE','INVITE_ONLY','PUBLIC')
+                  NOT NULL DEFAULT 'PRIVATE',      -- 공개 범위
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    ON UPDATE CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_user_group_owner
+    FOREIGN KEY (owner_user_id) REFERENCES user(user_id)
+      ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_user_group_owner ON user_group (owner_user_id);
