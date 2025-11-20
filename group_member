@@ -1,0 +1,34 @@
+USE railway;
+
+-- FK 잠시 끄기
+SET @OLD_FK_CHECKS = @@FOREIGN_KEY_CHECKS;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- 혹시 남아 있을지 모를 두 이름 다 삭제
+DROP TABLE IF EXISTS group_member;
+DROP TABLE IF EXISTS Group_Member;
+
+-- 테이블 생성 (이름: group_member)
+CREATE TABLE group_member (
+    group_id   BIGINT NOT NULL,
+    user_id    BIGINT NOT NULL,
+    role       ENUM('OWNER','ADMIN','MEMBER')
+                 NOT NULL DEFAULT 'MEMBER',
+    joined_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (group_id, user_id),
+
+    CONSTRAINT fk_group_member_group
+        FOREIGN KEY (group_id) REFERENCES user_group(group_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_group_member_user
+        FOREIGN KEY (user_id) REFERENCES user(user_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 인덱스 생성 (이제 테이블 이름 일치!)
+CREATE INDEX idx_group_member_user ON group_member (user_id);
+
+-- FK 원상복구
+SET FOREIGN_KEY_CHECKS = @OLD_FK_CHECKS;
