@@ -1,0 +1,36 @@
+USE railway;
+
+-- FK 임시 해제
+SET @OLD_FK_CHECKS = @@FOREIGN_KEY_CHECKS;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- 기존 테이블 제거
+DROP TABLE IF EXISTS notification;
+
+-- FK 원복
+SET FOREIGN_KEY_CHECKS = @OLD_FK_CHECKS;
+
+-- 알림 테이블 생성
+CREATE TABLE notification (
+    notification_id BIGINT AUTO_INCREMENT PRIMARY KEY,      -- PK
+    user_id         BIGINT NOT NULL,                        -- 누구에게 가는 알림인지
+    type            ENUM('SYSTEM','FRIEND','GROUP','MEAL_PLAN','REMINDER','OTHER')
+                     NOT NULL DEFAULT 'SYSTEM',             -- 알림 타입
+    title           VARCHAR(100) NOT NULL,                  -- 알림 제목(짧은 문구)
+    message         TEXT NOT NULL,                          -- 알림 상세 내용
+    link_url        VARCHAR(255) NULL,                      -- 눌렀을 때 이동할 링크(화면)
+    is_read         TINYINT(1) NOT NULL DEFAULT 0,          -- 읽음 여부 (0: 안 읽음, 1: 읽음)
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 생성 시각
+    read_at         TIMESTAMP NULL,                         -- 실제 읽은 시각
+
+    CONSTRAINT fk_notification_user
+      FOREIGN KEY (user_id) REFERENCES user(user_id)
+      ON DELETE CASCADE
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_general_ci;
+
+-- 조회 최적화 인덱스: 유저별 최신 알림 조회
+CREATE INDEX idx_notification_user_created
+  ON notification (user_id, created_at);
