@@ -15,6 +15,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// Style 임포트
+import { authStyles } from '@/constants/styles';  // 공통
+import { Header } from '@/components/header';  // 헤더
+
 const PROFILE_IMAGE_SIZE = 120; // 프로필 사진 크기
 
 export default function ProfileScreen() {
@@ -53,21 +57,21 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
 
       {/* Header 영역 */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButtonContainer}>
-          <Text style={styles.backButton}>{'<'}</Text>
+      <View style={Header.HeaderAlign}>
+        <TouchableOpacity onPress={() => router.back()} style={Header.BackButton}>
+          <Text style={Header.BackText}>{'<'}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>프로필</Text>
-        <TouchableOpacity onPress={handleSaveProfile}>
-          <Text style={styles.saveButton}>저장</Text>
+        <Text style={Header.Title}>프로필</Text>
+        <TouchableOpacity onPress={handleSaveProfile} style={Header.SaveButton}>
+          <Text style={Header.SaveButtonText}>저장</Text>
         </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={authStyles.scrollContent}>
               
           {/* 프로필 사진 영역 */}
           <View style={styles.profileImageArea}>
@@ -156,44 +160,6 @@ export default function ProfileScreen() {
 
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 30,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal:5,
-  },
-
-  // 공통 헤더 (뒤로 가기 버튼, 제목)
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 10,
-  },
-  backButtonContainer: {
-    paddingHorizontal: 10,
-  },
-  backButton: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: '#000',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    flex: 1,
-  },
-  saveButton: {
-    fontSize: 18,
-    color: '#000', 
-    fontWeight: 'bold',
-  },
-
   // 프로필 사진 영역
   profileImageArea: {
     alignItems: 'center',

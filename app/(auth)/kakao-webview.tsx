@@ -13,8 +13,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
 
+// Style 임포트
+import { Header } from '@/components/header'; // 헤더
+
 // Context 훅 임포트
-import { useAuth } from '../../context/authContext';
+import { useAuth } from '@/context/authContext';
 
 // 카카오 로그인 상수
 const KAKAO_REST_API_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY!;
@@ -101,11 +104,11 @@ export default function KakaoWebViewScreen() {
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             {/* Header 영역*/}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={handleGoBack} style={styles.backButtonContainer}>
-                    <Text style={styles.backButton}>{'<'}</Text>
+            <View style={Header.HeaderAlign}>
+                <TouchableOpacity onPress={handleGoBack} style={Header.KakaoLoginBackButton}>
+                    <Text style={Header.BackText}>{'<'}</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>카카오로 로그인</Text>
+                <Text style={Header.Title}>카카오로 로그인</Text>
             </View>
 
             {/* WebView 컴포넌트 */}
@@ -130,27 +133,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 20,
-        marginBottom: 10,
-    },
-    backButtonContainer: {
-        paddingHorizontal: 30,
-    },
-    backButton: {
-        fontSize: 28,
-        fontWeight: '300',
-        color: '#000',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        flex: 1, 
-        marginRight: 75, // backButtonContainer 패딩만큼 상쇄
     },
     webView: {
         flex: 1,

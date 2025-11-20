@@ -13,7 +13,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '../../constants/styles'; // 공통
+import { authStyles } from '@/constants/styles'; // 공통
+import { Header } from '@/components/header'; // 헤더
 
 export default function SetPasswordScreen() {
   const router = useRouter();
@@ -91,11 +92,11 @@ export default function SetPasswordScreen() {
     <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         
       {/* 헤더 */}
-      <View style={authStyles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={authStyles.backButtonContainer}>
-          <Text style={authStyles.backButton}>{'<'}</Text>
+      <View style={Header.HeaderAlign}>
+        <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
+          <Text style={Header.BackText}>{'<'}</Text>
         </TouchableOpacity>
-        <Text style={authStyles.title}>비밀번호 재설정</Text>
+        <Text style={Header.Title}>비밀번호 재설정</Text>
       </View>
 
       {/* 이메일 입력 및 인증 버튼 */}

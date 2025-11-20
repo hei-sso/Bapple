@@ -18,8 +18,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '../../constants/styles'; // 공통
-import { KakaoLogin } from '../../components/kakao-login-btn'; // Kakao 로그인 버튼
+import { authStyles } from '@/constants/styles'; // 공통
+import { Header } from '@/components/header'; // 헤더
+import { KakaoLogin } from '@/components/kakao-login-btn'; // Kakao 로그인 버튼
 
 WebBrowser.maybeCompleteAuthSession(); 
 
@@ -96,11 +97,11 @@ export default function RegisterScreen() {
   return (
     <View style={[authStyles.container, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
         
-      <View style={authStyles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={authStyles.backButtonContainer}>
-            <Text style={authStyles.backButton}>{'<'}</Text>
+      <View style={Header.HeaderAlign}>
+        <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
+            <Text style={Header.BackText}>{'<'}</Text>
         </TouchableOpacity>
-        <Text style={authStyles.title}>회원가입</Text>
+        <Text style={Header.Title}>회원가입</Text>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -212,7 +213,7 @@ export default function RegisterScreen() {
 
           {/* 카카오 로그인 버튼 */}
           <TouchableOpacity style={KakaoLogin.ButtonBackground} onPress={handleKakaoLogin}>
-            <View style={KakaoLogin.ButtonContent}>
+            <View style={KakaoLogin.ButtonAlign}>
               <FontAwesome name="comment" size={20} color="#000" style={KakaoLogin.Icon} />
               <Text style={KakaoLogin.ButtonText}>로그인</Text>
             </View>

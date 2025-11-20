@@ -10,9 +10,9 @@ export const KakaoLogin = StyleSheet.create({
     backgroundColor: '#FFD100',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10, // 회원가입 버튼과의 간격
+    marginTop: 6,
   },
-  ButtonContent: {
+  ButtonAlign: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

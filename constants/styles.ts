@@ -5,36 +5,13 @@ import { StyleSheet } from 'react-native';
 export const authStyles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingBottom: 30,
     backgroundColor: '#fff',
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 5,
-  },
-  
-  // 공통 헤더 (뒤로 가기 버튼, 제목)
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 10,
-  },
-  backButtonContainer: {
-    paddingHorizontal: 10,
-  },
-  backButton: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: '#000',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    flex: 1, 
-    marginRight: 38, // backButtonContainer 패딩만큼 상쇄
   },
   
   // 기타 스타일

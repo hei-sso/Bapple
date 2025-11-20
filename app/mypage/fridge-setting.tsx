@@ -10,6 +10,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// Style 임포트
+import { authStyles } from '@/constants/styles';  // 공통
+import { Header } from '@/components/header';  // 헤더
+
 export default function FridgeSettingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -20,12 +24,12 @@ export default function FridgeSettingsScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            <View style={styles.appHeader}>
-                <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-                    <Text style={styles.backText}>{'<'}</Text>
+        <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <View style={Header.HeaderAlign}>
+                <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
+                    <Text style={Header.BackText}>{'<'}</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{pageTitle}</Text>
+                <Text style={Header.Title}>{pageTitle}</Text>
             </View>
             <View style={styles.content}>
                 <Text style={styles.contentText}>페이지 내용 구현 예정</Text>
@@ -36,13 +40,6 @@ export default function FridgeSettingsScreen() {
 
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff', },
-    appHeader: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 15, marginBottom: 20,
-    },
-    backButton: { position: 'absolute', left: 24, padding: 5, zIndex: 10, },
-    backText: { fontSize: 28, fontWeight: '300', color: '#000', },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#000', },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', },
     contentText: { fontSize: 16, color: '#999', },
 });

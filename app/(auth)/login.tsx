@@ -15,8 +15,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '../../constants/styles'; // 공통
-import { KakaoLogin } from '../../components/kakao-login-btn'; // Kakao 로그인 버튼
+import { authStyles } from '@/constants/styles'; // 공통
+import { Header } from '@/components/header'; // 헤더
+import { KakaoLogin } from '@/components/kakao-login-btn'; // Kakao 로그인 버튼
 
 // Context 훅 임포트
 import { useAuth } from '../../context/authContext';
@@ -60,11 +61,11 @@ export default function LoginScreen() {
     <View style={[authStyles.container, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
         
       {/* Header 영역 */}
-      <View style={authStyles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={authStyles.backButtonContainer}>
-          <Text style={authStyles.backButton}>{'<'}</Text>
+      <View style={Header.HeaderAlign}>
+        <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
+          <Text style={Header.BackText}>{'<'}</Text>
         </TouchableOpacity>
-        <Text style={authStyles.title}>로그인</Text>
+        <Text style={Header.Title}>로그인</Text>
       </View>
 
       <Text style={authStyles.label}>이메일</Text>
@@ -105,7 +106,7 @@ export default function LoginScreen() {
 
       {/* 카카오 로그인 버튼 (handleKakaoLogin 연결) */}
       <TouchableOpacity style={KakaoLogin.ButtonBackground} onPress={handleKakaoLogin}>
-        <View style={KakaoLogin.ButtonContent}>
+        <View style={KakaoLogin.ButtonAlign}>
           <FontAwesome name="comment" size={20} color="#000" style={KakaoLogin.Icon} />
           <Text style={KakaoLogin.ButtonText}>로그인</Text>
         </View>

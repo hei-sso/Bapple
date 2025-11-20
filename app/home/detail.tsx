@@ -13,6 +13,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// Style 임포트
+import { authStyles } from '@/constants/styles';  // 공통
+import { Header } from '@/components/header';  // 헤더
+
 const { width } = Dimensions.get('window');
 
 // Mock 데이터 및 상수
@@ -121,15 +125,15 @@ export default function DateDetailScreen() {
     const recipeItem = (MOCK_RECIPES[currentDateString] || [])[0];
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <ScrollView contentContainerStyle={authStyles.scrollContent}>
 
                 {/* Header 영역 */}
-                <View style={styles.appHeader}>
-                    <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-                        <Text style={styles.backText}>{'<'}</Text>
+                <View style={Header.HeaderAlign}>
+                    <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
+                        <Text style={Header.BackText}>{'<'}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>
+                    <Text style={Header.Title}>
                         {new Date(currentDateString).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
                     </Text>
                 </View>
@@ -221,39 +225,8 @@ export default function DateDetailScreen() {
 
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff', },
-    scrollContent: { paddingBottom: 50, },
-    
-    // Header 영역
-    appHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center', 
-        paddingHorizontal: 24,
-        paddingVertical: 15,
-        marginBottom: 20,
-    },
-    backButton: {
-        position: 'absolute',
-        left: 24,
-        padding: 5,
-        zIndex: 10,
-    },
-    backText: {
-        fontSize: 28,
-        fontWeight: '300',
-        color: '#000',
-    },
-    headerTitle: {
-        fontSize: 24, // 큼직한 글꼴 유지
-        fontWeight: 'bold',
-        color: '#000',
-        marginLeft: 10,
-    },
-
     // 주간 달력 표시 영역
     calendarArea: {
-        paddingHorizontal: 24,
         marginBottom: 30,
         position: 'relative',
         marginTop: 15, // 달력 영역과 헤더 날짜 사이 여백
