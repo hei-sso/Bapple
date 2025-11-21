@@ -166,7 +166,6 @@ function RootLayoutNav({ isAuthenticated, onLayout }: { isAuthenticated: boolean
                 <Stack.Screen name="mypage/setting" options={{ headerShown: false, animation: 'slide_from_right' }} />
                 
                 <Stack.Screen name="mypage/health" options={{ headerShown: false, animation: 'slide_from_right' }} />
-                <Stack.Screen name="mypage/dislikes" options={{ headerShown: false, animation: 'slide_from_right' }} />
                 <Stack.Screen name="mypage/fridge-setting" options={{ headerShown: false, animation: 'slide_from_right' }} />
 
               </Stack>
