@@ -13,7 +13,6 @@ export const deleteAccount = async (req, res) => {
     console.log(`[DELETE ACCOUNT] 사용자 (ID: ${userId}) 탈퇴 요청`);
     
     try {
-        // 계정 상태를 'DELETED'로 변경 (실제 데이터 삭제 X)
         const query = `
             UPDATE user SET
             status = 'DELETED',
@@ -35,7 +34,54 @@ export const deleteAccount = async (req, res) => {
     }
 };
 
-// 프로필 및 상세 정보 수정
+// 내 프로필 정보 조회 (GET)
+export const getUserProfile = async (req, res) => {
+    const userId = req.user.user_id;
+    console.log(`[GET PROFILE] 사용자 (ID: ${userId}) 정보 조회 요청`);
+
+    try {
+        // (1) 기본 정보 조회
+        const [userRows] = await db.query(
+            `SELECT email, nickname, phone_number, birthdate, age, gender, profile_image_url 
+             FROM user WHERE user_id = ?`, 
+            [userId]
+        );
+
+        if (userRows.length === 0) {
+            return res.status(404).json({ message: "사용자 정보를 찾을 수 없습니다." });
+        }
+        const userInfo = userRows[0];
+
+        // (2) 알레르기 정보 조회 (ID 목록 반환)
+        const [allergyRows] = await db.query(
+            `SELECT allergy_id FROM user_allergy WHERE user_id = ?`,
+            [userId]
+        );
+        const allergyIds = allergyRows.map(row => row.allergy_id);
+
+        // (3) 건강 상태 정보 조회 (ID 목록 반환)
+        const [healthRows] = await db.query(
+            `SELECT health_condition_id FROM user_health_condition WHERE user_id = ?`,
+            [userId]
+        );
+        const healthIds = healthRows.map(row => row.health_condition_id);
+
+        // (4) 응답 데이터 구성
+        const responseData = {
+            ...userInfo,
+            allergies: allergyIds,          // 예: [1, 3]
+            health_conditions: healthIds    // 예: [2, 5]
+        };
+
+        res.json({ success: true, data: responseData });
+
+    } catch (error) {
+        console.error("❌ 프로필 조회 실패:", error);
+        res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+};
+
+// 프로필 및 상세 정보 수정 (PUT)
 export const updateProfile = async (req, res) => {
     const userId = req.user.user_id; 
     
@@ -43,7 +89,7 @@ export const updateProfile = async (req, res) => {
         // [1] 기본 정보
         nickname, email, phone_number, birthdate, age, gender, 
         
-        // [2] 맵핑 정보 (ID 숫자가 담긴 배열. 예: [1, 3, 5])
+        // [2] 맵핑 정보 (ID 배열)
         allergies,          // allergy_id 리스트
         health_conditions   // health_condition_id 리스트
     } = req.body;
@@ -72,12 +118,10 @@ export const updateProfile = async (req, res) => {
             await connection.query(sql, userValues);
         }
 
-        // (2) [알레르기 맵핑] (user_allergy 테이블)
+        // (2) [USER_ALLERGY 테이블] 알레르기 맵핑
         if (allergies !== undefined) {
-            // 기존 데이터 삭제
             await connection.query('DELETE FROM user_allergy WHERE user_id = ?', [userId]);
 
-            // 새 데이터 저장 (ID 배열이 있을 경우)
             if (Array.isArray(allergies) && allergies.length > 0) {
                 const values = allergies.map(allergyId => [userId, allergyId]);
                 await connection.query(
@@ -87,12 +131,10 @@ export const updateProfile = async (req, res) => {
             }
         }
 
-        // (3) [건강 상태 맵핑] (user_health_condition 테이블)
+        // (3) [USER_HEALTH_CONDITION 테이블] 건강 상태 맵핑
         if (health_conditions !== undefined) {
-            // 기존 데이터 삭제
             await connection.query('DELETE FROM user_health_condition WHERE user_id = ?', [userId]);
 
-            // 새 데이터 저장
             if (Array.isArray(health_conditions) && health_conditions.length > 0) {
                 const values = health_conditions.map(conditionId => [userId, conditionId]);
                 await connection.query(
@@ -103,7 +145,7 @@ export const updateProfile = async (req, res) => {
         }
 
         await connection.commit(); 
-        console.log("[DEBUG] 프로필 및 ID 맵핑 업데이트 완료");
+        console.log("[DEBUG] 프로필 및 상세 정보(식재료 제외) 업데이트 완료");
         res.status(200).json({ success: true, message: '저장되었습니다.' });
 
     } catch (error) {
