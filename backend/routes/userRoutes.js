@@ -1,5 +1,5 @@
 import express from "express";
-import { logout, deleteAccount } from "../controllers/userController.js";
+import { logout, deleteAccount, updateProfile } from "../controllers/userController.js";
 import authenticateToken from "../middleware/authenticateToken.js";
 
 const router = express.Router();
