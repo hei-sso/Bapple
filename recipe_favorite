@@ -4,7 +4,6 @@ USE railway;
 SET @OLD_FK_CHECKS = @@FOREIGN_KEY_CHECKS;
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS recipe_favorite;
 
 CREATE TABLE recipe_favorite (
     user_id    BIGINT NOT NULL,
