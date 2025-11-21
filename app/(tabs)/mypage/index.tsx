@@ -25,7 +25,6 @@ const MOCK_USER = {
 
 // 하단 설정/정보 메뉴 목록
 const INFO_MENUS = [
-    { label: "알레르기 정보", path: "/mypage/allergy" },
     { label: "건강 정보", path: "/mypage/health" },
     { label: "싫어하는 식재료", path: "/mypage/dislikes" },
     { label: "냉장고 공개 범위", path: "/mypage/fridge-setting" },
