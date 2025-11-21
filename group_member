@@ -4,10 +4,6 @@ USE railway;
 SET @OLD_FK_CHECKS = @@FOREIGN_KEY_CHECKS;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- 혹시 남아 있을지 모를 두 이름 다 삭제
-DROP TABLE IF EXISTS group_member;
-DROP TABLE IF EXISTS Group_Member;
-
 -- 테이블 생성 (이름: group_member)
 CREATE TABLE group_member (
     group_id   BIGINT NOT NULL,
