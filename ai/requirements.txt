@@ -1,10 +1,8 @@
 fastapi
-uvicorn
+uvicorn[standard]
 numpy==1.24.3
 pandas==2.0.3
-tensorflow-cpu
+tensorflow-cpu==2.15.0
 pydantic
 python-multipart
-ast
 typing-extensions>=4.5.0
-dataclasses; python_version < "3.7"
