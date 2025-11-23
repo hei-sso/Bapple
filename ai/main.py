@@ -1,7 +1,9 @@
+import os
 from pathlib import Path
 from typing import List, Optional, Any, Dict
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import tensorflow as tf
@@ -54,11 +56,22 @@ ctx = RecContext(
     id_to_dfidx=id_to_dfidx,
 )
 
-# FastAPI 앱
+# FastAPI 앱 + CORS
 app = FastAPI(
     title="Bapple Recipe Recommender",
     description="카테고리/질병/알레르기/냉장고 재료 기반 레시피 추천 API",
     version="1.0.0",
+)
+
+# 개발 단계에서는 전체 허용, 나중에 도메인 생기면 거기로 제한해도 됨
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 요청/응답 모델
@@ -178,3 +191,10 @@ def recommend_week_api(body: WeeklyPlanRequest):
         )
 
     return WeeklyPlanResponse(items=items)
+
+# 로컬/Railway 실행 엔트리포인트
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("PORT", 8000))  # Railway에서 PORT 환경변수로 포트 지정
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
