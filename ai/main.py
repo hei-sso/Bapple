@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "models"
 DATA_DIR  = BASE_DIR / "data"
 
-WEIGHTS_PATH      = MODEL_DIR / "two_tower_weights.weights.h5"
+WEIGHTS_PATH      = MODEL_DIR / "pure_two_tower_weights.weights.h5"
 RECIPE_EMBS_PATH  = MODEL_DIR / "recipe_embs.npy"
 RECIPE_VOCAB_PATH = MODEL_DIR / "recipe_vocab.pkl"
 USER_VOCAB_PATH   = MODEL_DIR / "user_vocab.pkl"
