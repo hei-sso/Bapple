@@ -1,0 +1,26 @@
+1. VS Code 터미널에서 가상환경 만들기
+    cd C:\bapple\ai 
+    python -m venv venv //가상환경 생성
+    venv\Scripts\activate // 활성화
+    (venv) PS C:\bapple\ai> //터미널이 이렇게 바뀌면 성공
+
+2. pip 최신 버전으로 업데이트
+    pip install --upgrade pip
+
+3. 필요한 페키지 설치
+    pip install fastapi
+    pip install uvicorn
+    pip install pydantic
+    pip install numpy
+    pip install pandas
+    pip install tensorflow-cpu
+    pip install python-multipart
+
+ai/requirements.txt 파일 만들고 아래 내용 넣자:
+fastapi
+uvicorn
+numpy
+pandas
+tensorflow-cpu
+pydantic
+python-multipart
