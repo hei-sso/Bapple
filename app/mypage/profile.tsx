@@ -1,6 +1,7 @@
 // app/mypage/profile.tsx
 
 import { useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -16,8 +17,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '@/constants/styles';  // 공통
-import { Header } from '@/components/header';  // 헤더
+import { Header } from '@/components/header'; // 헤더
+import { Styles } from '@/constants/styles'; // 공통
 
 const PROFILE_IMAGE_SIZE = 120; // 프로필 사진 크기
 
@@ -57,12 +58,12 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
 
       {/* Header 영역 */}
       <View style={Header.HeaderAlign}>
         <TouchableOpacity onPress={() => router.back()} style={Header.BackButton}>
-          <Text style={Header.BackText}>{'<'}</Text>
+          <ChevronLeft size={28} color="#000" />
         </TouchableOpacity>
         <Text style={Header.Title}>프로필</Text>
         <TouchableOpacity onPress={handleSaveProfile} style={Header.SaveButton}>
@@ -71,7 +72,7 @@ export default function ProfileScreen() {
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={authStyles.scrollContent}>
+        <ScrollView contentContainerStyle={Styles.scrollContent}>
               
           {/* 프로필 사진 영역 */}
           <View style={styles.profileImageArea}>

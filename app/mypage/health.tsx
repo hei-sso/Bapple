@@ -1,6 +1,7 @@
 // app/mypage/health.tsx
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
     ScrollView,
@@ -12,9 +13,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '@/constants/styles';  // 공통
-import { Header } from '@/components/header';  // 헤더
-import { CheckBox } from '@/components/checkbox' // 체크박스
+import { CheckBox } from '@/components/checkbox'; // 체크박스
+import { Header } from '@/components/header'; // 헤더
+import { Styles } from '@/constants/styles'; // 공통
 
 const mockData = {
     health_condition: [
@@ -65,17 +66,17 @@ export default function HealthScreen() {
     };
 
     return (
-        <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={Header.HeaderAlign}>
                 <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
-                    <Text style={Header.BackText}>{'<'}</Text>
+                    <ChevronLeft size={28} color="#000" />
                 </TouchableOpacity>
                 <Text style={Header.Title}>건강 정보</Text>
                 <TouchableOpacity onPress={handleSaveHealth} style={Header.SaveButton}>
                     <Text style={Header.SaveButtonText}>저장</Text>
                 </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={authStyles.scrollContent}>
+            <ScrollView contentContainerStyle={Styles.scrollContent}>
 
                 {/* 질병 여부 */}
                 <View style={styles.section}>

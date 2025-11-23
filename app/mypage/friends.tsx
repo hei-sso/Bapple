@@ -33,7 +33,10 @@ export default function FriendsScreen() {
 
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff'
+    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -44,9 +47,17 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderColor: '#eee',
     },
-    backButton: { fontSize: 24, color: '#000' },
-    headerTitle: { fontSize: 18, fontWeight: 'bold' },
-    placeholder: { width: 24 },
+    backButton: {
+        fontSize: 24,
+        color: '#000'
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold'
+    },
+    placeholder: {
+        width: 24
+    },
     content: {
         padding: 20,
     },
@@ -63,8 +74,13 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         marginHorizontal: 5,
     },
-    activeTabText: { fontWeight: 'bold', color: '#000' },
-    tabText: { color: '#666' },
+    activeTabText: {
+        fontWeight: 'bold',
+        color: '#000'
+    },
+    tabText: {
+        color: '#666'
+    },
     listArea: {
         marginTop: 10,
         textAlign: 'center',

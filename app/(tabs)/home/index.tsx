@@ -4,6 +4,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { RedirectProps, useRouter } from 'expo-router';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Animated,
@@ -16,6 +17,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Style 임포트
+import { Styles } from '@/constants/styles'; // 공통
 
 // Mock 데이터 및 상수
 const { width } = Dimensions.get('window');
@@ -291,8 +295,8 @@ export default function HomeScreen() {
 
   // 메인 뷰
   return (
-    <View style={styles.rootContainer}>
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={Styles.indexContainer}>
+      <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           
           {/* 상단 검색 및 설정 영역 */}
@@ -322,10 +326,10 @@ export default function HomeScreen() {
               <Text style={styles.monthText}>{format(currentDate, 'M월', { locale: ko })}</Text>
               <View style={styles.monthNav}>
                 <TouchableOpacity onPress={() => changeWeek(-1)}>
-                  <Text style={[styles.navArrow, styles.navArrowSize]}>{'<'}</Text>
+                  <ChevronLeft size={24} color="#000" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => changeWeek(1)}>
-                  <Text style={[styles.navArrow, styles.navArrowSize]}>{'>'}</Text>
+                  <ChevronRight size={24} color="#000" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -370,10 +374,10 @@ export default function HomeScreen() {
 
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
-  rootContainer: { flex: 1, backgroundColor: '#fff' },
-  container: { flex: 1, backgroundColor: '#fff', },
-  scrollContent: { paddingBottom: 50, },
-  
+  scrollContent: {
+    paddingBottom: 50
+  },
+
   // 헤더 (검색 및 설정)
   header: {
     flexDirection: 'row',

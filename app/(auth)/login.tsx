@@ -3,6 +3,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { RedirectProps, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { ChevronLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -15,9 +16,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '@/constants/styles'; // 공통
+import { authStyles } from '@/components/authStyles'; // Auth
 import { Header } from '@/components/header'; // 헤더
 import { KakaoLogin } from '@/components/kakao-login-btn'; // Kakao 로그인 버튼
+import { Styles } from '@/constants/styles'; // 공통
 
 // Context 훅 임포트
 import { useAuth } from '../../context/authContext';
@@ -58,12 +60,12 @@ export default function LoginScreen() {
   const handleRegisterLink = () => { router.replace('/(auth)/register' as RedirectProps['href']); };
 
   return (
-    <View style={[authStyles.container, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
+    <View style={[Styles.container, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
         
       {/* Header 영역 */}
       <View style={Header.HeaderAlign}>
         <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
-          <Text style={Header.BackText}>{'<'}</Text>
+          <ChevronLeft size={28} color="#000" />
         </TouchableOpacity>
         <Text style={Header.Title}>로그인</Text>
       </View>

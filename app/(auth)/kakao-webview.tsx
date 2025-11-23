@@ -2,6 +2,7 @@
 
 import axios from 'axios';
 import { useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import React from 'react';
 import {
     Alert,
@@ -106,7 +107,7 @@ export default function KakaoWebViewScreen() {
             {/* Header 영역*/}
             <View style={Header.HeaderAlign}>
                 <TouchableOpacity onPress={handleGoBack} style={Header.KakaoLoginBackButton}>
-                    <Text style={Header.BackText}>{'<'}</Text>
+                    <ChevronLeft size={28} color="#000" />
                 </TouchableOpacity>
                 <Text style={Header.Title}>카카오로 로그인</Text>
             </View>

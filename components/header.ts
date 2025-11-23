@@ -16,8 +16,8 @@ export const Header = StyleSheet.create ({
     },
     BackButton: {
         position: 'absolute',
-        left: 10,
-        top: 10,
+        left: 0,
+        top: 18,
     },
     KakaoLoginBackButton: {
         position: 'absolute',
@@ -32,7 +32,8 @@ export const Header = StyleSheet.create ({
 
     // 프로필 수정 - 저장
     SaveButton: {
-        left: 100
+        left: 100,
+        top: 4
     },
     SaveButtonText: {
         position: 'absolute',

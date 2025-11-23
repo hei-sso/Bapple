@@ -1,6 +1,7 @@
 // app/(auth)/set-password.tsx
 
 import { RedirectProps, useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -13,8 +14,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '@/constants/styles'; // 공통
+import { authStyles } from '@/components/authStyles'; // Auth
 import { Header } from '@/components/header'; // 헤더
+import { Styles } from '@/constants/styles'; // 공통
 
 export default function SetPasswordScreen() {
   const router = useRouter();
@@ -89,12 +91,12 @@ export default function SetPasswordScreen() {
   };
 
   return (
-    <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         
       {/* 헤더 */}
       <View style={Header.HeaderAlign}>
         <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
-          <Text style={Header.BackText}>{'<'}</Text>
+          <ChevronLeft size={28} color="#000" />
         </TouchableOpacity>
         <Text style={Header.Title}>비밀번호 재설정</Text>
       </View>

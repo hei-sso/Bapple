@@ -2,6 +2,7 @@
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { RedirectProps, useRouter } from 'expo-router';
+import { ChevronRight } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import {
     Dimensions,
@@ -12,6 +13,9 @@ import {
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Style 임포트
+import { Styles } from '@/constants/styles'; // 공통
 
 const { width } = Dimensions.get('window');
 
@@ -64,12 +68,12 @@ export default function MyPageScreen() {
             onPress={() => handleNavigation(item.path)}
         >
             <Text style={styles.infoItemText}>{item.label}</Text>
-            <FontAwesome name="angle-right" size={20} color="#333" />
+            <ChevronRight size={24} color="#000" />
         </TouchableOpacity>
     );
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 
                 {/* 상단 설정 아이콘 */}
@@ -125,10 +129,6 @@ const EDIT_BUTTON_SIZE = 35;
 const EDIT_BUTTON_OFFSET = 5; // 프로필 사진 모서리에 겹치는 정도
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
     scrollContent: {
         paddingTop: 0,
         paddingBottom: 50,

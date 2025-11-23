@@ -1,6 +1,7 @@
 // app/mypage/fridge-settings.tsx
 
 import { useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import React from 'react';
 import {
     StyleSheet,
@@ -11,8 +12,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '@/constants/styles';  // 공통
-import { Header } from '@/components/header';  // 헤더
+import { Header } from '@/components/header'; // 헤더
+import { Styles } from '@/constants/styles'; // 공통
 
 export default function FridgeSettingsScreen() {
     const router = useRouter();
@@ -24,10 +25,10 @@ export default function FridgeSettingsScreen() {
     };
 
     return (
-        <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={Header.HeaderAlign}>
                 <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
-                    <Text style={Header.BackText}>{'<'}</Text>
+                    <ChevronLeft size={28} color="#000" />
                 </TouchableOpacity>
                 <Text style={Header.Title}>{pageTitle}</Text>
             </View>

@@ -49,9 +49,17 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderColor: '#eee',
     },
-    backButton: { fontSize: 24, color: '#000' },
-    headerTitle: { fontSize: 18, fontWeight: 'bold' },
-    placeholder: { width: 24 },
+    backButton: {
+        fontSize: 24,
+        color: '#000'
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold'
+    },
+    placeholder: {
+        width: 24
+    },
     content: {
         padding: 20,
     },

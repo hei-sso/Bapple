@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// Style 임포트
+import { Styles } from '@/constants/styles'; // 공통
+
 interface Recipe {
   id: string;
   name: string;
@@ -144,7 +147,7 @@ export default function RecipeScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[Styles.indexContainer, { paddingTop: insets.top }]}>
       {/* 검색 영역 */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
@@ -209,10 +212,6 @@ const { width } = Dimensions.get('window');
 const CATEGORY_WIDTH = width * 0.4; // 왼쪽 카테고리 영역 너비
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1,
-    backgroundColor: '#fff',
-  },
   // 검색 바
   searchContainer: {
     paddingHorizontal: 15,

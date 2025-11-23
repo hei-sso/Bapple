@@ -1,4 +1,4 @@
-// app/context/authContext.tsx
+// context/authContext.tsx
 
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store'; // 보안 저장소 사용

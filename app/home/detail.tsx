@@ -2,6 +2,7 @@
 
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
     Dimensions,
@@ -14,8 +15,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
-import { authStyles } from '@/constants/styles';  // 공통
-import { Header } from '@/components/header';  // 헤더
+import { Header } from '@/components/header'; // 헤더
+import { Calendar } from '@/components/week-calendar'; // 달력
+import { Styles } from '@/constants/styles'; // 공통
 
 const { width } = Dimensions.get('window');
 
@@ -120,18 +122,16 @@ export default function DateDetailScreen() {
         });
     }, [currentDateString]);
 
-    const WEEK_CALENDAR_PADDING_H = 24;
-    const BORDER_WIDTH = 1;
     const recipeItem = (MOCK_RECIPES[currentDateString] || [])[0];
 
     return (
-        <View style={[authStyles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            <ScrollView contentContainerStyle={authStyles.scrollContent}>
+        <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <ScrollView contentContainerStyle={Styles.scrollContent}>
 
                 {/* Header 영역 */}
                 <View style={Header.HeaderAlign}>
                     <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
-                        <Text style={Header.BackText}>{'<'}</Text>
+                        <ChevronLeft size={28} color="#000" />
                     </TouchableOpacity>
                     <Text style={Header.Title}>
                         {new Date(currentDateString).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
@@ -139,56 +139,58 @@ export default function DateDetailScreen() {
                 </View>
                 
                 {/* 주간 달력 표시 (상세 뷰) */}
-                <View style={styles.calendarArea}>
+                <View style={Calendar.calendarArea}>
                     
-                    {/* 달력 상단 우측 주 이동 버튼 */}
-                    <View style={styles.weekNavContainer}>
-                        <TouchableOpacity onPress={() => changeWeek(-1)} style={styles.navButton}>
-                            <Text style={styles.navArrow}>{'<  '}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => changeWeek(1)} style={styles.navButton}>
-                            <Text style={styles.navArrow}>{'  >'}</Text>
-                        </TouchableOpacity>
+                    {/* 달력 상단 (주 이동 버튼) */}
+                    <View style={Calendar.weekNavContainer}>
+                        <View style={Calendar.weekNavAlign}> 
+                            <TouchableOpacity onPress={() => changeWeek(-1)} style={Calendar.weekNavButton}>
+                                <ChevronLeft size={24} color="#000" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => changeWeek(1)} style={Calendar.weekNavButton}>
+                                <ChevronRight size={24} color="#000" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
-                    <View style={styles.dayOfWeekHeader}>
+                    <View style={Calendar.dayOfWeekContainer}>
                         {['일', '월', '화', '수', '목', '금', '토'].map(day => (
-                            <Text key={day} style={styles.dayOfWeekText}>{day}</Text>
+                            <Text key={day} style={Calendar.dayOfWeekText}>{day}</Text>
                         ))}
                     </View>
-                    <View style={styles.weekCalendarGrid}>
+                    <View style={Calendar.weekCalendarGrid}>
                         {weekDays.map(dayData => {
-                            // 찌부 해결 - 너비 계산
-                            const cellWidth = (width - (WEEK_CALENDAR_PADDING_H * 2) - BORDER_WIDTH) / 7;
+                            // 찌부 방지
+                            const cellWidth = (width - (24 * 2) - 1) / 7;
 
                             return (
                                 <TouchableOpacity 
                                     key={dayData.dateString}
                                     style={[
-                                        styles.weekCalendarCell,
+                                        Calendar.weekCalendarCell,
                                         { width: cellWidth },
-                                        dayData.isSelected && styles.weekSelectedCell,
+                                        dayData.isSelected && Calendar.weekSelectedCell,
                                         // 토요일 borderRightWidth 제거
                                         dayData.dayOfWeek === 6 && { borderRightWidth: 0 } 
                                     ]}
                                     onPress={() => setCurrentDateString(dayData.dateString)}
                                 >
                                     <View style={[ 
-                                        styles.dayNumberContainer,
+                                        Calendar.dayNumberContainer,
                                         // 오늘일 때와 선택됐을 때 검은 동그라미
-                                        dayData.isSelected && styles.todayIndicator, 
+                                        dayData.isSelected && Calendar.todayIndicator, 
                                     ]}>
                                         <Text style={[
-                                            styles.weekDayNumber,
+                                            Calendar.weekDayNumber,
                                             // 오늘이거나 선택된 날짜는 흰색 글씨
-                                            dayData.isSelected && styles.todayText, 
+                                            dayData.isSelected && Calendar.todayText, 
                                         ]}>{dayData.date}</Text>
                                     </View>
                                     
                                     {/* 레시피 카운트 */}
                                     {dayData.recipes.length > 0 && (
-                                        <View style={styles.weekRecipeCount}>
-                                            <Text style={styles.weekRecipeCountText}>{dayData.recipes.length}</Text>
+                                        <View style={Calendar.weekRecipeCountContainer}>
+                                            <Text style={Calendar.weekRecipeCountText}>{dayData.recipes.length}</Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>
@@ -198,7 +200,7 @@ export default function DateDetailScreen() {
                 </View>
 
                 {/* 레시피 상세 카드 (현재 선택된 날짜의 레시피) */}
-                <View style={styles.recipeListContainer}>
+                <View>
                     {recipeItem ? (
                         <View style={styles.recipeItemCard}>
                             <View style={[styles.groupTag, { backgroundColor: GROUP_COLORS[recipeItem.group] }]}>
@@ -225,92 +227,7 @@ export default function DateDetailScreen() {
 
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
-    // 주간 달력 표시 영역
-    calendarArea: {
-        marginBottom: 30,
-        position: 'relative',
-        marginTop: 15, // 달력 영역과 헤더 날짜 사이 여백
-    },
-    
-    // 주 이동 버튼 컨테이너
-    weekNavContainer: {
-        position: 'absolute',
-        top: -35, // 위치를 조정하여 날짜 제목과 겹치지 않게 함
-        right: 24,
-        flexDirection: 'row',
-        zIndex: 5,
-    },
-    navButton: {
-        paddingHorizontal: 5,
-    },
-    navArrow: {
-        fontSize: 21,
-        color: '#000',
-    },
-    dayOfWeekHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingVertical: 8,
-    },
-    dayOfWeekText: {
-        fontSize: 12,
-        fontWeight: '600',
-        width: (width - 48) / 7, 
-        textAlign: 'center',
-    },
-    weekCalendarGrid: {
-        flexDirection: 'row',
-        flexWrap: 'nowrap',
-        justifyContent: 'space-between',
-        borderWidth: 1,
-        borderColor: '#eee',
-    },
-    weekCalendarCell: {
-        // width는 동적으로 계산됨
-        paddingVertical: 10,
-        alignItems: 'center',
-        borderRightWidth: 1,
-        borderColor: '#eee',
-    },
-    dayNumberContainer: {
-        width: 25,
-        height: 25,
-        borderRadius: 12.5,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    weekSelectedCell: {
-        backgroundColor: '#f0f0f0', 
-    },
-    
-    // 오늘/선택 시 검은색 동그라미와 흰색 텍스트
-    todayIndicator: {
-        backgroundColor: '#000', // 검은색 동그라미
-    },
-    todayText: {
-        color: '#fff', // 흰색 글씨
-        fontWeight: 'bold',
-    },
-    weekDayNumber: {
-        fontSize: 16, 
-        fontWeight: 'bold',
-    },
-    weekRecipeCount: {
-        backgroundColor: '#f0f0f0',
-        borderRadius: 10,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        marginTop: 5,
-    },
-    weekRecipeCountText: {
-        fontSize: 12,
-        color: '#000',
-    },
-
     // 레시피 상세 카드
-    recipeListContainer: {
-        paddingHorizontal: 24,
-    },
     recipeItemCard: {
         backgroundColor: '#fff',
         padding: 20,
