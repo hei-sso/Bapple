@@ -122,6 +122,12 @@ class WeeklyPlanResponse(BaseModel):
     items: List[WeeklyPlanItem]
 
 # 엔드포인트
+
+# 헬스 체크용
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.get("/")
 def root():
     return {"message": "Bapple AI 추천 서버 동작 중"}
