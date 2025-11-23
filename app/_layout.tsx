@@ -164,9 +164,11 @@ function RootLayoutNav({ isAuthenticated, onLayout }: { isAuthenticated: boolean
                 <Stack.Screen name="mypage/profile" options={{ headerShown: false, animation: 'slide_from_right' }} />
                 <Stack.Screen name="mypage/friends" options={{ headerShown: false, animation: 'slide_from_right' }} />
                 <Stack.Screen name="mypage/setting" options={{ headerShown: false, animation: 'slide_from_right' }} />
-                
                 <Stack.Screen name="mypage/health" options={{ headerShown: false, animation: 'slide_from_right' }} />
                 <Stack.Screen name="mypage/fridge-setting" options={{ headerShown: false, animation: 'slide_from_right' }} />
+
+                {/* group */}
+                <Stack.Screen name="group/detail" options={{ headerShown: false, animation: 'slide_from_right' }}/>
 
               </Stack>
         </View>
