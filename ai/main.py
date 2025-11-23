@@ -44,9 +44,14 @@ recipe_embs = np.load(RECIPE_EMBS_PATH)
 print("Loading model...")
 # custom_objects에 TwoTower 등록
 model = TwoTower(user_vocab=user_vocab, recipe_vocab=recipe_vocab, dim=EMBED_DIM)
-model.compile(optimizer=tf.keras.optimizers.Adagrad(0.1))
-model.built = True        # 안전용(없어도 돌아가지만 에러 방지)
-model.load_weights(str(WEIGHTS_PATH))
+model.built = True
+load_status = model.load_weights(str(WEIGHTS_PATH))
+
+# 일부 변수(losss/optimizer) 불일치는 무시
+try:
+    load_status.expect_partial()
+except:
+    pass
 
 # 추천 컨텍스트 생성
 ctx = RecContext(
