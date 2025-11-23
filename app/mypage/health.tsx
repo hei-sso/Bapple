@@ -16,7 +16,6 @@ import { authStyles } from '@/constants/styles';  // 공통
 import { Header } from '@/components/header';  // 헤더
 import { CheckBox } from '@/components/checkbox' // 체크박스
 
-
 const mockData = {
     health_condition: [
         { id: 1, name: "당뇨" },
