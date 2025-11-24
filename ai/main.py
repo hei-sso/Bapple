@@ -45,6 +45,14 @@ print("Loading model...")
 # custom_objects에 TwoTower 등록
 model = TwoTower(user_vocab=user_vocab, recipe_vocab=recipe_vocab, dim=EMBED_DIM)
 model.built = True
+
+# 2) 학습 때처럼 한 번 compile 해서 loss 변수 만들어주기
+#    loss 타입은 아무거나 상관 없고, 간단히 "mse" 로 넣어도 돼 (추론에는 영향 없음)
+model.compile(
+    optimizer=tf.keras.optimizers.Adagrad(0.1),
+    loss="mse",
+)
+
 load_status = model.load_weights(str(WEIGHTS_PATH))
 
 # 일부 변수(losss/optimizer) 불일치는 무시
