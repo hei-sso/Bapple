@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import db from './db.js'; 
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import groupRoutes from './routes/groupRoutes.js';
+import fridgeRoutes from './routes/fridgeRoutes.js';
 
 // 환경 변수 로드
 dotenv.config();
@@ -49,6 +51,8 @@ app.get('/', (req, res) => {
 // 인증 라우트 연결
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use('/api/group', groupRoutes);
+app.use('/api/fridge', fridgeRoutes);
 
 // 서버 시작
 app.listen(PORT, '0.0.0.0', () => {
