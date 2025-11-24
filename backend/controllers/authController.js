@@ -87,6 +87,25 @@ export const kakaoTokenExchange = async (req, res) => {
 
       const newUserId = insertResult.insertId;
 
+      // 2. Fridge 테이블에 깡통 냉장고 생성 (스키마 반영)
+      // - owner_user_id: 방금 가입한 유저 ID
+      // - name: "{닉네임}님의 냉장고"
+      // - is_default: 첫 냉장고이므로 1 (True)로 설정
+      const defaultFridgeName = `${nickname}님의 냉장고`;
+      
+      const [insertFridgeResult] = await connection.query(
+        `INSERT INTO fridge (owner_user_id, name, is_default, visibility) VALUES (?, ?, 1, 'private')`, 
+        [newUserId, defaultFridgeName] 
+      );
+      
+      // (참고) insertFridgeResult.insertId 가 생성된 냉장고의 id 입니다.
+
+      // 3. 방금 가입시킨 유저 정보 다시 조회
+      [rows] = await connection.query('SELECT * FROM user WHERE user_id = ?', [newUserId]);
+      user = rows[0];
+      
+      console.log(`DEBUG: 신규 유저 및 기본 냉장고 생성 완료 (user_id: ${user.user_id}, fridge_id: ${insertFridgeResult.insertId})`);
+      
       // 방금 가입시킨 유저 정보 다시 조회
       [rows] = await connection.query('SELECT * FROM user WHERE user_id = ?', [newUserId]);
       user = rows[0];
