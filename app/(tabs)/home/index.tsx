@@ -1,11 +1,12 @@
 // app/(tabs)/home/index.tsx
 
+import { Ionicons } from '@expo/vector-icons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { RedirectProps, useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -13,6 +14,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -371,8 +373,12 @@ export default function HomeScreen() {
             </TouchableOpacity>
             
             <View style={styles.searchBar}>
-              <Text style={styles.searchText}>검색</Text>
-              <FontAwesome name="search" size={20} color="#000" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="검색"
+                placeholderTextColor="#888"
+              />
+              <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
             </View>
             <FontAwesome name="cog" size={24} color="#000" style={styles.settingsIcon} />
           </View>
@@ -452,10 +458,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 15,
   },
-  searchText: {
+  searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#999',
+    color: '#000',
+  },
+  searchIcon: {
+    marginLeft: 10,
   },
   settingsIcon: {
     color: '#000',
