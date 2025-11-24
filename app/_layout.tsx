@@ -170,7 +170,9 @@ function RootLayoutNav({ isAuthenticated, onLayout }: { isAuthenticated: boolean
                 {/* group */}
                 <Stack.Screen name="group/detail" options={{ headerShown: false, animation: 'slide_from_right' }}/>
 
-              </Stack>
+                {/* recipe */}
+                <Stack.Screen name="recipe/detail" options={{ headerShown: false, animation: 'slide_from_right'}}/>
+            </Stack>
         </View>
     </SafeAreaProvider>
   );

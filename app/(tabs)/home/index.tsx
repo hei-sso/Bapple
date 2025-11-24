@@ -5,7 +5,7 @@ import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { RedirectProps, useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import {
   Animated,
   Dimensions,
@@ -34,34 +34,36 @@ interface RecipeItem {
 }
 
 const GROUP_COLORS: Record<string, string> = {
+  '나': '#C0C0C0',
   '그룹 1': '#F07575', 
   '그룹 2': '#FDE2A1',
   '그룹 3': '#B8E998',
-  '그룹 4': '#C0C0C0', 
+  '그룹 4': '#7ccef0ff', 
 };
 
 const MOCK_RECIPES: Record<string, RecipeItem[]> = { 
-    '2025-10-20': [ 
-        { id: 1, group: '그룹 1', recipe: 'Is this wher' },
-        { id: 2, group: '그룹 2', recipe: 'Budget for' },
-        { id: 5, group: '그룹 2', recipe: 'Take Jake ti' }, 
+    '2025-11-24': [ 
+        { id: 1, group: '그룹 1', recipe: '김치찌개' },
+        { id: 2, group: '그룹 2', recipe: '비빔밥' },
+        { id: 5, group: '그룹 4', recipe: '잡채' }, 
     ],
-    '2025-10-21': [
-        { id: 3, group: '그룹 3', recipe: 'Vaccine app' },
-        { id: 4, group: '그룹 3', recipe: 'Take Jake ti' },
-        { id: 6, group: '그룹 3', recipe: 'DMV appoi' }, 
+    '2025-11-26': [
+        { id: 3, group: '나', recipe: '떡볶이' },
+        { id: 4, group: '그룹 2', recipe: '갈비찜' },
+        { id: 6, group: '그룹 3', recipe: '짜장면' },
+        { id: 7, group: '그룹 4', recipe: '부대찌개' },
     ],
-    '2025-10-23': [
-        { id: 7, group: '그룹 1', recipe: 'St. Patrick\'s' },
-        { id: 8, group: '그룹 2', recipe: 'PTO day' },
+    '2025-11-27': [
+        { id: 7, group: '나', recipe: '불고기' },
+        { id: 8, group: '그룹 2', recipe: '김밥' },
     ],
-    '2025-10-27': [
-        { id: 7, group: '그룹 1', recipe: 'St. Patrick\'s' },
-        { id: 8, group: '그룹 2', recipe: 'PTO day' },
+    '2025-11-29': [
+        { id: 7, group: '그룹 1', recipe: '볶음밥' },
+        { id: 8, group: '그룹 2', recipe: '연어 스테이크' },
     ],
-}; 
+};
 
-const ALL_GROUPS = ['그룹 1', '그룹 2', '그룹 3', '그룹 4', '새 그룹 추가'];
+const ALL_GROUPS = ['나', '그룹 1', '그룹 2', '그룹 3', '그룹 4', '새 그룹 추가'];
 
 // 달력 유틸리티 (2주 범위)
 const getCalendarDays = (date: Date) => {
@@ -162,13 +164,78 @@ const GroupSideMenu: React.FC<GroupSideMenuProps> = ({ isMenuOpen, onClose, inse
     );
 };
 
+const RecipeCards = () => {
+  // 자동 스크롤을 위한 상태 및 ref
+  const router = useRouter();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // 레시피 카드 데이터
+  const recipes = [
+    { id: 1, name: '김치찌개' },
+    { id: 2, name: '케이준 치킨 샐러드' },
+    { id: 3, name: '까르보나라' },
+    { id: 4, name: '불고기' },
+    { id: 5, name: '연어 스테이크' },
+  ];
+
+  // 추천 레시피 카드 자동 스크롤 함수
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setCurrentIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % recipes.length;
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ x: nextIndex * (width * 0.5 + 15), animated: true });
+        }
+        return nextIndex;
+      });
+    }, 2000); // 2초마다 스크롤 이동
+
+    // 컴포넌트가 unmount될 때 interval을 클리어
+    return () => clearInterval(intervalId);
+  }, [recipes.length]);
+
+  // 추천 레시피의 아이디와 이름을 recipe/detail.tsx로 전달
+  const handleRecipeDetail = (recipe: { id: number; name: string }) => {
+    router.push({
+      pathname: '/recipe/detail',
+      params: {
+        id: recipe.id.toString(),
+        name: recipe.name,
+      },
+    });
+  };
+
+  return (
+    <View style={styles.recommendationContainer}>
+      <Text style={styles.recommendationTitle}>추천 레시피</Text>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {recipes.map((recipe) => (
+          <TouchableOpacity onPress={() => handleRecipeDetail(recipe)} key={recipe.id}>
+            <View style={styles.recipeCard}>
+              <Text style={styles.recipeCardText}>{recipe.name}</Text>
+              <View style={styles.recipeCardImagePlaceholder}></View>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
 // 메인 컴포넌트
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
   const [currentDate, setCurrentDate] = useState(new Date(TODAY));
-  const [activeGroups, setActiveGroups] = useState<string[]>(['그룹 1', '그룹 2', '그룹 3', '그룹 4']);
+  const [activeGroups, setActiveGroups] = useState<string[]>(['나', '그룹 1', '그룹 2', '그룹 3', '그룹 4']);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const calendarDays = useMemo(() => getCalendarDays(currentDate), [currentDate]);
@@ -218,86 +285,84 @@ export default function HomeScreen() {
   const BORDER_WIDTH = 1;
 
   const renderCalendarCell = (dayData: (typeof calendarDays)[0]) => {
-    const filteredRecipes = getFilteredRecipes(dayData.recipes);
-    const cellWidth = (width - (CALENDAR_PADDING_H * 2) - BORDER_WIDTH * 2) / 7; 
+  const filteredRecipes = getFilteredRecipes(dayData.recipes);
+  const cellWidth = (width - (CALENDAR_PADDING_H * 2) - BORDER_WIDTH * 2) / 7; 
 
-    return (
-      <TouchableOpacity
-        key={dayData.dateString}
-        style={[
-          styles.calendarCell,
-          { width: cellWidth, minHeight: cellWidth * 1.5 }, 
-        ]}
-        onPress={() => handleDatePress(dayData)}
-      >
-        {/* 날짜 번호 */}
-        <View style={[
-          styles.dayNumberContainer,
-          dayData.isToday && styles.todayIndicator, 
+  return (
+    <TouchableOpacity
+      key={dayData.dateString}
+      style={[
+        styles.calendarCell,
+        { width: cellWidth, minHeight: cellWidth * 1.5 }, 
+      ]}
+      onPress={() => handleDatePress(dayData)}
+    >
+      {/* 날짜 번호 */}
+      <View style={[
+        styles.dayNumberContainer,
+        dayData.isToday && styles.todayIndicator, 
+      ]}>
+        <Text style={[
+          styles.dayNumber,
+          dayData.isToday && styles.todayText,
+          !dayData.isCurrentMonth && styles.otherMonthText,
         ]}>
-          <Text style={[
-            styles.dayNumber,
-            dayData.isToday && styles.todayText,
-            !dayData.isCurrentMonth && styles.otherMonthText,
-          ]}>
-            {dayData.date}
-          </Text>
-        </View>
+          {dayData.date}
+        </Text>
+      </View>
 
-        {/* 레시피 아이템 목록 (색상 점) */}
-        <View style={styles.recipeList}>
-          {/* 3개까지만 보여주기 */}
-          {filteredRecipes.slice(0, 3).map((recipe, index) => (
-            <View key={index} style={styles.recipeItem}>
-              <View 
-                style={[
-                  styles.recipeDot, 
-                  { backgroundColor: GROUP_COLORS[recipe.group] || '#ccc' }
-                ]} 
-              />
-              <Text style={styles.recipeText} numberOfLines={1}>
-                {recipe.recipe}
-              </Text>
-            </View>
-          ))}
-          {/* 3개 초과 시에는 'view more' 렌더링 */}
-          {filteredRecipes.length > 3 && ( 
-             <Text style={styles.viewMoreText}>view more</Text>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  };
+      {/* 레시피 아이템 목록 (색상 점) */}
+      <View style={styles.recipeList}>
+        {/* 3개까지만 보여주기 */}
+        {filteredRecipes.slice(0, 3).map((recipe, index) => (
+          <View key={index} style={styles.recipeItem}>
+            <View 
+              style={[
+                styles.recipeDot, 
+                { backgroundColor: GROUP_COLORS[recipe.group] || '#ccc' }
+              ]} 
+            />
+            <Text style={styles.recipeText} numberOfLines={1}>
+              {recipe.recipe}
+            </Text>
+          </View>
+        ))}
+        {/* 3개 초과 시에는 'view more' 렌더링 */}
+        {filteredRecipes.length > 3 && ( 
+            <Text style={styles.viewMoreText}>view more</Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
 
   const renderGroupButton = (group: string) => {
-    const isActive = activeGroups.includes(group);
-    const color = GROUP_COLORS[group] || '#ccc';
+  const isActive = activeGroups.includes(group);
+  const color = GROUP_COLORS[group] || '#ccc';
 
-    return (
-      <TouchableOpacity
-        key={group}
-        style={[
-          styles.groupButton,
-          { backgroundColor: isActive ? color : '#fff', borderColor: color },
-        ]}
-        onPress={() => toggleGroup(group)}
-      >
-        <Text style={[
-          styles.groupButtonText,
-          { color: isActive ? '#fff' : color },
-          !isActive && styles.disabledGroupText
-        ]}>
-          {group}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  return (
+    <TouchableOpacity
+      key={group}
+      style={[
+        styles.groupButton,
+        { backgroundColor: isActive ? color : '#fff', borderColor: color },
+      ]}
+      onPress={() => toggleGroup(group)}
+    >
+      <Text style={[
+        styles.groupButtonText,
+        { color: isActive ? '#fff' : color },
+        !isActive && styles.disabledGroupText
+      ]}>
+        {group}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
   // 메인 뷰
   return (
-    <View style={Styles.indexContainer}>
       <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
           
           {/* 상단 검색 및 설정 영역 */}
           <View style={styles.header}>
@@ -345,27 +410,11 @@ export default function HomeScreen() {
             <View style={styles.calendarGrid}>
               {calendarDays.map(renderCalendarCell)}
             </View>
-          </View>
-          
-          {/* 레시피 추천 영역 (냉장고 기반) */}
-          <View style={styles.recommendationContainer}>
-            <Text style={styles.recommendationTitle}>냉장고 기반 추천 레시피</Text>
-            
-            <View style={styles.recipeCardList}>
-              <View style={styles.recipeCard}>
-                <Text style={styles.recipeCardText}>김치찌개</Text>
-                <View style={styles.recipeCardImagePlaceholder} />
-              </View>
-              <View style={styles.recipeCard}>
-                <Text style={styles.recipeCardText}>케이준 치킨 샐러드</Text>
-                <View style={styles.recipeCardImagePlaceholder} />
-              </View>
-            </View>
-          </View>
-
-        </ScrollView>
-      </View>
       
+        {/* 추천 레시피 컴포넌트 */}
+        <RecipeCards />
+      </View>
+
       {/* 사이드 메뉴 컴포넌트 */}
       <GroupSideMenu isMenuOpen={isMenuOpen} onClose={handleCloseMenu} insets={insets} />
     </View>
@@ -375,6 +424,9 @@ export default function HomeScreen() {
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
   scrollContent: {
+    justifyContent: 'center', // 수평 중앙
+    alignItems: 'center',     // 수직 중앙
+    paddingHorizontal: 80,
     paddingBottom: 50
   },
 
@@ -465,7 +517,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   dayOfWeekText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     width: (width - 40) / 7,
     textAlign: 'center',
@@ -525,14 +577,14 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   recipeDot: {
-    width: 4,
-    height: 4,
+    width: 5,
+    height: 5,
     borderRadius: 2,
     marginRight: 4,
     marginTop: 4,
   },
   recipeText: {
-    fontSize: 8,
+    fontSize: 10,
     color: '#333',
     lineHeight: 10,
     flexShrink: 1,
@@ -547,40 +599,43 @@ const styles = StyleSheet.create({
 
   // 레시피 추천 영역
   recommendationContainer: {
-    paddingHorizontal: 24,
+    alignItems: 'center',
     marginTop: 30,
   },
   recommendationTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    color: '#333',
+    marginBottom: 18,
   },
   recipeCardList: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 15,
+    alignItems:'center'
   },
   recipeCard: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fff',
+    padding: 18,
     borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#eee',
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 3,
+    marginRight: 15, // 카드끼리 붙지 않게
+    width: width * 0.5, // 레시피 카드 너비 조정
   },
   recipeCardText: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 10,
     color: '#000',
   },
   recipeCardImagePlaceholder: {
     width: '100%',
-    height: 100,
+    height: 120,
     backgroundColor: '#ccc',
     borderRadius: 8,
     justifyContent: 'center',

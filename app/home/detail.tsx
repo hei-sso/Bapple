@@ -1,7 +1,7 @@
-// app/(tabs)/home/detail.tsx
+// app/home/detail.tsx
 
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { RedirectProps, useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -28,33 +28,35 @@ interface RecipeItem {
     recipe: string;
 }
 
-const GROUP_COLORS: Record<string, string> = { 
-    '그룹 1': '#F07575', 
-    '그룹 2': '#FDE2A1', 
-    '그룹 3': '#B8E998', 
-    '그룹 4': '#C0C0C0', 
-}; 
+const GROUP_COLORS: Record<string, string> = {
+  '나': '#C0C0C0',
+  '그룹 1': '#F07575', 
+  '그룹 2': '#FDE2A1',
+  '그룹 3': '#B8E998',
+  '그룹 4': '#7ccef0ff', 
+};
 
 const MOCK_RECIPES: Record<string, RecipeItem[]> = { 
-    '2025-10-20': [ 
-        { id: 1, group: '그룹 1', recipe: 'Is this wher' },
-        { id: 2, group: '그룹 2', recipe: 'Budget for' },
-        { id: 5, group: '그룹 2', recipe: 'Take Jake ti' }, 
+    '2025-11-24': [ 
+        { id: 1, group: '그룹 1', recipe: '김치찌개' },
+        { id: 2, group: '그룹 2', recipe: '비빔밥' },
+        { id: 5, group: '그룹 4', recipe: '잡채' }, 
     ],
-    '2025-10-21': [
-        { id: 3, group: '그룹 3', recipe: 'Vaccine app' },
-        { id: 4, group: '그룹 3', recipe: 'Take Jake ti' },
-        { id: 6, group: '그룹 3', recipe: 'DMV appoi' }, 
+    '2025-11-26': [
+        { id: 3, group: '나', recipe: '떡볶이' },
+        { id: 4, group: '그룹 2', recipe: '갈비찜' },
+        { id: 6, group: '그룹 3', recipe: '짜장면' },
+        { id: 7, group: '그룹 4', recipe: '부대찌개' },
     ],
-    '2025-10-23': [
-        { id: 7, group: '그룹 1', recipe: 'St. Patrick\'s' },
-        { id: 8, group: '그룹 2', recipe: 'PTO day' },
+    '2025-11-27': [
+        { id: 7, group: '나', recipe: '불고기' },
+        { id: 8, group: '그룹 2', recipe: '김밥' },
     ],
-    '2025-10-27': [
-        { id: 7, group: '그룹 1', recipe: 'St. Patrick\'s' },
-        { id: 8, group: '그룹 2', recipe: 'PTO day' },
+    '2025-11-29': [
+        { id: 7, group: '그룹 1', recipe: '볶음밥' },
+        { id: 8, group: '그룹 2', recipe: '연어 스테이크' },
     ],
-}; 
+};
 
 const TODAY_STRING = new Date().toISOString().split('T')[0];
 
@@ -122,22 +124,33 @@ export default function DateDetailScreen() {
         });
     }, [currentDateString]);
 
-    const recipeItem = (MOCK_RECIPES[currentDateString] || [])[0];
+    const recipeItems = MOCK_RECIPES[currentDateString] || [];
+
+    // 추천 레시피의 아이디와 이름을 recipe/detail.tsx로 전달
+    const handleRecipeDetail = (recipe: { id: number; name: string }) => {
+    router.push({
+        pathname: '/recipe/detail',
+        params: {
+        id: recipe.id.toString(),
+        name: recipe.name,
+        },
+    });
+    };
 
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            <ScrollView contentContainerStyle={Styles.scrollContent}>
 
-                {/* Header 영역 */}
-                <View style={Header.HeaderAlign}>
-                    <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
-                        <ChevronLeft size={28} color="#000" />
-                    </TouchableOpacity>
-                    <Text style={Header.Title}>
-                        {new Date(currentDateString).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                    </Text>
-                </View>
+            {/* Header 영역 */}
+            <View style={Header.HeaderAlign}>
+                <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
+                    <ChevronLeft size={28} color="#000" />
+                </TouchableOpacity>
+                <Text style={Header.Title}>
+                    {new Date(currentDateString).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                </Text>
+            </View>
                 
+            <ScrollView contentContainerStyle={Styles.scrollContent}>
                 {/* 주간 달력 표시 (상세 뷰) */}
                 <View style={Calendar.calendarArea}>
                     
@@ -199,27 +212,31 @@ export default function DateDetailScreen() {
                     </View>
                 </View>
 
-                {/* 레시피 상세 카드 (현재 선택된 날짜의 레시피) */}
-                <View>
-                    {recipeItem ? (
-                        <View style={styles.recipeItemCard}>
-                            <View style={[styles.groupTag, { backgroundColor: GROUP_COLORS[recipeItem.group] }]}>
-                                <Text style={styles.groupTagText}>{recipeItem.group}</Text>
+                {/* 레시피 상세 카드 (현재 선택된 날짜의 레시피) */} 
+                {recipeItems && recipeItems.length > 0 ? (
+                    recipeItems.map((item) => (
+                        <TouchableOpacity 
+                            key={item.id}
+                            onPress={() => handleRecipeDetail({ id: item.id, name: item.recipe })}
+                        >
+                            <View style={styles.recipeItemCard}>
+                                <View style={[
+                                    styles.groupTag, 
+                                    { backgroundColor: GROUP_COLORS[item.group] }
+                                ]}>
+                                    <Text style={styles.groupTagText}>{item.group}</Text>
+                                </View>
+
+                                <View style={styles.recipeCardContent}>
+                                    <Text style={styles.recipeName}>{item.recipe}</Text>
+                                    <View style={styles.recipeImagePlaceholder} />
+                                </View>
                             </View>
-                            <View style={styles.recipeCardContent}>
-                                <Text style={styles.recipeName}>
-                                    {recipeItem.recipe}
-                                    {'\n'}
-                                    케이준 치킨 샐러드
-                                </Text>
-                                <View style={styles.recipeImagePlaceholder} />
-                            </View>
-                        </View>
-                    ) : (
-                        <Text style={styles.noRecipeText}>이 날짜에는 등록된 레시피가 없습니다.</Text>
-                    )}
-                </View>
-                
+                        </TouchableOpacity>
+                    ))
+                ) : (
+                    <Text style={styles.noRecipeText}>이 날짜에는 등록된 레시피가 없습니다.</Text>
+                )}
             </ScrollView>
         </View>
     );
@@ -239,6 +256,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
+        marginBottom: 10
     },
     groupTag: {
         alignSelf: 'flex-start',

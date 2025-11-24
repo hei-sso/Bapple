@@ -1,3 +1,5 @@
+// app/group/detail.tsx
+
 import { useRoute } from '@react-navigation/native';
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
 import { useRouter } from 'expo-router';
@@ -33,25 +35,28 @@ interface RecipeItem {
     recipe: string;
 }
 
+// Mock Data
 const MOCK_RECIPES: Record<string, RecipeItem[]> = { 
-    // 오늘 날짜 주변으로 Mock Data 조정
-    [dateToDateString(addDays(new Date(), -2))]: [ 
+    '2025-11-24': [ 
         { id: 1, group: '그룹 1', recipe: '김치찌개' },
-        { id: 2, group: '그룹 1', recipe: '불고기' },
-        { id: 3, group: '그룹 1', recipe: '닭볶음탕' }, 
+        { id: 2, group: '그룹 2', recipe: '비빔밥' },
+        { id: 5, group: '그룹 4', recipe: '잡채' }, 
     ],
-    [dateToDateString(addDays(new Date(), -1))]: [
-        { id: 4, group: '그룹 1', recipe: '스테이크' },
+    '2025-11-26': [
+        { id: 3, group: '나', recipe: '떡볶이' },
+        { id: 4, group: '그룹 2', recipe: '갈비찜' },
+        { id: 6, group: '그룹 3', recipe: '짜장면' },
+        { id: 7, group: '그룹 4', recipe: '부대찌개' },
     ],
-    [TODAY_STRING]: [
-        { id: 5, group: '그룹 1', recipe: '파스타' },
-        { id: 6, group: '그룹 1', recipe: '샐러드' },
-        { id: 7, group: '그룹 1', recipe: '월남쌈' },
+    '2025-11-27': [
+        { id: 7, group: '나', recipe: '불고기' },
+        { id: 8, group: '그룹 2', recipe: '김밥' },
     ],
-    [dateToDateString(addDays(new Date(), 3))]: [
-        { id: 8, group: '그룹 1', recipe: '잡채' },
+    '2025-11-29': [
+        { id: 7, group: '그룹 1', recipe: '볶음밥' },
+        { id: 8, group: '그룹 2', recipe: '연어 스테이크' },
     ],
-}; 
+};
 
 interface DayData {
     date: number;
@@ -132,6 +137,17 @@ export default function GroupDetailScreen() {
     }, [currentDateString, groupName]); 
     
     const RECIPE_CARD_WIDTH = width * 0.87; // 레시피 상세 카드 가로 길이 조정
+
+    // 추천 레시피의 아이디와 이름을 recipe/detail.tsx로 전달
+    const handleRecipeDetail = (recipe: { id: number; recipe: string }) => {
+        router.push({
+            pathname: '/recipe/detail',
+            params: {
+                id: recipe.id.toString(),
+                name: recipe.recipe, // MOCK_RECIPES 구조상 name이 아니라 recipe임
+            },
+        });
+    };
 
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -219,22 +235,22 @@ export default function GroupDetailScreen() {
                         {currentRecipes.length > 0 ? (
                             <ScrollView horizontal contentContainerStyle={styles.recipeCardScrollContent}>
                                 {currentRecipes.map((recipeItem, index) => (
-                                    <View 
-                                        key={recipeItem.id} 
-                                        style={[
-                                            styles.recipeItemCard,
-                                            { width: RECIPE_CARD_WIDTH }, 
-                                            index < currentRecipes.length - 1 && styles.recipeCardMarginRight 
-                                        ]}
-                                    >
-                                        {/* 레시피 카드 */}
-                                        <View style={styles.recipeCardContent}>
-                                            <Text style={styles.recipeName}>
-                                                    {recipeItem.recipe}
-                                            </Text>
-                                            <View style={styles.recipeImagePlaceholder} />
+                                    <TouchableOpacity onPress={() => handleRecipeDetail(recipeItem)} key={recipeItem.id}>
+                                        <View 
+                                            key={recipeItem.id} 
+                                            style={[
+                                                styles.recipeItemCard,
+                                                { width: RECIPE_CARD_WIDTH }, 
+                                                index < currentRecipes.length - 1 && styles.recipeCardMarginRight 
+                                            ]}
+                                        >
+                                            {/* 레시피 카드 */}
+                                            <View style={styles.recipeCardContent}>
+                                                <Text style={styles.recipeName}>{recipeItem.recipe}</Text>
+                                                <View style={styles.recipeImagePlaceholder} />
+                                            </View>
                                         </View>
-                                    </View>
+                                    </TouchableOpacity>
                                 ))}
                             </ScrollView>
                         ) : (
