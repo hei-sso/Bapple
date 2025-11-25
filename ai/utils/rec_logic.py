@@ -281,10 +281,10 @@ def recommend_with_rules(
 
         results.append({
             "recipe_id": rid,
-            "ml_score": float(ml_score),
-            "fridge_bonus": float(fb),
-            "disease_bonus": float(db),
-            "final_score": float(final_score),
+            # "ml_score": float(ml_score),
+            # "fridge_bonus": float(fb),
+            # "disease_bonus": float(db),
+            # "final_score": float(final_score),
         })
 
     results = sorted(results, key=lambda x: x["final_score"], reverse=True)
@@ -340,17 +340,17 @@ def build_weekly_plan(
             row = ctx.df.iloc[df_idx]
 
             rows.append({
-                "day": day + 1,
-                "meal": meal_names[m],
+                # "day": day + 1,
+                # "meal": meal_names[m],
                 "recipe_id": rid,
-                "name": row["name"],
-                "cuisine_type": row.get("cuisine_type"),
-                "diet_type": row.get("diet_type"),
-                "tags": row.get("tags"),
-                "ml_score": item["ml_score"],
-                "fridge_bonus": item["fridge_bonus"],
-                "disease_bonus": item["disease_bonus"],
-                "final_score": item["final_score"],
+                # "name": row["name"],
+                # "cuisine_type": row.get("cuisine_type"),
+                # "diet_type": row.get("diet_type"),
+                # "tags": row.get("tags"),
+                # "ml_score": item["ml_score"],
+                # "fridge_bonus": item["fridge_bonus"],
+                # "disease_bonus": item["disease_bonus"],
+                # "final_score": item["final_score"],
             })
 
     return pd.DataFrame(rows)
