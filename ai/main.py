@@ -159,10 +159,10 @@ def recommend_api(body: RecommendRequest):
     items = [
         RecommendItem(
             recipe_id=r["recipe_id"],
-            ml_score=r["ml_score"],
-            fridge_bonus=r["fridge_bonus"],
-            disease_bonus=r["disease_bonus"],
-            final_score=r["final_score"],
+            # ml_score=r["ml_score"],
+            # fridge_bonus=r["fridge_bonus"],
+            # disease_bonus=r["disease_bonus"],
+            # final_score=r["final_score"],
         )
         for r in results_raw
     ]
@@ -190,17 +190,17 @@ def recommend_week_api(body: WeeklyPlanRequest):
     for _, row in weekly_df.iterrows():
         items.append(
             WeeklyPlanItem(
-                day=int(row["day"]),
-                meal=str(row["meal"]),
+                # day=int(row["day"]),
+                # meal=str(row["meal"]),
                 recipe_id=str(row["recipe_id"]),
-                name=row.get("name"),
-                cuisine_type=row.get("cuisine_type"),
-                diet_type=row.get("diet_type"),
-                tags=row.get("tags"),
-                ml_score=float(row["ml_score"]),
-                fridge_bonus=float(row["fridge_bonus"]),
-                disease_bonus=float(row["disease_bonus"]),
-                final_score=float(row["final_score"]),
+                # name=row.get("name"),
+                # cuisine_type=row.get("cuisine_type"),
+                # diet_type=row.get("diet_type"),
+                # tags=row.get("tags"),
+                # ml_score=float(row["ml_score"]),
+                # fridge_bonus=float(row["fridge_bonus"]),
+                # disease_bonus=float(row["disease_bonus"]),
+                # final_score=float(row["final_score"]),
             )
         )
 
