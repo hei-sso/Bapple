@@ -268,7 +268,7 @@ def recommend_with_rules(
         top_k=top_k,
     )
 
-    results: List[Dict[str, Any]] = []
+    temp_results: List[Dict[str, Any]] = []
     for rid, ml_score in zip(base_ids, base_scores):
         fb = calc_fridge_bonus(ctx, rid, fridge_ings)
         db = calc_disease_bonus(ctx, rid, diseases)
@@ -279,16 +279,16 @@ def recommend_with_rules(
             + w_disease * float(db)
         )
 
-        results.append({
-            "recipe_id": rid
-            # "ml_score": float(ml_score),
-            # "fridge_bonus": float(fb),
-            # "disease_bonus": float(db),
-            # "final_score": float(final_score),
+        temp_results.append({
+            "recipe_id": rid,
+            "ml_score": float(ml_score),
+            "fridge_bonus": float(fb),
+            "disease_bonus": float(db),
+            "final_score": float(final_score),
         })
 
-    # results = sorted(results, key=lambda x: x["final_score"], reverse=True)
-    results = [{"recipe_id": r["recipe_id"]} for r in results]
+    temp_results = sorted(temp_results, key=lambda x: x["final_score"], reverse=True)
+    results = [{"recipe_id": r["recipe_id"]} for r in temp_results]
     return results
 
 # 1주일 식단 편성
@@ -324,35 +324,35 @@ def build_weekly_plan(
 
     ranked = ranked[:total_needed]
 
-    meal_names = ["아침", "점심", "저녁"]
+    # meal_names = ["아침", "점심", "저녁"]
     rows: List[Dict[str, Any]] = []
 
-    for day in range(days):
-        for m in range(meals_per_day):
-            idx = day * meals_per_day + m
-            if idx >= len(ranked):
-                break
+    # for day in range(days):
+    #     for m in range(meals_per_day):
+    #         idx = day * meals_per_day + m
+    #         if idx >= len(ranked):
+    #             break
 
-            item = ranked[idx]
-            rid = item["recipe_id"]
-            df_idx = ctx.id_to_dfidx.get(rid)
-            if df_idx is None:
-                continue
-            row = ctx.df.iloc[df_idx]
+    #         item = ranked[idx]
+    #         rid = item["recipe_id"]
+    #         df_idx = ctx.id_to_dfidx.get(rid)
+    #         if df_idx is None:
+    #             continue
+    #         row = ctx.df.iloc[df_idx]
 
-            rows.append({
-                # "day": day + 1,
-                # "meal": meal_names[m],
-                "recipe_id": rid,
-                # "name": row["name"],
-                # "cuisine_type": row.get("cuisine_type"),
-                # "diet_type": row.get("diet_type"),
-                # "tags": row.get("tags"),
-                # "ml_score": item["ml_score"],
-                # "fridge_bonus": item["fridge_bonus"],
-                # "disease_bonus": item["disease_bonus"],
-                # "final_score": item["final_score"],
-            })
+    #         rows.append({
+    #             "day": day + 1,
+    #             "meal": meal_names[m],
+    #             "recipe_id": rid,
+    #             "name": row["name"],
+    #             "cuisine_type": row.get("cuisine_type"),
+    #             "diet_type": row.get("diet_type"),
+    #             "tags": row.get("tags"),
+    #             "ml_score": item["ml_score"],
+    #             "fridge_bonus": item["fridge_bonus"],
+    #             "disease_bonus": item["disease_bonus"],
+    #             "final_score": item["final_score"],
+    #         })
     for item in ranked:
         rid = item["recipe_id"]
         rows.append({"recipe_id": rid})
