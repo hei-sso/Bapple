@@ -109,8 +109,8 @@ class WeeklyPlanRequest(BaseModel):
     tags: Optional[List[str]] = None
     allergies: Optional[List[str]] = None
     fridge_ings: Optional[List[str]] = None
-    days: int = 7
-    meals_per_day: int = 3
+    days: int = 5
+    meals_per_day: int = 2
     top_k: int = 100
 
 class WeeklyPlanItem(BaseModel):

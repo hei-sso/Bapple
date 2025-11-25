@@ -1,9 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+
+from .health_map import HEALTH_TO_TAGS
 
 # 19대 알레르기(사용자 선택용)
 ALLERGEN_CHOICES = [
@@ -25,6 +27,7 @@ class RecContext:
     recipe_vocab: List[str]
     df: pd.DataFrame
     id_to_dfidx: Dict[str, int]
+    health_condition_ids: List[str] = field(default_factory=list)
 
 # 토큰 생성
 def build_tokens(
@@ -171,6 +174,21 @@ def recommend(
             cand_indices  = [p[1] for p in pairs]
             cand_embs = tf.gather(recipe_embs, cand_indices)
 
+    #질병(health_condition_ids)에 맞는 태그 필터링 추가
+    if ctx.health_condition_ids:
+        # 후보 레시피 DataFrame 구성
+        cand_df = df[df["recipe_id"].isin(candidate_ids)].copy()
+        cand_df = apply_health_condition_filter(cand_df, ctx)
+
+        filtered_ids = cand_df["recipe_id"].tolist()
+        # 필터링 후에도 남는 게 있으면 그걸로 교체
+        if filtered_ids:
+            candidate_ids = filtered_ids
+            id_to_index = {rid: i for i, rid in enumerate(recipe_vocab)}
+            cand_indices = [id_to_index[rid] for rid in candidate_ids if rid in id_to_index]
+            cand_embs = tf.gather(recipe_embs, cand_indices)
+        # 만약 하나도 안 남으면(너무 제한적인 경우) → 기존 candidate_ids 그대로 사용
+
     # 5) user embedding
     tokens = build_tokens(cuisine, diet, diseases, tags)
     token_tensor = tf.constant(tokens)
@@ -190,6 +208,35 @@ def recommend(
 
     return top_ids, top_scores
 
+#질병 상태 필터 함수 추가
+def apply_health_condition_filter(rec_df: pd.DataFrame, ctx: RecContext) -> pd.DataFrame:
+    #RecContext.health_condition_ids에 맞는 태그만 남기도록 필터링.
+    if rec_df.empty:
+        return rec_df
+
+    # 1) health_condition_ids → 태그 목록
+    health_tags: List[str] = []
+    for hc_id in ctx.health_condition_ids:
+        health_tags.extend(HEALTH_TO_TAGS.get(hc_id, []))
+
+    # 중복 제거
+    health_tags = list(set(health_tags))
+
+    if not health_tags:
+        # 질병 정보 없으면 필터링 안 함
+        return rec_df
+
+    # 2) 레시피 tags 컬럼에서 health_tags가 하나라도 포함된 것만 남기기
+    def has_health_tag(row_tags: Any) -> bool:
+        # tags가 리스트인 경우와 문자열인 경우 모두 처리
+        if isinstance(row_tags, list):
+            return any(tag in row_tags for tag in health_tags)
+        if isinstance(row_tags, str):
+            return any(tag in row_tags for tag in health_tags)
+        return False
+
+    return rec_df[rec_df["tags"].apply(has_health_tag)]
+
 # 가점 포함 최종 추천
 def recommend_with_rules(
     ctx: RecContext,
@@ -208,6 +255,8 @@ def recommend_with_rules(
     tags        = tags or []
     allergies   = clean_allergy_input(allergies or [])
     fridge_ings = fridge_ings or []
+
+    ctx.health_condition_ids = diseases
 
     base_ids, base_scores = recommend(
         ctx=ctx,
