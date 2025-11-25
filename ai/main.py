@@ -94,10 +94,10 @@ class RecommendRequest(BaseModel):
 
 class RecommendItem(BaseModel):
     recipe_id: str
-    ml_score: float
-    fridge_bonus: float
-    disease_bonus: float
-    final_score: float
+    # ml_score: float
+    # fridge_bonus: float
+    # disease_bonus: float
+    # final_score: float
 
 class RecommendResponse(BaseModel):
     results: List[RecommendItem]
@@ -114,17 +114,17 @@ class WeeklyPlanRequest(BaseModel):
     top_k: int = 100
 
 class WeeklyPlanItem(BaseModel):
-    day: int
-    meal: str     
+    # day: int
+    # meal: str     
     recipe_id: str
-    name: Optional[str] = None
-    cuisine_type: Optional[str] = None
-    diet_type: Optional[str] = None
-    tags: Optional[str] = None
-    ml_score: float
-    fridge_bonus: float
-    disease_bonus: float
-    final_score: float
+    # name: Optional[str] = None
+    # cuisine_type: Optional[str] = None
+    # diet_type: Optional[str] = None
+    # tags: Optional[str] = None
+    # ml_score: float
+    # fridge_bonus: float
+    # disease_bonus: float
+    # final_score: float
 
 class WeeklyPlanResponse(BaseModel):
     items: List[WeeklyPlanItem]
