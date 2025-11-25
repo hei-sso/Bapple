@@ -280,14 +280,15 @@ def recommend_with_rules(
         )
 
         results.append({
-            "recipe_id": rid,
+            "recipe_id": rid
             # "ml_score": float(ml_score),
             # "fridge_bonus": float(fb),
             # "disease_bonus": float(db),
             # "final_score": float(final_score),
         })
 
-    results = sorted(results, key=lambda x: x["final_score"], reverse=True)
+    # results = sorted(results, key=lambda x: x["final_score"], reverse=True)
+    results = [{"recipe_id": r["recipe_id"]} for r in results]
     return results
 
 # 1주일 식단 편성
@@ -352,5 +353,8 @@ def build_weekly_plan(
                 # "disease_bonus": item["disease_bonus"],
                 # "final_score": item["final_score"],
             })
+    for item in ranked:
+        rid = item["recipe_id"]
+        rows.append({"recipe_id": rid})
 
     return pd.DataFrame(rows)
