@@ -39,9 +39,9 @@ const MOCK_CATEGORIES_DATA = [
     id: 'fruits',
     name: '과일',
     ingredients: [
-      { id: 'banana', name: '바나나', category: 'fruits_nuts' },
-      { id: 'apple', name: '사과', category: 'fruits_nuts' },
-      { id: 'grape', name: '포도', category: 'fruits_nuts' },
+      { id: 'banana', name: '바나나', category: 'fruits' },
+      { id: 'apple', name: '사과', category: 'fruits' },
+      { id: 'grape', name: '포도', category: 'fruits' },
     ],
   },
   { id: 'nuts', name: '견과류', ingredients: [] },
