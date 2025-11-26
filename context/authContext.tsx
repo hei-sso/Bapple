@@ -30,7 +30,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
         if (token) {
-          // 💡 [추후 구현] 여기서 토큰 유효성 검사 API 호출 필요
           setAccessToken(token);
         }
       } catch (e) {
