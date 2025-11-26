@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Carousel from 'react-native-reanimated-carousel';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style 임포트
@@ -25,6 +26,7 @@ import { Styles } from '@/constants/styles'; // 공통
 
 // Mock 데이터 및 상수
 const { width } = Dimensions.get('window');
+
 const TODAY = new Date();
 const TODAY_STRING = format(TODAY, 'yyyy-MM-dd');
 const SIDE_MENU_WIDTH = width * 0.55;
@@ -166,13 +168,10 @@ const GroupSideMenu: React.FC<GroupSideMenuProps> = ({ isMenuOpen, onClose, inse
     );
 };
 
+// 추천 레시피 컴포넌트
 const RecipeCards = () => {
-  // 자동 스크롤을 위한 상태 및 ref
   const router = useRouter();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollViewRef = useRef<ScrollView>(null);
 
-  // 레시피 카드 데이터
   const recipes = [
     { id: 1, name: '김치찌개' },
     { id: 2, name: '케이준 치킨 샐러드' },
@@ -181,23 +180,6 @@ const RecipeCards = () => {
     { id: 5, name: '연어 스테이크' },
   ];
 
-  // 추천 레시피 카드 자동 스크롤 함수
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % recipes.length;
-        if (scrollViewRef.current) {
-          scrollViewRef.current.scrollTo({ x: nextIndex * (width * 0.5 + 15), animated: true });
-        }
-        return nextIndex;
-      });
-    }, 2000); // 2초마다 스크롤 이동
-
-    // 컴포넌트가 unmount될 때 interval을 클리어
-    return () => clearInterval(intervalId);
-  }, [recipes.length]);
-
-  // 추천 레시피의 아이디와 이름을 recipe/detail.tsx로 전달
   const handleRecipeDetail = (recipe: { id: number; name: string }) => {
     router.push({
       pathname: '/recipe/detail',
@@ -211,22 +193,29 @@ const RecipeCards = () => {
   return (
     <View style={styles.recommendationContainer}>
       <Text style={styles.recommendationTitle}>추천 레시피</Text>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        ref={scrollViewRef}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {recipes.map((recipe) => (
-          <TouchableOpacity onPress={() => handleRecipeDetail(recipe)} key={recipe.id}>
+
+      <Carousel
+        loop               // 무한 루프
+        autoPlay           // 자동 스크롤
+        autoPlayInterval={2000}
+        data={recipes}
+        width={width}  // 카드 너비
+        height={220}
+        scrollAnimationDuration={800}
+        mode="parallax"
+        modeConfig={{
+          parallaxScrollingScale: 0.8,   // 카드 크기
+          parallaxScrollingOffset: 100,   // 옆 카드가 얼마나 보일지
+        }}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => handleRecipeDetail(item)}>
             <View style={styles.recipeCard}>
-              <Text style={styles.recipeCardText}>{recipe.name}</Text>
-              <View style={styles.recipeCardImagePlaceholder}></View>
+              <Text style={styles.recipeCardText}>{item.name}</Text>
+              <View style={styles.recipeCardImagePlaceholder} />
             </View>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        )}
+      />
     </View>
   );
 };
@@ -364,63 +353,63 @@ export default function HomeScreen() {
 
   // 메인 뷰
   return (
-      <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        
+        {/* 상단 검색 및 설정 영역 */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
+              <FontAwesome name="user-circle" size={32} color="#ccc" /> 
+          </TouchableOpacity>
           
-          {/* 상단 검색 및 설정 영역 */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
-               <FontAwesome name="user-circle" size={32} color="#ccc" /> 
-            </TouchableOpacity>
-            
-            <View style={styles.searchBar}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="검색"
-                placeholderTextColor="#888"
-              />
-              <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
+          <View style={styles.searchBar}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="검색"
+              placeholderTextColor="#888"
+            />
+            <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
+          </View>
+          <FontAwesome name="cog" size={24} color="#000" style={styles.settingsIcon} />
+        </View>
+
+        {/* 그룹 활성화/비활성화 버튼 영역 */}
+        <View style={styles.groupFilterContainer}>
+          {ALL_GROUPS.filter(g => g !== '새 그룹 추가').map(renderGroupButton)}
+        </View>
+
+        {/* 달력 영역 */}
+        <View style={styles.calendarContainer}>
+          
+          {/* 월 표시 및 네비게이션 */}
+          <View style={styles.monthHeader}>
+            {/* 주 이동 로직 */}
+            <Text style={styles.monthText}>{format(currentDate, 'M월', { locale: ko })}</Text>
+            <View style={styles.monthNav}>
+              <TouchableOpacity onPress={() => changeWeek(-1)}>
+                <ChevronLeft size={24} color="#000" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => changeWeek(1)}>
+                <ChevronRight size={24} color="#000" />
+              </TouchableOpacity>
             </View>
-            <FontAwesome name="cog" size={24} color="#000" style={styles.settingsIcon} />
           </View>
 
-          {/* 그룹 활성화/비활성화 버튼 영역 */}
-          <View style={styles.groupFilterContainer}>
-            {ALL_GROUPS.filter(g => g !== '새 그룹 추가').map(renderGroupButton)}
+          {/* 요일 헤더 */}
+          <View style={styles.dayOfWeekHeader}>
+            {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+              <Text key={day} style={styles.dayOfWeekText}>{day}</Text>
+            ))}
           </View>
 
-          {/* 달력 영역 */}
-          <View style={styles.calendarContainer}>
-            
-            {/* 월 표시 및 네비게이션 */}
-            <View style={styles.monthHeader}>
-              {/* 주 이동 로직 */}
-              <Text style={styles.monthText}>{format(currentDate, 'M월', { locale: ko })}</Text>
-              <View style={styles.monthNav}>
-                <TouchableOpacity onPress={() => changeWeek(-1)}>
-                  <ChevronLeft size={24} color="#000" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => changeWeek(1)}>
-                  <ChevronRight size={24} color="#000" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* 요일 헤더 */}
-            <View style={styles.dayOfWeekHeader}>
-              {['일', '월', '화', '수', '목', '금', '토'].map(day => (
-                <Text key={day} style={styles.dayOfWeekText}>{day}</Text>
-              ))}
-            </View>
-
-            {/* 달력 날짜 그리드 (2주) */}
-            <View style={styles.calendarGrid}>
-              {calendarDays.map(renderCalendarCell)}
-            </View>
+          {/* 달력 날짜 그리드 (2주) */}
+          <View style={styles.calendarGrid}>
+            {calendarDays.map(renderCalendarCell)}
+          </View>
+        </View>
       
-        {/* 추천 레시피 컴포넌트 */}
-        <RecipeCards />
-      </View>
-
+      {/* 추천 레시피 컴포넌트 */}
+      <RecipeCards />
+      
       {/* 사이드 메뉴 컴포넌트 */}
       <GroupSideMenu isMenuOpen={isMenuOpen} onClose={handleCloseMenu} insets={insets} />
     </View>
@@ -609,18 +598,12 @@ const styles = StyleSheet.create({
   // 레시피 추천 영역
   recommendationContainer: {
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 20,
   },
   recommendationTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 18,
-  },
-  recipeCardList: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems:'center'
   },
   recipeCard: {
     backgroundColor: '#fff',
@@ -633,22 +616,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    marginRight: 15, // 카드끼리 붙지 않게
-    width: width * 0.5, // 레시피 카드 너비 조정
   },
   recipeCardText: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
     color: '#000',
   },
   recipeCardImagePlaceholder: {
     width: '100%',
-    height: 120,
+    height: 150,
     backgroundColor: '#ccc',
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 
   // 사이드 메뉴 스타일
