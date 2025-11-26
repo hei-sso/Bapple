@@ -90,7 +90,7 @@ const FridgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   // 'my_fridge'를 제외한 모든 카테고리 (UI용)
   const allCategories = useMemo(() => {
-    // 실제 앱에서는 DB에서 불러올 것이므로, initialData 계산 로직을 제거하고 MOCK_CATEGORIES_DATA를 직접 사용합니다.
+    // 나중에 DB 적용할 예정 (initialData 계산 로직 제거 -> MOCK_CATEGORIES_DATA 직접 사용)
     return MOCK_CATEGORIES_DATA;
   }, []);
 
@@ -261,7 +261,6 @@ const FridgeScreenContent = () => {
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* 검색 영역 */}
-            {/* ... (검색 영역 코드는 동일) ... */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchInputWrapper}>
                     <TextInput
