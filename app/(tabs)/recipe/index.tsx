@@ -1,7 +1,7 @@
 // app/(tabs)/recipe/index.tsx
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -13,20 +13,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
-import { Styles } from '@/constants/styles'; // 공통
+// Modal 임포트
+import RecipeModal from '@/components/RecipeModal';
 
-interface Recipe {
-  id: string;
-  name: string;
-  category: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  recipes: Recipe[];
-}
+// Context 임포트
+import { Recipe, Category, RecipeContextType } from '@/context/recipeContext';
 
 // Mock 데이터
 const MOCK_CATEGORIES_DATA: Category[] = [
@@ -81,130 +72,269 @@ const MOCK_CATEGORIES_DATA: Category[] = [
   },
 ];
 
-// '찜' 카테고리에 모든 레시피를 합산하는 로직 (useMemo로 처리)
-const calculateInitialData = (): Category[] => {
-  const allRecipes: Recipe[] = MOCK_CATEGORIES_DATA.flatMap(
-    (cat) => cat.id !== 'my_recipe' ? cat.recipes : []
-  );
+// Recipe Context 생성
+const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
-  return MOCK_CATEGORIES_DATA.map(cat => {
-    if (cat.id === 'my_fridge') {
-      // '찜'은 다른 모든 카테고리의 레시피를 포함
-      return { ...cat, recipes: allRecipes };
-    }
-    return cat;
-  });
+// Recipe Context를 사용하는 커스텀 훅
+const useRecipe = () => {
+  const context = useContext(RecipeContext);
+  if (!context) {
+    throw new Error('useRecipe must be used within a RecipeProvider');
+  }
+  return context;
+};
+
+// 레시피 찜 상태 관리 Provider
+const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string>('my_recipe');
+  // '찜' 레시피 목록 상태
+  const [myFavoriteRecipes, setMyFavoriteRecipes] = useState<Recipe[]>([]);
+
+  // 모든 카테고리 (UI용)
+  const allCategories = useMemo(() => {
+    return MOCK_CATEGORIES_DATA;
+  }, []);
+
+  // 찜 추가 함수
+  const addFavorite = useCallback((recipe: Recipe) => {
+    setMyFavoriteRecipes(prev => {
+      // 중복 추가 방지
+      if (!prev.find(item => item.id === recipe.id)) {
+        return [...prev, recipe];
+      }
+      return prev;
+    });
+  }, []);
+
+  // 찜 삭제 함수
+  const removeFavorite = useCallback((recipeId: string) => {
+    setMyFavoriteRecipes(prev => prev.filter(item => item.id !== recipeId));
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    allCategories,
+    myFavoriteRecipes,
+    addFavorite,
+    removeFavorite,
+    selectedCategory,
+    setSelectedCategory,
+  }), [allCategories, myFavoriteRecipes, addFavorite, removeFavorite, selectedCategory]);
+
+  return (
+    <RecipeContext.Provider value={contextValue}>
+      {children}
+    </RecipeContext.Provider>
+  );
 };
 
 // 개별 레시피 컴포넌트
-const RecipeItem: React.FC<{ recipe: Recipe }> = ({ recipe }) => (
-  <TouchableOpacity style={styles.recipeCard}>
-    {/* 회색 상자 (이미지/아이콘 자리) */}
-    <View style={styles.recipeImagePlaceholder} />
-    {/* 레시피 이름 */}
-    <Text style={styles.recipeName} numberOfLines={1}>
-      {recipe.name}
-    </Text>
-  </TouchableOpacity>
-);
+const RecipeItem: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
+  const { myFavoriteRecipes, addFavorite, removeFavorite } = useRecipe();
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
-// 여기부터 메인 화면 처리
-export default function RecipeScreen() {
-  const initialData = useMemo(calculateInitialData, []);
-  const [selectedCategory, setSelectedCategory] = useState<string>('my_recipe');
+  // 현재 레시피가 찜 목록에 있는지 확인
+  const isFavorite = useMemo(
+    () => myFavoriteRecipes.some(item => item.id === recipe.id),
+    [myFavoriteRecipes, recipe.id]
+  );
 
-  const insets = useSafeAreaInsets();
-
-  // 현재 선택된 카테고리의 레시피 목록을 계산
-  const currentRecipes = useMemo(() => {
-    const category = initialData.find(cat => cat.id === selectedCategory);
-    return category ? category.recipes : [];
-  }, [selectedCategory, initialData]);
-
-  // 카테고리 목록 렌더링 함수
-  const renderCategoryItem = (category: Category) => {
-    const isSelected = category.id === selectedCategory;
-    
-    // 선택된 카테고리 스타일
-    const categoryTextStyle = isSelected
-      ? styles.selectedCategoryText
-      : styles.categoryText;
-    
-    // 선택된 카테고리 컨테이너 스타일 (흰색 바탕)
-    const categoryContainerStyle = isSelected
-      ? styles.selectedCategoryContainer
-      : styles.categoryContainer;
-
-    return (
-      <TouchableOpacity
-        key={category.id}
-        style={categoryContainerStyle}
-        onPress={() => setSelectedCategory(category.id)}
-      >
-        <Text style={categoryTextStyle}>{category.name}</Text>
-      </TouchableOpacity>
-    );
+  // 모달에서 확인 버튼 클릭 시
+  const handleConfirm = (rec: Recipe) => {
+    if (isFavorite) {
+      removeFavorite(rec.id); // 찜 목록에 있으면 삭제
+    } else {
+      addFavorite(rec); // 없으면 찜 추가
+    }
   };
 
   return (
-    <View style={[Styles.indexContainer, { paddingTop: insets.top }]}>
-      {/* 검색 영역 */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputWrapper}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="검색"
-            placeholderTextColor="#888"
-          />
-          {/* Ionicons 사용 */}
-          <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
-        </View>
-      </View>
+    <>
+      <TouchableOpacity 
+        style={styles.recipeCard}
+        onPress={() => setIsModalVisible(true)} // 클릭 시 모달 열기
+      >
+        {/* 회색 상자 (이미지/아이콘 자리) */}
+        <View style={styles.recipeImagePlaceholder} />
+        {/* 찜 아이콘 (옵션) */}
+        {isFavorite && (
+          <View style={styles.favoriteIcon}>
+            <Ionicons name="heart" size={20} color="#ff69b4" /> 
+          </View>
+        )}
+        {/* 레시피 이름 */}
+        <Text style={styles.recipeName} numberOfLines={1}>
+          {recipe.name}
+        </Text>
+      </TouchableOpacity>
 
-      {/* 카테고리 + 레시피 그리드 */}
-      <View style={styles.contentArea}>
-        
-        {/* 왼쪽: 카테고리 목록 */}
-        <View style={styles.categoryListContainer}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.categoryListContent}
-          >
-            {initialData.map(renderCategoryItem)}
-          </ScrollView>
-        </View>
-
-        {/* 오른쪽: 레시피 그리드 */}
-        <View style={styles.recipeGridContainer}>
-          <ScrollView 
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.recipeGridContent}
-          >
-            {/* 현재 선택된 카테고리의 레시피를 그리드 형태로 표시 */}
-            <Text style={styles.currentCategoryTitle}>
-                {initialData.find(c => c.id === selectedCategory)?.name || '카테고리'}
-            </Text>
-            
-            <View style={styles.gridRow}>
-              {currentRecipes.length > 0 ? (
-                currentRecipes.map((ing, index) => (
-                  // 그리드 레이아웃을 위해 key prop을 제공
-                  <RecipeItem key={ing.id + index} recipe={ing} />
-                ))
-              ) : (
-                <Text style={styles.noRecipeText}>
-                  {selectedCategory === 'my_recipe' 
-                    ? '찜에 등록된 레시피가 없습니다.' 
-                    : <>이 카테고리에 등록된{"\n"}레시피가 없습니다.</> // 글씨 잘려서
-                  }
-                </Text>
-              )}
-            </View>
-          </ScrollView>
-        </View>
-      </View>
-    </View>
+      <RecipeModal
+        isVisible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        recipe={recipe}
+        isFavorite={isFavorite}
+        onConfirm={handleConfirm}
+      />
+    </>
   );
+};
+
+// 레시피 그리드를 카테고리별로 그룹화하여 표시하는 컴포넌트 (찜 전용)
+const FavoriteRecipeGroup: React.FC<{ recipes: Recipe[] }> = ({ recipes }) => {
+    
+    // 카테고리별로 레시피를 그룹화
+    const groupedRecipes = useMemo(() => {
+        return recipes.reduce((acc, recipe) => {
+            const categoryName = MOCK_CATEGORIES_DATA.find(cat => cat.id === recipe.category)?.name || '기타';
+            if (!acc[categoryName]) {
+                acc[categoryName] = [];
+            }
+            acc[categoryName].push(recipe);
+            return acc;
+        }, {} as { [key: string]: Recipe[] });
+    }, [recipes]);
+    
+    // 카테고리 이름 목록 (순서 유지를 위해)
+    const categoryNames = Object.keys(groupedRecipes);
+    
+    if (recipes.length === 0) {
+        return (
+            <Text style={styles.noRecipeText}>
+                찜 목록에 등록된 레시피가 없습니다.
+            </Text>
+        );
+    }
+
+    return (
+        <>
+            {categoryNames.map(categoryName => (
+                <View key={categoryName} style={styles.categoryGroup}>
+                    <Text style={styles.groupTitle}>{categoryName}</Text>
+                    <View style={styles.gridRow}>
+                        {groupedRecipes[categoryName].map((rec, index) => (
+                            <RecipeItem key={rec.id + index} recipe={rec} />
+                        ))}
+                    </View>
+                </View>
+            ))}
+        </>
+    );
+};
+
+
+// 메인 화면 처리
+const RecipeScreenContent = () => {
+    const { 
+        allCategories, 
+        myFavoriteRecipes, 
+        selectedCategory, 
+        setSelectedCategory 
+    } = useRecipe();
+    
+    const insets = useSafeAreaInsets();
+
+    // 현재 선택된 카테고리의 레시피 목록을 계산 (찜 목록이 아닌 경우에만)
+    const currentRecipes = useMemo(() => {
+        if (selectedCategory === 'my_recipe') {
+            // '찜'은 그룹화된 뷰를 별도로 사용
+            return []; 
+        }
+        const category = allCategories.find(cat => cat.id === selectedCategory);
+        return category ? category.recipes : [];
+    }, [selectedCategory, allCategories]);
+
+    // 카테고리 목록 렌더링 함수
+    const renderCategoryItem = (category: Category) => {
+        const isSelected = category.id === selectedCategory;
+        
+        // 선택된 카테고리 스타일
+        const categoryTextStyle = isSelected
+          ? styles.selectedCategoryText
+          : styles.categoryText;
+        
+        // 선택된 카테고리 컨테이너 스타일 (흰색 바탕)
+        const categoryContainerStyle = isSelected
+          ? styles.selectedCategoryContainer
+          : styles.categoryContainer;
+
+        return (
+            <TouchableOpacity
+                key={category.id}
+                style={categoryContainerStyle}
+                onPress={() => setSelectedCategory(category.id)}
+            >
+                <Text style={categoryTextStyle}>{category.name}</Text>
+            </TouchableOpacity>
+        );
+    };
+
+    return (
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+            {/* 검색 영역 */}
+            <View style={styles.searchContainer}>
+                <View style={styles.searchInputWrapper}>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="검색"
+                        placeholderTextColor="#888"
+                    />
+                    <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
+                </View>
+            </View>
+
+            {/* 카테고리 + 레시피 그리드 */}
+            <View style={styles.contentArea}>
+                
+                {/* 왼쪽: 카테고리 목록 */}
+                <View style={styles.categoryListContainer}>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.categoryListContent}
+                    >
+                        {allCategories.map(renderCategoryItem)}
+                    </ScrollView>
+                </View>
+
+                {/* 오른쪽: 레시피 그리드 */}
+                <View style={styles.recipeGridContainer}>
+                    <ScrollView 
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.recipeGridContent}
+                    >
+                        <Text style={styles.currentCategoryTitle}>
+                            {allCategories.find(c => c.id === selectedCategory)?.name || '카테고리'}
+                        </Text>
+                        
+                        {/* '찜' 카테고리인 경우 */}
+                        {selectedCategory === 'my_recipe' ? (
+                            <FavoriteRecipeGroup recipes={myFavoriteRecipes} />
+                        ) : (
+                            // 일반 카테고리인 경우
+                            <View style={styles.gridRow}>
+                                {currentRecipes.length > 0 ? (
+                                    currentRecipes.map((rec, index) => (
+                                        <RecipeItem key={rec.id + index} recipe={rec} />
+                                    ))
+                                ) : (
+                                    <Text style={styles.noRecipeText}>
+                                        이 카테고리에 등록된{"\n"}레시피가 없습니다.
+                                    </Text>
+                                )}
+                            </View>
+                        )}
+                    </ScrollView>
+                </View>
+            </View>
+        </View>
+    );
+};
+
+// 메인 Export 컴포넌트: Provider로 감싸기
+export default function RecipeScreen() {
+    return (
+        <RecipeProvider>
+            <RecipeScreenContent />
+        </RecipeProvider>
+    );
 }
 
 // 💡스타일 시트💡
@@ -212,6 +342,10 @@ const { width } = Dimensions.get('window');
 const CATEGORY_WIDTH = width * 0.4; // 왼쪽 카테고리 영역 너비
 
 const styles = StyleSheet.create({
+  container: { 
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   // 검색 바
   searchContainer: {
     paddingHorizontal: 15,
@@ -246,7 +380,7 @@ const styles = StyleSheet.create({
   // 왼쪽: 카테고리 목록
   categoryListContainer: {
     width: CATEGORY_WIDTH,
-    backgroundColor: '#f7f7f7', // 비선택 카테고리의 배경색 (밝은 회색)
+    backgroundColor: '#f7f7f7',
     borderRightWidth: 1,
     borderRightColor: '#eee',
   },
@@ -256,14 +390,14 @@ const styles = StyleSheet.create({
   categoryContainer: {
     paddingVertical: 15,
     paddingLeft: 20,
-    backgroundColor: '#f7f7f7', // 비선택 배경색
+    backgroundColor: '#f7f7f7',
   },
   selectedCategoryContainer: {
     paddingVertical: 15,
     paddingLeft: 20,
-    backgroundColor: '#fff', // 선택된 카테고리 배경색 (흰색)
-    borderLeftWidth: 5, // 선택 표시를 위한 왼쪽 바
-    borderLeftColor: '#404040ff', // 선택된 카테고리 강조 색상
+    backgroundColor: '#fff',
+    borderLeftWidth: 5,
+    borderLeftColor: '#404040ff',
   },
   categoryText: {
     fontSize: 16,
@@ -273,13 +407,13 @@ const styles = StyleSheet.create({
   selectedCategoryText: {
     fontSize: 16,
     color: '#000',
-    fontWeight: '700', // 볼드체
+    fontWeight: '700',
   },
 
   // 오른쪽: 레시피 그리드
   recipeGridContainer: {
     flex: 1,
-    backgroundColor: '#fff', // 오른쪽은 흰색 배경
+    backgroundColor: '#fff',
     paddingHorizontal: 15,
   },
   recipeGridContent: {
@@ -295,7 +429,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    marginRight: -10, // 카드 사이의 간격 상쇄
+    marginRight: -10,
   },
   recipeCard: {
     // 3열 그리드 레이아웃
@@ -306,13 +440,13 @@ const styles = StyleSheet.create({
   },
   recipeImagePlaceholder: {
     width: '100%',
-    aspectRatio: 1, // 정사각형
-    backgroundColor: '#eee', // 회색 상자
+    aspectRatio: 1, 
+    backgroundColor: '#eee',
     borderRadius: 8,
     marginBottom: 5,
   },
   recipeName: {
-    fontSize: 13, // 작은 글씨
+    fontSize: 13,
     color: '#444',
     textAlign: 'center',
     marginTop: 4,
@@ -323,5 +457,28 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     width: '100%',
+  },
+  // --- 찜 아이콘 및 그룹화 관련 스타일 ---
+  favoriteIcon: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 15,
+    padding: 2,
+  },
+  categoryGroup: {
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom: 10,
+  },
+  groupTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#666',
+    marginBottom: 10,
+    paddingLeft: 5, 
   }
 });
