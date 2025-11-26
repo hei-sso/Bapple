@@ -4,7 +4,7 @@ import db from '../db.js';
 import nodemailer from 'nodemailer';
 import sgTransport from 'nodemailer-sendgrid-transport';
 import crypto from 'crypto';
-import qs from 'qs'; // [수정] form -> from 오타 수정
+import qs from 'qs';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -18,8 +18,10 @@ console.log(`[DEBUG] KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}`);
 // 카카오 토큰 교환 및 로그인/회원가입
 export const kakaoTokenExchange = async (req, res) => {
   console.log("--- KAKAO TOKEN EXCHANGE 시작 ---");
-  const { code } = req.body; 
+  const code = req.body.code || req.query.code;
 
+  console.log(`[DEBUG] 수신된 인가 코드: ${code ? '존재함' : '없음'}`);
+  
   if (!code) {
     console.log("ERROR: KAKAO_ACCESS_TOKEN(인가코드) 누락");
     return res.status(400).json({ message: "카카오 인가 코드가 누락되었습니다." });
