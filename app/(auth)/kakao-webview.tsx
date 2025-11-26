@@ -15,16 +15,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
 
 // Style 임포트
-import { Header } from '@/components/header'; // 헤더
+import { Header } from '@/components/header';
 
-// Context 훅 임포트
+// Context 임포트
 import { useAuth } from '@/context/authContext';
 
 // 카카오 로그인 상수
 const KAKAO_REST_API_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY!;
 
 // RAILWAY BASE URL
-const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL
+const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
 
 // 카카오 디벨로퍼에 등록된 전체 Redirect URI (콜백 주소)
 const REDIRECT_URI_WEB = `${RAILWAY_BASE_URL}/api/auth/kakao/callback`; 
@@ -50,55 +50,55 @@ export default function KakaoWebViewScreen() {
         router.back();
     };
 
-    // URL에서 인가 코드(code)를 추출
+    // WebView에서 받은 URL에서 인가 코드(code)를 추출
     const getCode = (url: string) => {
         const exp = 'code=';
         const condition = url.indexOf(exp);
         
         if (condition !== -1) {
             const requestCode = url.substring(condition + exp.length);
+            console.log("✅ 인가 코드 추출 성공:", requestCode);
             requestToken(requestCode);
-        } else {
-            Alert.alert('오류', '카카오 인증 코드 추출 실패.');
-            router.back(); // 실패 시 이전 화면으로 돌아감
         }
     };
 
-    // 인가 코드를 백엔드로 바로 전달
+    // ✨ 인가 코드를 백엔드로 바로 전송 (토큰 교환은 백엔드 담당)
     const requestToken = async (code: string) => {
+        const BACKEND_API_URL = `${RAILWAY_BASE_URL}/api/auth/kakao/token_exchange`; 
 
         try {
-            // 바로 백엔드로 직행!
-            const BACKEND_API_URL = `${RAILWAY_BASE_URL}/api/auth/kakao/token_exchange`; 
+            console.log("➡ 백엔드로 로그인 요청 전송 중...");
 
-            // 백엔드가 req.body.code를 기다리므로 키 이름을 'code'로 백엔드랑 맞춤
-            const body = { code: code };
+            // ✨ 백엔드가 { code: "..." } 형태의 JSON을 기다림
+            const response = await axios.post(BACKEND_API_URL, 
+                { 
+                    code: code 
+                }, 
+                {
+                    headers: { 
+                        "Content-Type": "application/json" 
+                    }
+                }
+            );
             
-            console.log("백엔드로 인가 코드 전송 중...", BACKEND_API_URL);
-
-            // 백엔드와 통신하여 서비스 JWT 토큰 획득
-            const response = await axios.post(BACKEND_API_URL, body);
-            
+            // 백엔드에서 받은 서비스용 JWT 토큰
             const serviceToken = response.data.token; 
-            const isNewUser = response.data.isNewUser; // 신규 유저 여부 (필요 시 사용)
+            const isNewUser = response.data.isNewUser;
 
-            console.log("✅ 로그인 성공: JWT 획득 완료.");
+            console.log(`✅ 로그인 성공! (신규 유저 여부: ${isNewUser})`);
 
             // 로그인 완료 처리
-            await signIn(serviceToken); // 토큰 저장 및 Context 업데이트
-            router.replace('/(tabs)/home'); // 홈으로 이동
+            await signIn(serviceToken); // 토큰 저장
+            router.replace('/(tabs)/home'); // 메인 화면으로 이동
 
         } catch (e: any) {
-            // 에러 처리 강화
-            console.error("❌ 로그인 실패 (백엔드 통신 오류):", e.response?.data || e.message);
+            console.error("❌ 백엔드 로그인 요청 실패:", e.response?.data || e.message);
             
-            // 400 or 401 오류: 백엔드 측의 통신 거부
-            if (e.response && (e.response.status === 400 || e.response.status === 401)) {
-                 Alert.alert('로그인 실패', e.response.data.message || '인증 정보가 올바르지 않습니다.');
-            } else {
-                 Alert.alert('서버 오류', '로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.');
-            }
-            router.back();
+            Alert.alert(
+                '로그인 실패', 
+                `서버 메시지: ${e.response?.data?.message || '네트워크 오류가 발생했습니다.'}`
+            );
+            router.back(); // 실패 시 뒤로 가기
         }
     };
 
@@ -116,6 +116,12 @@ export default function KakaoWebViewScreen() {
             <WebView
                 style={styles.webView}
                 source={{ uri: KAKAO_AUTH_URL }}
+                
+                // 매번 새로운 로그인을 위해 쿠키/캐시 삭제 옵션 추가 (테스트용)
+                incognito={true}             
+                sharedCookiesEnabled={false}
+                cacheEnabled={false}
+                
                 injectedJavaScript={INJECTED_JAVASCRIPT}
                 javaScriptEnabled
                 onMessage={event => {

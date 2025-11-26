@@ -21,13 +21,8 @@ export const Header = StyleSheet.create ({
     },
     KakaoLoginBackButton: {
         position: 'absolute',
-        left: 25,
-        top: 10,
-    },
-    BackText: {
-        fontSize: 28,
-        fontWeight: '300',
-        color: '#000',
+        left: 22,
+        top: 15,
     },
 
     // 프로필 수정 - 저장
