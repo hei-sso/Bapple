@@ -2,7 +2,10 @@
 
 import React from 'react';
 import { Modal, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+
+// Context 임포트
 import { Ingredient } from '@/context/fridgeContext';
+
 interface IngredientModalProps {
   isVisible: boolean;
   onClose: () => void;
