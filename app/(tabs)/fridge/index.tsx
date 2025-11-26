@@ -1,7 +1,7 @@
 // app/(tabs)/fridge/index.tsx
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -13,20 +13,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-interface Ingredient {
-  id: string;
-  name: string;
-  category: string;
-}
+// Modal 임포트
+import IngredientModal from '@/components/IngredientModal';
 
-interface Category {
-  id: string;
-  name: string;
-  ingredients: Ingredient[];
-}
+// Context 임포트
+import { Ingredient, Category, FridgeContextType } from '@/context/fridgeContext';
 
 // Mock 데이터
-const MOCK_CATEGORIES_DATA: Category[] = [
+const MOCK_CATEGORIES_DATA = [
   {
     id: 'my_fridge',
     name: '내 냉장고',
@@ -76,130 +70,263 @@ const MOCK_CATEGORIES_DATA: Category[] = [
   { id: 'snack', name: '간식/과자/떡', ingredients: [] },
 ];
 
-// '내 냉장고' 카테고리에 모든 재료를 합산하는 로직 (useMemo로 처리)
-const calculateInitialData = (): Category[] => {
-  const allIngredients: Ingredient[] = MOCK_CATEGORIES_DATA.flatMap(
-    (cat) => cat.id !== 'my_fridge' ? cat.ingredients : []
-  );
+// Fridge Context 생성
+const FridgeContext = createContext<FridgeContextType | undefined>(undefined);
 
-  return MOCK_CATEGORIES_DATA.map(cat => {
-    if (cat.id === 'my_fridge') {
-      // '내 냉장고'는 다른 모든 카테고리의 재료를 포함
-      return { ...cat, ingredients: allIngredients };
-    }
-    return cat;
-  });
+// Fridge Context를 사용하는 커스텀 훅
+const useFridge = () => {
+  const context = useContext(FridgeContext);
+  if (!context) {
+    throw new Error('useFridge must be used within a FridgeProvider');
+  }
+  return context;
+};
+
+// 냉장고 상태 관리 Provider
+const FridgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string>('my_fridge');
+  // 초기 냉장고 재료 상태 (현재는 빈 배열로 시작)
+  const [myFridgeIngredients, setMyFridgeIngredients] = useState<Ingredient[]>([]);
+
+  // 'my_fridge'를 제외한 모든 카테고리 (UI용)
+  const allCategories = useMemo(() => {
+    // 실제 앱에서는 DB에서 불러올 것이므로, initialData 계산 로직을 제거하고 MOCK_CATEGORIES_DATA를 직접 사용합니다.
+    return MOCK_CATEGORIES_DATA;
+  }, []);
+
+  // 재료 추가 함수
+  const addIngredient = useCallback((ingredient: Ingredient) => {
+    setMyFridgeIngredients(prev => {
+      // 중복 추가 방지
+      if (!prev.find(item => item.id === ingredient.id)) {
+        return [...prev, ingredient];
+      }
+      return prev;
+    });
+  }, []);
+
+  // 재료 삭제 함수
+  const removeIngredient = useCallback((ingredientId: string) => {
+    setMyFridgeIngredients(prev => prev.filter(item => item.id !== ingredientId));
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    allCategories,
+    myFridgeIngredients,
+    addIngredient,
+    removeIngredient,
+    selectedCategory,
+    setSelectedCategory,
+  }), [allCategories, myFridgeIngredients, addIngredient, removeIngredient, selectedCategory]);
+
+  return (
+    <FridgeContext.Provider value={contextValue}>
+      {children}
+    </FridgeContext.Provider>
+  );
 };
 
 // 개별 식재료 컴포넌트
-const IngredientItem: React.FC<{ ingredient: Ingredient }> = ({ ingredient }) => (
-  <TouchableOpacity style={styles.ingredientCard}>
-    {/* 회색 상자 (이미지/아이콘 자리) */}
-    <View style={styles.ingredientImagePlaceholder} />
-    {/* 식재료 이름 */}
-    <Text style={styles.ingredientName} numberOfLines={1}>
-      {ingredient.name}
-    </Text>
-  </TouchableOpacity>
-);
+const IngredientItem: React.FC<{ ingredient: Ingredient }> = ({ ingredient }) => {
+  const { myFridgeIngredients, addIngredient, removeIngredient } = useFridge();
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
-// 여기부터 메인 화면 처리
-export default function FridgeScreen() {
-  const initialData = useMemo(calculateInitialData, []);
-  const [selectedCategory, setSelectedCategory] = useState<string>('my_fridge');
+  // 현재 재료가 냉장고에 있는지 확인
+  const isInFridge = useMemo(
+    () => myFridgeIngredients.some(item => item.id === ingredient.id),
+    [myFridgeIngredients, ingredient.id]
+  );
 
-  const insets = useSafeAreaInsets();
-
-  // 현재 선택된 카테고리의 식재료 목록을 계산
-  const currentIngredients = useMemo(() => {
-    const category = initialData.find(cat => cat.id === selectedCategory);
-    return category ? category.ingredients : [];
-  }, [selectedCategory, initialData]);
-
-  // 카테고리 목록 렌더링 함수
-  const renderCategoryItem = (category: Category) => {
-    const isSelected = category.id === selectedCategory;
-    
-    // 선택된 카테고리 스타일
-    const categoryTextStyle = isSelected
-      ? styles.selectedCategoryText
-      : styles.categoryText;
-    
-    // 선택된 카테고리 컨테이너 스타일 (흰색 바탕)
-    const categoryContainerStyle = isSelected
-      ? styles.selectedCategoryContainer
-      : styles.categoryContainer;
-
-    return (
-      <TouchableOpacity
-        key={category.id}
-        style={categoryContainerStyle}
-        onPress={() => setSelectedCategory(category.id)}
-      >
-        <Text style={categoryTextStyle}>{category.name}</Text>
-      </TouchableOpacity>
-    );
+  // 모달에서 확인 버튼 클릭 시
+  const handleConfirm = (ing: Ingredient) => {
+    if (isInFridge) {
+      removeIngredient(ing.id); // 냉장고에 있으면 삭제
+    } else {
+      addIngredient(ing); // 없으면 추가
+    }
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* 검색 영역 */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputWrapper}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="검색"
-            placeholderTextColor="#888"
-          />
-          {/* Ionicons 사용 */}
-          <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
-        </View>
-      </View>
+    <>
+      <TouchableOpacity 
+        style={styles.ingredientCard}
+        onPress={() => setIsModalVisible(true)} // 클릭 시 모달 열기
+      >
+        {/* 회색 상자 (이미지/아이콘 자리) */}
+        <View style={styles.ingredientImagePlaceholder} />
+        {/* 식재료 이름 */}
+        <Text style={styles.ingredientName} numberOfLines={1}>
+          {ingredient.name}
+        </Text>
+      </TouchableOpacity>
 
-      {/* 카테고리 + 식재료 그리드 */}
-      <View style={styles.contentArea}>
-        
-        {/* 왼쪽: 카테고리 목록 */}
-        <View style={styles.categoryListContainer}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.categoryListContent}
-          >
-            {initialData.map(renderCategoryItem)}
-          </ScrollView>
-        </View>
-
-        {/* 오른쪽: 식재료 그리드 */}
-        <View style={styles.ingredientGridContainer}>
-          <ScrollView 
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.ingredientGridContent}
-          >
-            {/* 현재 선택된 카테고리의 재료를 그리드 형태로 표시 */}
-            <Text style={styles.currentCategoryTitle}>
-                {initialData.find(c => c.id === selectedCategory)?.name || '카테고리'}
-            </Text>
-            
-            <View style={styles.gridRow}>
-              {currentIngredients.length > 0 ? (
-                currentIngredients.map((ing, index) => (
-                  // 그리드 레이아웃을 위해 key prop을 제공
-                  <IngredientItem key={ing.id + index} ingredient={ing} />
-                ))
-              ) : (
-                <Text style={styles.noIngredientText}>
-                  {selectedCategory === 'my_fridge' 
-                    ? '냉장고에 등록된 재료가 없습니다.' 
-                    : <>이 카테고리에 등록된{"\n"}재료가 없습니다.</> // 글씨 잘려서
-                  }
-                </Text>
-              )}
-            </View>
-          </ScrollView>
-        </View>
-      </View>
-    </View>
+      <IngredientModal
+        isVisible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        ingredient={ingredient}
+        isInFridge={isInFridge}
+        onConfirm={handleConfirm}
+      />
+    </>
   );
+};
+
+// 재료 그리드를 카테고리별로 그룹화하여 표시하는 컴포넌트 (내 냉장고 전용)
+const FridgeIngredientGroup: React.FC<{ ingredients: Ingredient[] }> = ({ ingredients }) => {
+    
+    // 카테고리별로 재료를 그룹화
+    const groupedIngredients = useMemo(() => {
+        return ingredients.reduce((acc, ingredient) => {
+            const categoryName = MOCK_CATEGORIES_DATA.find(cat => cat.id === ingredient.category)?.name || '기타';
+            if (!acc[categoryName]) {
+                acc[categoryName] = [];
+            }
+            acc[categoryName].push(ingredient);
+            return acc;
+        }, {} as { [key: string]: Ingredient[] });
+    }, [ingredients]);
+    
+    // 카테고리 이름 목록 (순서 유지를 위해)
+    const categoryNames = Object.keys(groupedIngredients);
+    
+    if (ingredients.length === 0) {
+        return (
+            <Text style={styles.noIngredientText}>
+                냉장고에 등록된 재료가 없습니다.
+            </Text>
+        );
+    }
+
+    return (
+        <>
+            {categoryNames.map(categoryName => (
+                <View key={categoryName} style={styles.categoryGroup}>
+                    <Text style={styles.groupTitle}>{categoryName}</Text>
+                    <View style={styles.gridRow}>
+                        {groupedIngredients[categoryName].map((ing, index) => (
+                            <IngredientItem key={ing.id + index} ingredient={ing} />
+                        ))}
+                    </View>
+                </View>
+            ))}
+        </>
+    );
+};
+
+// 여기부터 메인 화면 처리
+const FridgeScreenContent = () => {
+    const { 
+        allCategories, 
+        myFridgeIngredients, 
+        selectedCategory, 
+        setSelectedCategory 
+    } = useFridge();
+    
+    const insets = useSafeAreaInsets();
+
+    // 현재 선택된 카테고리의 식재료 목록을 계산 (내 냉장고가 아닌 경우에만)
+    const currentIngredients = useMemo(() => {
+        if (selectedCategory === 'my_fridge') {
+            // '내 냉장고'는 그룹화된 뷰를 별도로 사용
+            return []; 
+        }
+        const category = allCategories.find(cat => cat.id === selectedCategory);
+        return category ? category.ingredients : [];
+    }, [selectedCategory, allCategories]);
+
+    // 카테고리 목록 렌더링 함수
+    const renderCategoryItem = (category: Category) => {
+        const isSelected = category.id === selectedCategory;
+        
+        // ... (스타일 로직은 동일) ...
+        const categoryTextStyle = isSelected
+          ? styles.selectedCategoryText
+          : styles.categoryText;
+        
+        const categoryContainerStyle = isSelected
+          ? styles.selectedCategoryContainer
+          : styles.categoryContainer;
+
+        return (
+            <TouchableOpacity
+                key={category.id}
+                style={categoryContainerStyle}
+                onPress={() => setSelectedCategory(category.id)}
+            >
+                <Text style={categoryTextStyle}>{category.name}</Text>
+            </TouchableOpacity>
+        );
+    };
+
+    return (
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+            {/* 검색 영역 */}
+            {/* ... (검색 영역 코드는 동일) ... */}
+            <View style={styles.searchContainer}>
+                <View style={styles.searchInputWrapper}>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="검색"
+                        placeholderTextColor="#888"
+                    />
+                    <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
+                </View>
+            </View>
+
+            {/* 카테고리 + 식재료 그리드 */}
+            <View style={styles.contentArea}>
+                
+                {/* 왼쪽: 카테고리 목록 */}
+                <View style={styles.categoryListContainer}>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.categoryListContent}
+                    >
+                        {allCategories.map(renderCategoryItem)}
+                    </ScrollView>
+                </View>
+
+                {/* 오른쪽: 식재료 그리드 */}
+                <View style={styles.ingredientGridContainer}>
+                    <ScrollView 
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.ingredientGridContent}
+                    >
+                        <Text style={styles.currentCategoryTitle}>
+                            {allCategories.find(c => c.id === selectedCategory)?.name || '카테고리'}
+                        </Text>
+                        
+                        {/* '내 냉장고' 카테고리인 경우 */}
+                        {selectedCategory === 'my_fridge' ? (
+                            <FridgeIngredientGroup ingredients={myFridgeIngredients} />
+                        ) : (
+                            // 일반 카테고리인 경우
+                            <View style={styles.gridRow}>
+                                {currentIngredients.length > 0 ? (
+                                    currentIngredients.map((ing, index) => (
+                                        <IngredientItem key={ing.id + index} ingredient={ing} />
+                                    ))
+                                ) : (
+                                    <Text style={styles.noIngredientText}>
+                                        이 카테고리에 등록된{"\n"}재료가 없습니다.
+                                    </Text>
+                                )}
+                            </View>
+                        )}
+                    </ScrollView>
+                </View>
+            </View>
+        </View>
+    );
+};
+
+// 메인 Export 컴포넌트: Provider로 감싸기
+export default function FridgeScreen() {
+    return (
+        <FridgeProvider>
+            <FridgeScreenContent />
+        </FridgeProvider>
+    );
 }
 
 // 💡스타일 시트💡
@@ -211,7 +338,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  // 검색 바
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -235,17 +361,13 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginLeft: 10,
   },
-
-  // 메인 컨텐츠
   contentArea: {
     flex: 1,
     flexDirection: 'row',
   },
-
-  // 왼쪽: 카테고리 목록
   categoryListContainer: {
     width: CATEGORY_WIDTH,
-    backgroundColor: '#f7f7f7', // 비선택 카테고리의 배경색 (밝은 회색)
+    backgroundColor: '#f7f7f7',
     borderRightWidth: 1,
     borderRightColor: '#eee',
   },
@@ -255,14 +377,14 @@ const styles = StyleSheet.create({
   categoryContainer: {
     paddingVertical: 15,
     paddingLeft: 20,
-    backgroundColor: '#f7f7f7', // 비선택 배경색
+    backgroundColor: '#f7f7f7',
   },
   selectedCategoryContainer: {
     paddingVertical: 15,
     paddingLeft: 20,
-    backgroundColor: '#fff', // 선택된 카테고리 배경색 (흰색)
-    borderLeftWidth: 5, // 선택 표시를 위한 왼쪽 바
-    borderLeftColor: '#404040ff', // 선택된 카테고리 강조 색상
+    backgroundColor: '#fff',
+    borderLeftWidth: 5,
+    borderLeftColor: '#404040ff',
   },
   categoryText: {
     fontSize: 16,
@@ -272,13 +394,11 @@ const styles = StyleSheet.create({
   selectedCategoryText: {
     fontSize: 16,
     color: '#000',
-    fontWeight: '700', // 볼드체
+    fontWeight: '700',
   },
-
-  // 오른쪽: 식재료 그리드
   ingredientGridContainer: {
     flex: 1,
-    backgroundColor: '#fff', // 오른쪽은 흰색 배경
+    backgroundColor: '#fff',
     paddingHorizontal: 15,
   },
   ingredientGridContent: {
@@ -294,7 +414,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    marginRight: -10, // 카드 사이의 간격 상쇄
+    marginRight: -10,
   },
   ingredientCard: {
     // 3열 그리드 레이아웃
@@ -305,13 +425,13 @@ const styles = StyleSheet.create({
   },
   ingredientImagePlaceholder: {
     width: '100%',
-    aspectRatio: 1, // 정사각형
-    backgroundColor: '#eee', // 회색 상자
+    aspectRatio: 1, 
+    backgroundColor: '#eee',
     borderRadius: 8,
     marginBottom: 5,
   },
   ingredientName: {
-    fontSize: 13, // 작은 글씨
+    fontSize: 13,
     color: '#444',
     textAlign: 'center',
     marginTop: 4,
@@ -322,5 +442,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     width: '100%',
+  },
+  // --- '내 냉장고' 카테고리 그룹화 관련 스타일 ---
+  categoryGroup: {
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom: 10,
+  },
+  groupTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#666',
+    marginBottom: 10,
+    paddingLeft: 5, // 그리드와 시각적 정렬
   }
 });
