@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import fridgeRoutes from './routes/fridgeRoutes.js';
+import recommendRoutes from "./routes/recommendRoutes.js"
 
 // 환경 변수 로드
 dotenv.config();
@@ -42,6 +43,8 @@ app.use(cors({
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json()); // JSON 파싱 필수
+
 
 // 루트 경로 설정
 app.get('/', (req, res) => {
@@ -53,6 +56,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use('/api/group', groupRoutes);
 app.use('/api/fridge', fridgeRoutes);
+app.use("/api/recommend", recommendRoutes);
 
 // 서버 시작
 app.listen(PORT, '0.0.0.0', () => {
