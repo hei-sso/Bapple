@@ -1,4 +1,5 @@
 // app/mypage/health.tsx
+
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -107,16 +108,6 @@ export default function HealthScreen() {
     };
 
     const handleGoBack = () => router.back();
-
-    if (isLoading) {
-        return (
-            <View style={[Styles.container, styles.loadingContainer, { paddingTop: insets.top }]}>
-                <ActivityIndicator size="large" color="#000" />
-                <Text style={styles.loadingText}>정보를 불러오는 중...</Text>
-            </View>
-        );
-    }
-
 
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
