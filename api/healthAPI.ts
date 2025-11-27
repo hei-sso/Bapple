@@ -6,9 +6,7 @@ import { HealthOptions, UserHealthPayload } from '@/types/userTypes';
 // RAILWAY BASE URL
 const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
 
-/**
- * [API 1] 전체 건강/알레르기 옵션 목록을 DB에서 불러오는 함수 (GET /health/options 가정)
- */
+// 전체 건강/알레르기 옵션 목록을 DB에서 불러오는 함수 (GET /health/options 가정)
 export const fetchHealthOptions = async (): Promise<HealthOptions> => {
     try {
         // 가정: GET /health/options 엔드포인트가 전체 목록을 제공합니다.
