@@ -2,13 +2,15 @@
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,112 +19,182 @@ import { CheckBox } from '@/components/checkbox'; // 체크박스
 import { Header } from '@/components/header'; // 헤더
 import { Styles } from '@/constants/styles'; // 공통
 
-const mockData = {
-    health_condition: [
-        { id: 1, name: "당뇨" },
-        { id: 2, name: "고지혈"},
-    ],
-    allergy: [
-        { id: 1, name: "우유" },
-        { id: 2, name: "메밀" },
-        { id: 3, name: "땅콩" },
-        { id: 4, name: "대두" },
-    ],
-    user_health_condition: [2],
-    user_allergy: [1],
-};
+// Type 임포트
+import { HealthItem } from '@/types/userTypes';
+
+// API 임포트
+import { fetchHealthOptions, fetchUserHealthData, saveUserHealthData } from '@/api/healthAPI';
 
 export default function HealthScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    // 상태 관리
-    const [selectedHealth, setSelectedHealth] = useState<number[]>(mockData.user_health_condition);
-    const [seletecAllergy, setSelectedAllergy] = useState<number[]>(mockData.user_allergy);
+    // 로딩/저장 상태
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    
+    // 전체 목록 상태 (DB에서 로드)
+    const [allHealthConditions, setAllHealthConditions] = useState<HealthItem[]>([]);
+    const [allAllergies, setAllAllergies] = useState<HealthItem[]>([]);
 
-    const toggleHealth = (id: number) => {
+    // 사용자 선택 상태 (초기에는 빈 배열, DB에서 로드 후 업데이트)
+    const [selectedHealth, setSelectedHealth] = useState<number[]>([]);
+    const [selectedAllergy, setSelectedAllergy] = useState<number[]>([]);
+
+    // 1. 초기 데이터 로딩 (전체 옵션 목록 + 사용자 선택 값)
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                // (1) 전체 목록 로드 (API/DB)
+                const options = await fetchHealthOptions(); 
+                setAllHealthConditions(options.health_condition);
+                setAllAllergies(options.allergy);
+                
+                // (2) 사용자 선택 값 로드 (API/DB)
+                const profile = await fetchUserHealthData();
+                setSelectedHealth(profile.health_conditions);
+                setSelectedAllergy(profile.allergies);
+                
+            } catch (error) {
+                console.error("❌ 데이터 로드 실패:", error);
+                Alert.alert("로드 오류", error instanceof Error ? error.message : "정보를 불러오는데 실패했습니다.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadData();
+    }, []);
+
+
+    // 체크박스 토글 로직
+    const toggleHealth = useCallback((id: number) => {
         setSelectedHealth((prev) =>
-        prev.includes(id)
-            ? prev.filter((a) => a !== id)
-            : [...prev, id]
+            prev.includes(id)
+                ? prev.filter((a) => a !== id)
+                : [...prev, id]
         );
-    };
+    }, []);
 
-    const toggleAllergy = (id: number) => {
+    const toggleAllergy = useCallback((id: number) => {
         setSelectedAllergy((prev) =>
-        prev.includes(id)
-            ? prev.filter((a) => a !== id)
-            : [...prev, id]
+            prev.includes(id)
+                ? prev.filter((a) => a !== id)
+                : [...prev, id]
         );
+    }, []);
+
+
+    // '저장' 버튼 핸들러 (API 호출)
+    const handleSaveHealth = async () => {
+        if (isSaving || isLoading) return; 
+
+        setIsSaving(true);
+        try {
+            // 백엔드 updateProfile에 맞게 ID 배열만 전송
+            await saveUserHealthData(selectedHealth, selectedAllergy);
+            
+            // 저장 성공 시
+            Alert.alert("저장 완료", "건강 정보가 성공적으로 저장되었습니다.");
+            router.back(); 
+
+        } catch (error) {
+            console.error("❌ 저장 실패:", error);
+            const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+            Alert.alert("저장 오류", errorMessage);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleGoBack = () => router.back();
 
-    const handleSaveHealth = () => {
-      // [추후 구현] 건강 정보 변경 사항 저장 로직
-      console.log("선택된 질병:", selectedHealth);
-      console.log("선택된 알레르기:", seletecAllergy);
-      router.back();
-    };
+    if (isLoading) {
+        return (
+            <View style={[Styles.container, styles.loadingContainer, { paddingTop: insets.top }]}>
+                <ActivityIndicator size="large" color="#000" />
+                <Text style={styles.loadingText}>정보를 불러오는 중...</Text>
+            </View>
+        );
+    }
+
 
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            {/* 헤더 */}
             <View style={Header.HeaderAlign}>
-                <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
+                <TouchableOpacity onPress={handleGoBack} style={Header.BackButton} disabled={isSaving}>
                     <ChevronLeft size={28} color="#000" />
                 </TouchableOpacity>
                 <Text style={Header.Title}>건강 정보</Text>
-                <TouchableOpacity onPress={handleSaveHealth} style={Header.SaveButton}>
-                    <Text style={Header.SaveButtonText}>저장</Text>
+                <TouchableOpacity onPress={handleSaveHealth} style={Header.SaveButton} disabled={isSaving}>
+                    {isSaving ? (
+                        <ActivityIndicator size="small" color="#007AFF" />
+                    ) : (
+                        <Text style={Header.SaveButtonText}>저장</Text>
+                    )}
                 </TouchableOpacity>
             </View>
+            
             <ScrollView contentContainerStyle={Styles.scrollContent}>
 
-                {/* 질병 여부 */}
+                {/* 질병 여부 섹션 */}
                 <View style={styles.section}>
                     <Text style={styles.label}>질병 여부</Text>
                     <View style={styles.divider}>
                         <View style={styles.mapWrapper}>
-                            {mockData.health_condition.map((item) => {
-                                const Checked = selectedHealth.includes(item.id);
+                            {allHealthConditions.map((item) => {
+                                const isChecked = selectedHealth.includes(item.id);
 
                                 return (
-                                    <View key={item.id} style={styles.itemAlign}>
+                                    <TouchableOpacity 
+                                        key={item.id} 
+                                        style={styles.itemAlign}
+                                        onPress={() => toggleHealth(item.id)}
+                                        disabled={isSaving}
+                                    >
                                         <Checkbox
                                             style={CheckBox.checkbox}
-                                            value={Checked}
+                                            value={isChecked}
                                             onValueChange={() => toggleHealth(item.id)}
-                                            color={Checked ? '#000' : undefined}
+                                            color={isChecked ? '#000' : undefined}
                                         />
                                         <Text style={CheckBox.itemLabel}>{item.name}</Text>
-                                    </View>
+                                    </TouchableOpacity>
                                 );
                             })}
                         </View>
                     </View>
                 </View>
                 
-                {/* 알레르기 여부 */}
-                <Text style={styles.label}>알레르기 여부</Text>
-                <View style={styles.divider}>
-                    <View style={styles.mapWrapper}>
-                        {mockData.allergy.map((item) => {
-                            const Checked = seletecAllergy.includes(item.id);
+                {/* 알레르기 여부 섹션 */}
+                <View style={styles.section}>
+                    <Text style={styles.label}>알레르기 여부</Text>
+                    <View style={styles.divider}>
+                        <View style={styles.mapWrapper}>
+                            {allAllergies.map((item) => {
+                                const isChecked = selectedAllergy.includes(item.id);
 
-                            return (
-                                <View key={item.id} style={styles.itemAlign}>
-                                    <Checkbox
-                                        style={CheckBox.checkbox}
-                                        value={Checked}
-                                        onValueChange={() => toggleAllergy(item.id)}
-                                        color={Checked ? '#000' : undefined}
-                                    />
-                                    <Text style={CheckBox.itemLabel}>{item.name}</Text>
-                                </View>
-                            );
-                        })}
+                                return (
+                                    <TouchableOpacity 
+                                        key={item.id} 
+                                        style={styles.itemAlign}
+                                        onPress={() => toggleAllergy(item.id)}
+                                        disabled={isSaving}
+                                    >
+                                        <Checkbox
+                                            style={CheckBox.checkbox}
+                                            value={isChecked}
+                                            onValueChange={() => toggleAllergy(item.id)}
+                                            color={isChecked ? '#000' : undefined}
+                                        />
+                                        <Text style={CheckBox.itemLabel}>{item.name}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
                     </View>
                 </View>
+                
             </ScrollView>
         </View>
     );
@@ -130,13 +202,25 @@ export default function HealthScreen() {
 
 // 💡스타일 시트💡
 const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: '#555',
+    },
     section: {
         marginTop: 20,
-        marginBottom: 80,  // 섹션 간격 고정값
+        marginBottom: 30, // 섹션 간격 조정
     },
     label: {
         fontSize: 18,
         fontWeight: "700",
+        marginBottom: 5,
     },
     divider: {
         height: 1,
@@ -146,8 +230,9 @@ const styles = StyleSheet.create({
     itemAlign: {
         flexDirection: "row",
         alignItems: "center",
-        width: "30%", // 한 줄에 3개
+        width: "33.33%", // 한 줄에 3개
         marginVertical: 10,
+        paddingRight: 10,
     },
     mapWrapper: {
         flexDirection: "row",
