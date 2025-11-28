@@ -204,4 +204,4 @@ router.post("/week/start", async (req, res) => {
 });
 
 module.exports = router;
-// export default router;
+export default router;
