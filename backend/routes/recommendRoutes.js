@@ -1,12 +1,9 @@
 import express from "express";
 import axios from "axios";
-// const pool = require("../db");
-// const defaults = require("../config/recommendDefaults");
 import db from '../db.js';
 import defaults from "../config/recommendDefaults.js";
 
 const router = express.Router();
-
 const AI_BASE_URL = process.env.AI_SERVICE_BASE_URL; 
 
 // 1) 단일 추천 리스트 (오늘 먹을 레시피 추천)
@@ -62,13 +59,10 @@ router.post("/week", async (req, res) => {
     });
   }
 });
+
 // ===========/week/start 라우터 전체 코드=====
-// const express = require("express");
-// const axios = require("axios");
-
-
-// const router = express.Router();
 router.post("/week/start", async (req, res) => {
+  console.log(">>> [POST] /api/recommend/week/start hit"); 
   const{
     user_id,
     cuisine,
@@ -206,5 +200,4 @@ router.post("/week/start", async (req, res) => {
   }
 });
 
-// module.exports = router;
 export default router;
