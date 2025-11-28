@@ -1,5 +1,4 @@
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS password_reset_token;
 SET FOREIGN_KEY_CHECKS = 1;
 
 CREATE TABLE password_reset_token (
