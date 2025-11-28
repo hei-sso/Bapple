@@ -5,6 +5,6 @@ import authenticateToken from '../middleware/authenticateToken.js';
 const router = express.Router();
 
 // GET /api/health/options
-router.get('/options', authenticateToken, getHealthOptions);
+router.get('/options', getHealthOptions);
 
 export default router;
