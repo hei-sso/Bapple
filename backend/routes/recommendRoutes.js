@@ -183,7 +183,7 @@ router.post("/week/start", async (req, res) => {
         [showIds]
       );
     }
-
+    
     await conn.commit();
 
     // 8) UI로 batch_id + 10개 추천 레시피 반환
@@ -196,6 +196,94 @@ router.post("/week/start", async (req, res) => {
     await conn.rollback();
     return res.status(500).json({ message: "추천 생성 중 오류가 발생했습니다." });
   } finally {
+    conn.release();
+  }
+});
+
+// ======week/next 선택 7개/나머지 3개 처리 + 다음 10개 조회
+router.post("/week/next", async (req, res)=>{
+  const { batch_id, selected_recipe_id = []} = req.body;
+
+  if(!batch_id){
+    return res.status(400).json({message: "batch_id는 필수입니다."});
+  }
+  
+  const conn = await db.getConnection();
+
+  try{
+    await conn.beginTransaction();
+
+    // 1) 선택된 레시피들 선택 처리
+    if(selected_recipe_id.length > 0){
+      await conn.query(
+        `
+        UPDATE user_recommendation_item 
+        SET is_selected = 1, selected_at = NOW() 
+        WHERE batch_id = ? 
+          AND recipe_id IN (?)
+        `,
+        [batch_id, selected_recipe_id]
+      );
+    }
+    // 2) 이번에 화면에 보였는데 선택되지 않은 나머지는 거절 처리
+    await conn.query(
+      `
+      UPDATE user_recommendation_item 
+      SET is_rejected = 1, rejected_at = NOW() 
+      WHERE batch_id = ? 
+        AND is_shown = 1
+        AND is_selected = 0
+        AND is_rejected = 0
+      `,
+      [batch_id]
+    );
+    // 3) 아직 한번도 안 보여준 후보들 중에서 10뽑기
+    let [next10] = await conn.query(
+      `
+      SELECT 
+        uri.id AS recommendation_item_id,
+        r.recipe_id,
+        r.name,
+        r.difficulty,
+        r.cooking_time 
+      FROM user_recommendation_item uri 
+      JOIN recipe r ON uri.recipe_id = r.recipe_id 
+      WHERE uri.batch_id = ? 
+        AND uri.is_selected = 0 
+        AND uri.is_rejected = 0 
+        AND uri.is_shown = 0 
+      ORDER BY uri.rank_no
+      LIMIT 10
+      `,
+      [batch_id]
+    );
+
+    // (선택) 만약 남은 후보가 10개 미만이면, 지금은 그냥 있는 만큼만 반환.
+    // 나중에 "50개 다 떨어지면 AI 다시 호출해서 채우기" 로직을 여기에 추가하면 됨.
+
+    // 4) 이번에 내려줄 후보들 is_shown = 1 업데이트
+    const showIds = next10.map((row) => row.recommendation_item_id);
+    if(showIds.length > 0){
+      await conn.query(
+        `
+        UPDATE user_recommendation_item 
+        SET is_shown = 1, shown_at = NOW() 
+        WHERE id IN (?)
+        `,
+        [showIds]
+      );
+    }
+    await conn.commit();
+
+    return res.status(200).json({
+      batch_id,
+      items: next10,
+    });
+  }catch (err){
+    console.error("/week/next error:", err);
+    await conn.rollback();
+    return res.status(500).json({message: "다음 추천 생성 중 오류가 발생했습니다."});
+  }finally{
     conn.release();
   }
 });
