@@ -7,8 +7,8 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import fridgeRoutes from './routes/fridgeRoutes.js';
-import recommendRoutes from "./routes/recommendRoutes.js"
-import healthRoutes from './routes/healthRoutes.js';
+import recommendRoutes from "./routes/recommendRoutes.js";
+import healthRoutes from './routes/healthRoutes.js'; 
 
 // 환경 변수 로드
 dotenv.config();
@@ -20,23 +20,19 @@ const allowedOrigins = [
   'http://localhost:8081', 
   'http://localhost:8080',
   'http://localhost:3000',
-  'https://bapple-production.up.railway.app' // 배포된 백엔드 주소
+  'https://bapple-production.up.railway.app' 
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // 1. !origin: 앱, Postman 등 Origin 헤더가 없는 요청 허용
-        // 2. allowedOrigins: 화이트리스트 도메인 허용
-        // 3. startsWith: 내부 IP 등 허용
         if (!origin || allowedOrigins.includes(origin) || 
             allowedOrigins.some(o => origin.startsWith(o)) || 
             origin.includes('192.168.') || origin.includes('10.')) {
             
-            callback(null, true); // ✅ 통과
+            callback(null, true); 
         } else {
-            // [수정] 에러를 던지지 않고 false를 반환하여 서버가 죽는 것을 방지함
             console.log("CORS Blocked (Safe Reject):", origin); 
-            callback(null, false); //  거절 (서버는 죽지 않음)
+            callback(null, false); 
         }
     },
     credentials: true
@@ -44,8 +40,7 @@ app.use(cors({
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.json()); // JSON 파싱 필수
-
+app.use(express.json()); 
 
 // 루트 경로 설정
 app.get('/', (req, res) => {
@@ -54,7 +49,7 @@ app.get('/', (req, res) => {
 
 // 라우트 연결
 app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);     // userController 연결됨 (/user/profile 등)
+app.use("/api/user", userRoutes);
 app.use('/api/group', groupRoutes);
 app.use('/api/fridge', fridgeRoutes);
 app.use("/api/recommend", recommendRoutes);
