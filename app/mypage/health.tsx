@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     },
     section: {
         marginTop: 20,
-        marginBottom: 30, // 섹션 간격 조정
+        marginBottom: 600, // 섹션 간격 조정
     },
     label: {
         fontSize: 18,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     itemAlign: {
         flexDirection: "row",
         alignItems: "center",
-        width: "33.33%", // 한 줄에 3개
+        width: "50%", // 한 줄에 3개
         marginVertical: 10,
         paddingRight: 10,
     },
