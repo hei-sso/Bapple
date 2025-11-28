@@ -122,6 +122,9 @@ router.post("/week/start", async (req, res) => {
 
     // 디버깅용 로그
     console.log("AI /recommend/week payload:", aiPayload);
+    console.log(">>> /week/start aiPayload:", aiPayload);
+    console.log(">>> AI returned items length:", items.length);
+    console.log(">>> insert values count:", values.length);
 
     // 4) AI 서버 호출
     const aiRes = await axios.post(
@@ -257,10 +260,6 @@ router.post("/week/next", async (req, res)=>{
       `,
       [batch_id]
     );
-
-    console.log(">>> /week/start aiPayload:", aiPayload);
-    console.log(">>> AI returned items length:", items.length);
-    console.log(">>> insert values count:", values.length);
 
     // (선택) 만약 남은 후보가 10개 미만이면, 지금은 그냥 있는 만큼만 반환.
     // 나중에 "50개 다 떨어지면 AI 다시 호출해서 채우기" 로직을 여기에 추가하면 됨.
