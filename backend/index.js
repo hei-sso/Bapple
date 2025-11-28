@@ -49,11 +49,11 @@ app.get('/', (req, res) => {
 
 // 라우트 연결
 app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
+app.use("/user", userRoutes);
 app.use('/api/group', groupRoutes);
 app.use('/api/fridge', fridgeRoutes);
 app.use("/api/recommend", recommendRoutes);
-app.use("/api/health", healthRoutes);
+app.use("/health", healthRoutes);
 
 // 서버 시작
 app.listen(PORT, '0.0.0.0', () => {
