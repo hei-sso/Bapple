@@ -123,7 +123,7 @@ export const kakaoTokenExchange = async (req, res) => {
           email = ?,
           status = 'ACTIVE',
           deleted_at = NULL,
-          last_login = NOW() 
+          last_login_at = NOW() 
           WHERE kakao_id = ?`,
         [nickname, email, kakao_id]
       );
