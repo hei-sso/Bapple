@@ -5,10 +5,6 @@ USE railway;
 SET @OLD_FK_CHECKS = @@FOREIGN_KEY_CHECKS;
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TRIGGER IF EXISTS trg_auth_account_set_exp;
-DROP TRIGGER IF EXISTS trg_auth_account_rotate_exp;
-DROP TABLE IF EXISTS auth_account;
-
 SET FOREIGN_KEY_CHECKS = @OLD_FK_CHECKS;
 
 -- 본 테이블
