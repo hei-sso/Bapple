@@ -1,6 +1,5 @@
 -- (안전 초기화 옵션) 기존 테이블 제거
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS user_profile;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- user_profile 테이블
