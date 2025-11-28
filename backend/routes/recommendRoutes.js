@@ -122,9 +122,6 @@ router.post("/week/start", async (req, res) => {
 
     // 디버깅용 로그
     console.log("AI /recommend/week payload:", aiPayload);
-    console.log(">>> /week/start aiPayload:", aiPayload);
-    console.log(">>> AI returned items length:", items.length);
-    console.log(">>> insert values count:", values.length);
 
     // 4) AI 서버 호출
     const aiRes = await axios.post(
@@ -186,6 +183,8 @@ router.post("/week/start", async (req, res) => {
         [showIds]
       );
     }
+    console.log(">>> AI returned items length:", items.length);
+    console.log(">>> insert values count:", values.length);
 
     await conn.commit();
 
