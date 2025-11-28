@@ -8,6 +8,7 @@ import userRoutes from './routes/userRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import fridgeRoutes from './routes/fridgeRoutes.js';
 import recommendRoutes from "./routes/recommendRoutes.js"
+import healthRoutes from './routes/healthRoutes.js';
 
 // 환경 변수 로드
 dotenv.config();
@@ -51,12 +52,13 @@ app.get('/', (req, res) => {
     res.json({message: 'backend API 작동', status : '준비 완료'});
 })
 
-// 인증 라우트 연결
+// 라우트 연결
 app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
+app.use("/api/user", userRoutes);     // userController 연결됨 (/user/profile 등)
 app.use('/api/group', groupRoutes);
 app.use('/api/fridge', fridgeRoutes);
 app.use("/api/recommend", recommendRoutes);
+app.use("/api/health", healthRoutes);
 
 // 서버 시작
 app.listen(PORT, '0.0.0.0', () => {
