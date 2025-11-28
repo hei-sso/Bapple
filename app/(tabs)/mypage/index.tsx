@@ -40,22 +40,26 @@ export default function MyPageScreen() {
     // 💡[추후 구현] useAuth 훅 등으로 사용자 정보 관리
     const [user, setUser] = useState(MOCK_USER);
 
-    // 설정/정보 페이지 이동 핸들러
-    const handleNavigation = useCallback((path: string) => {
-        // app/mypage/[filename].tsx 경로로 이동
-        router.push(path as RedirectProps['href']);
+    // 설정 페이지
+    const handleSetting = useCallback(() => {
+        router.push('/mypage/setting' as RedirectProps['href']);
     }, [router]);
 
-    // 프로필 수정 버튼 핸들러
+    // 프로필 수정 버튼
     const handleEditProfile = useCallback(() => {
         router.push('/mypage/profile' as RedirectProps['href']);
     }, [router]);
 
-    // 친구 추가 버튼 핸들러
+    // 친구 추가 버튼
     const handleAddFriend = useCallback(() => {
         // 💡[추후 구현] 친구 추가/검색 화면으로 이동
         console.log("친구 추가하기 버튼 클릭");
     }, []);
+
+    // 건강 정보/냉장고 공개 범위 설정
+    const handleNavigation = useCallback((path: string) => {
+        router.push(path as RedirectProps['href']);
+    }, [router]);
 
     const renderInfoItem = (item: (typeof INFO_MENUS)[0], index: number) => (
         <TouchableOpacity 
@@ -78,7 +82,7 @@ export default function MyPageScreen() {
                 
                 {/* 상단 설정 아이콘 */}
                 <View style={styles.settingsHeader}>
-                    <TouchableOpacity onPress={() => handleNavigation('/mypage/settings')}>
+                    <TouchableOpacity onPress={handleSetting}>
                         <FontAwesome name="cog" size={24} color="#000" />
                     </TouchableOpacity>
                 </View>

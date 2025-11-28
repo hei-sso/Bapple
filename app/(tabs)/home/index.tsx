@@ -272,6 +272,11 @@ export default function HomeScreen() {
     setIsMenuOpen(false);
   }, []);
 
+  // 설정 페이지
+  const handleSetting = useCallback(() => {
+      router.push('/mypage/setting' as RedirectProps['href']);
+  }, [router]);
+
   const CALENDAR_PADDING_H = 20;
   const BORDER_WIDTH = 1;
 
@@ -369,7 +374,9 @@ export default function HomeScreen() {
             />
             <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
           </View>
-          <FontAwesome name="cog" size={24} color="#000" style={styles.settingsIcon} />
+          <TouchableOpacity onPress={handleSetting}>
+            <FontAwesome name="cog" size={24} color="#000" style={styles.settingsIcon} />
+          </TouchableOpacity>
         </View>
 
         {/* 그룹 활성화/비활성화 버튼 영역 */}
