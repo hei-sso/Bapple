@@ -358,22 +358,22 @@ export default function HomeScreen() {
 
   // 메인 뷰
   return (
-    <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[Styles.indexContainer, { paddingTop: insets.top}]}>
         
         {/* 상단 검색 및 설정 영역 */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
               <FontAwesome name="user-circle" size={32} color="#ccc" /> 
           </TouchableOpacity>
-          
-          <View style={styles.searchBar}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="검색"
-              placeholderTextColor="#888"
-            />
-            <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
-          </View>
+            {/* 검색 영역 */}
+            <View style={styles.searchBar}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="검색"
+                placeholderTextColor="#888"
+              />
+              <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
+            </View>
           <TouchableOpacity onPress={handleSetting}>
             <FontAwesome name="cog" size={24} color="#000" style={styles.settingsIcon} />
           </TouchableOpacity>
@@ -431,7 +431,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 80,
     paddingBottom: 50
   },
-
   // 헤더 (검색 및 설정)
   header: {
     flexDirection: 'row',

@@ -268,63 +268,63 @@ const RecipeScreenContent = () => {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            {/* 검색 영역 */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchInputWrapper}>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="검색"
-                        placeholderTextColor="#888"
-                    />
-                    <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
-                </View>
-            </View>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+          {/* 검색 영역 */}
+          <View style={styles.searchContainer}>
+              <View style={styles.searchInputWrapper}>
+                  <TextInput
+                      style={styles.searchInput}
+                      placeholder="검색"
+                      placeholderTextColor="#888"
+                  />
+                  <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
+              </View>
+          </View>
 
-            {/* 카테고리 + 레시피 그리드 */}
-            <View style={styles.contentArea}>
-                
-                {/* 왼쪽: 카테고리 목록 */}
-                <View style={styles.categoryListContainer}>
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.categoryListContent}
-                    >
-                        {allCategories.map(renderCategoryItem)}
-                    </ScrollView>
-                </View>
+          {/* 카테고리 + 레시피 그리드 */}
+          <View style={styles.contentArea}>
+              
+              {/* 왼쪽: 카테고리 목록 */}
+              <View style={styles.categoryListContainer}>
+                  <ScrollView
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.categoryListContent}
+                  >
+                      {allCategories.map(renderCategoryItem)}
+                  </ScrollView>
+              </View>
 
-                {/* 오른쪽: 레시피 그리드 */}
-                <View style={styles.recipeGridContainer}>
-                    <ScrollView 
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.recipeGridContent}
-                    >
-                        <Text style={styles.currentCategoryTitle}>
-                            {allCategories.find(c => c.id === selectedCategory)?.name || '카테고리'}
-                        </Text>
-                        
-                        {/* '찜' 카테고리인 경우 */}
-                        {selectedCategory === 'my_recipe' ? (
-                            <FavoriteRecipeGroup recipes={myFavoriteRecipes} />
-                        ) : (
-                            // 일반 카테고리인 경우
-                            <View style={styles.gridRow}>
-                                {currentRecipes.length > 0 ? (
-                                    currentRecipes.map((rec, index) => (
-                                        <RecipeItem key={rec.id + index} recipe={rec} />
-                                    ))
-                                ) : (
-                                    <Text style={styles.noRecipeText}>
-                                        이 카테고리에 등록된{"\n"}레시피가 없습니다.
-                                    </Text>
-                                )}
-                            </View>
-                        )}
-                    </ScrollView>
-                </View>
-            </View>
-        </View>
+              {/* 오른쪽: 레시피 그리드 */}
+              <View style={styles.recipeGridContainer}>
+                  <ScrollView 
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.recipeGridContent}
+                  >
+                      <Text style={styles.currentCategoryTitle}>
+                          {allCategories.find(c => c.id === selectedCategory)?.name || '카테고리'}
+                      </Text>
+                      
+                      {/* '찜' 카테고리인 경우 */}
+                      {selectedCategory === 'my_recipe' ? (
+                          <FavoriteRecipeGroup recipes={myFavoriteRecipes} />
+                      ) : (
+                          // 일반 카테고리인 경우
+                          <View style={styles.gridRow}>
+                              {currentRecipes.length > 0 ? (
+                                  currentRecipes.map((rec, index) => (
+                                      <RecipeItem key={rec.id + index} recipe={rec} />
+                                  ))
+                              ) : (
+                                  <Text style={styles.noRecipeText}>
+                                      이 카테고리에 등록된{"\n"}레시피가 없습니다.
+                                  </Text>
+                              )}
+                          </View>
+                      )}
+                  </ScrollView>
+              </View>
+          </View>
+      </View>
     );
 };
 
