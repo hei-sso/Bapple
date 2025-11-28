@@ -1,5 +1,9 @@
 import express from "express";
 import axios from "axios";
+// const pool = require("../db");
+// const defaults = require("../config/recommendDefaults");
+import db from '../db.js';
+import defaults from "../config/recommendDefaults.js";
 
 const router = express.Router();
 
@@ -61,8 +65,7 @@ router.post("/week", async (req, res) => {
 // ===========/week/start 라우터 전체 코드=====
 // const express = require("express");
 // const axios = require("axios");
-const pool = require("../db");
-const defaults = require("../config/recommendDefaults");
+
 
 // const router = express.Router();
 router.post("/week/start", async (req, res) => {
@@ -83,7 +86,7 @@ router.post("/week/start", async (req, res) => {
     return res.status(400).json({message: "user_id는 필수입니다."});
   }
 
-  const conn = await pool.getConnection();
+  const conn = await db.getConnection();
 
   try {
     await conn.beginTransaction();
@@ -203,5 +206,5 @@ router.post("/week/start", async (req, res) => {
   }
 });
 
-module.exports = router;
-// export default router;
+// module.exports = router;
+export default router;
