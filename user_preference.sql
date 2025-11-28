@@ -1,5 +1,5 @@
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS user_preference;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 CREATE TABLE user_preference (
