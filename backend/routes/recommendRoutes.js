@@ -202,9 +202,9 @@ router.post("/week/start", async (req, res) => {
 
 // ======week/next 선택 7개/나머지 3개 처리 + 다음 10개 조회
 router.post("/week/next", async (req, res)=>{
-  const { batchId, selected_recipe_id = []} = req.body;
+  const { batch_id, selected_recipe_id = []} = req.body;
 
-  if(!batchId){
+  if(!batch_id){
     return res.status(400).json({message: "batch_id는 필수입니다."});
   }
   
@@ -222,7 +222,7 @@ router.post("/week/next", async (req, res)=>{
         WHERE batch_id = ? 
           AND recipe_id IN (?)
         `,
-        [batchId, selected_recipe_id]
+        [batch_id, selected_recipe_id]
       );
     }
     // 2) 이번에 화면에 보였는데 선택되지 않은 나머지는 거절 처리
@@ -235,7 +235,7 @@ router.post("/week/next", async (req, res)=>{
         AND is_selected = 0
         AND is_rejected = 0
       `,
-      [batchId]
+      [batch_id]
     );
     // 3) 아직 한번도 안 보여준 후보들 중에서 10뽑기
     let [next10] = await conn.query(
@@ -255,7 +255,7 @@ router.post("/week/next", async (req, res)=>{
       ORDER BY uri.rank_no
       LIMIT 10
       `,
-      [batchId]
+      [batch_id]
     );
 
     // (선택) 만약 남은 후보가 10개 미만이면, 지금은 그냥 있는 만큼만 반환.
