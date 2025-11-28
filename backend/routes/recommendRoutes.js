@@ -183,9 +183,7 @@ router.post("/week/start", async (req, res) => {
         [showIds]
       );
     }
-    console.log(">>> AI returned items length:", items.length);
-    console.log(">>> insert values count:", values.length);
-
+    
     await conn.commit();
 
     // 8) UI로 batch_id + 10개 추천 레시피 반환
