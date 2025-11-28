@@ -1,5 +1,4 @@
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS ingredient_category;
 SET FOREIGN_KEY_CHECKS = 1;
 
 CREATE TABLE ingredient_category (
