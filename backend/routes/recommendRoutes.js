@@ -3,7 +3,7 @@ import axios from "axios";
 // const pool = require("../db");
 // const defaults = require("../config/recommendDefaults");
 import db from '../db.js';
-import { defaults } from "../config/recommendDefaults.js";
+import defaults from "../config/recommendDefaults.js";
 
 const router = express.Router();
 
