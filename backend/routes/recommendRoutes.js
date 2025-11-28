@@ -63,6 +63,10 @@ router.post("/week", async (req, res) => {
 // ===========/week/start 라우터 전체 코드=====
 router.post("/week/start", async (req, res) => {
   console.log(">>> [POST] /api/recommend/week/start hit"); 
+  console.log(">>> /week/start aiPayload:", aiPayload);
+  console.log(">>> AI returned items length:", items.length);
+  console.log(">>> insert values count:", values.length);
+
   const{
     user_id,
     cuisine,
