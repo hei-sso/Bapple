@@ -52,7 +52,7 @@ export const fetchUserHealthData = async (): Promise<UserHealthPayload> => {
  * @param health_conditions - 선택된 질병 ID 배열
  * @param allergies - 선택된 알레르기 ID 배열
  */
-export const saveUserHealthData = async (health_conditions: number[], allergies: number[]): Promise<void> => {
+export const saveUserHealthData = async (health_conditions: string[], allergies: string[]): Promise<void> => {
     try {
         // 백엔드: PUT /user/profile
         const payload: UserHealthPayload = { health_conditions, allergies };

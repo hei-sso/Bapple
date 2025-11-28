@@ -39,8 +39,8 @@ export default function HealthScreen() {
     const [allAllergies, setAllAllergies] = useState<HealthItem[]>([]);
 
     // 사용자 선택 상태 (초기에는 빈 배열, DB에서 로드 후 업데이트)
-    const [selectedHealth, setSelectedHealth] = useState<number[]>([]);
-    const [selectedAllergy, setSelectedAllergy] = useState<number[]>([]);
+    const [selectedHealth, setSelectedHealth] = useState<string[]>([]);
+    const [selectedAllergy, setSelectedAllergy] = useState<string[]>([]);
 
     // 1. 초기 데이터 로딩 (전체 옵션 목록 + 사용자 선택 값)
     useEffect(() => {
@@ -68,7 +68,7 @@ export default function HealthScreen() {
 
 
     // 체크박스 토글 로직
-    const toggleHealth = useCallback((id: number) => {
+    const toggleHealth = useCallback((id: string) => {
         setSelectedHealth((prev) =>
             prev.includes(id)
                 ? prev.filter((a) => a !== id)
@@ -76,7 +76,7 @@ export default function HealthScreen() {
         );
     }, []);
 
-    const toggleAllergy = useCallback((id: number) => {
+    const toggleAllergy = useCallback((id: string) => {
         setSelectedAllergy((prev) =>
             prev.includes(id)
                 ? prev.filter((a) => a !== id)
