@@ -144,9 +144,31 @@ router.post("/week/start", async (req, res) => {
     
     console.log("uniqueItems length : ", uniqueItems.length);
 
+    // 현재 recipe 테이블에 있는 id만 남기기
+    if(uniqueItems.length === 0){
+      console.log("No unique items from AI.");
+    }else{
+      const recipeIds = uniqueItems.map((i)=> i.recipe_id);
+
+      const [existingRecipes] = await conn.query(
+        `
+        SELECT recipe_id 
+        FROM recipe 
+        WHERE recipe_id IN (?)
+        `,
+        [recipeIds]
+      );
+
+      const validIdSet = new Set(existingRecipes.map((r)=> r.recipe_id));
+      const filteredItems = uniqueItems.filter((i)=> validIdSet.has(i.recipe_id));
+
+      console.log("filteredItems length:", filteredItems.length);
+
+    }
+
     // 5) 추천 결과를 user_recommendation_item 에 저장
-    if (uniqueItems.length > 0) {
-      const values = uniqueItems.map((item, idx) => [
+    if (filteredItems.length > 0) {
+      const values = filteredItems.map((item, idx) => [
         batchId,
         item.recipe_id,
         idx + 1, // rank_no: 1부터 시작
@@ -160,6 +182,8 @@ router.post("/week/start", async (req, res) => {
         `,
         [values]
       );
+    }else{
+      console.warn("No valid recipe_ids found in recipe table for this batch.");
     }
 
     // 6) 첫 10개를 recipe 테이블과 조인해서 가져오기
