@@ -130,6 +130,19 @@ router.post("/week/start", async (req, res) => {
     );
 
     const items = aiRes.data.items || []; // 기대형태: [{ recipe_id: "..." }, ...]
+    console.log("AI return items length:", items.length);
+
+    // recipe_id 기준으로 중복 제거
+    const seen = new Set();
+    const uniqueItems = [];
+    for(const item of items){
+      if (!item.recipe_id) continue; // 혹시 모를 빈 값 방지
+      if(seen.has(item.recipe_id)) continue; // 이미 넣은 레시피는 스킵
+      seen.add(item.recipe_id);
+      uniqueItems.push(item);
+    }
+    
+    console.log("uniqueItems length : ", uniqueItems.length);
 
     // 5) 추천 결과를 user_recommendation_item 에 저장
     if (items.length > 0) {
