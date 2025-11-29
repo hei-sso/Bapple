@@ -164,26 +164,25 @@ router.post("/week/start", async (req, res) => {
 
       console.log("filteredItems length:", filteredItems.length);
 
-    }
+      // 5) 추천 결과를 user_recommendation_item 에 저장
+      if (filteredItems.length > 0) {
+        const values = filteredItems.map((item, idx) => [
+          batchId,
+          item.recipe_id,
+          idx + 1, // rank_no: 1부터 시작
+        ]);
 
-    // 5) 추천 결과를 user_recommendation_item 에 저장
-    if (filteredItems.length > 0) {
-      const values = filteredItems.map((item, idx) => [
-        batchId,
-        item.recipe_id,
-        idx + 1, // rank_no: 1부터 시작
-      ]);
-
-      await conn.query(
-        `
-          INSERT INTO user_recommendation_item
-          (batch_id, recipe_id, rank_no)
-          VALUES ?
-        `,
-        [values]
-      );
-    }else{
-      console.warn("No valid recipe_ids found in recipe table for this batch.");
+        await conn.query(
+          `
+            INSERT INTO user_recommendation_item
+            (batch_id, recipe_id, rank_no)
+            VALUES ?
+          `,
+          [values]
+        );
+      }else{
+        console.warn("No valid recipe_ids found in recipe table for this batch.");
+      }
     }
 
     // 6) 첫 10개를 recipe 테이블과 조인해서 가져오기
