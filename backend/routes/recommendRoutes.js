@@ -145,8 +145,8 @@ router.post("/week/start", async (req, res) => {
     console.log("uniqueItems length : ", uniqueItems.length);
 
     // 5) 추천 결과를 user_recommendation_item 에 저장
-    if (items.length > 0) {
-      const values = items.map((item, idx) => [
+    if (uniqueItems.length > 0) {
+      const values = uniqueItems.map((item, idx) => [
         batchId,
         item.recipe_id,
         idx + 1, // rank_no: 1부터 시작
