@@ -2,6 +2,7 @@ import express from "express";
 import axios from "axios";
 import db from '../db.js';
 import defaults from "../config/recommendDefaults.js";
+import { refillRecommendationsForBatch } from "../services/recommendRefillService.js";
 
 const router = express.Router();
 const AI_BASE_URL = process.env.AI_SERVICE_BASE_URL; 
@@ -275,6 +276,8 @@ router.post("/week/next", async (req, res) => {
       [batch_id]
     );
 
+    const NEED_COUNT = 10;
+
     // 3) 아직 한 번도 안 보여준 후보들 중에서 10개 뽑기
     let [next10] = await conn.query(
       `
@@ -291,15 +294,47 @@ router.post("/week/next", async (req, res) => {
           AND uri.is_rejected = 0
           AND uri.is_shown    = 0
         ORDER BY uri.rank_no
-        LIMIT 10
+        LIMIT ?
       `,
-      [batch_id]
+      [batch_id, NEED_COUNT]
     );
 
-    // (선택) 만약 남은 후보가 10개 미만이면, 지금은 그냥 있는 만큼만 반환.
-    // 나중에 "50개 다 떨어지면 AI 다시 호출해서 채우기" 로직을 여기에 추가하면 됨.
+    // 4) 부족하면 refill 호출
+    if (next10.length < NEED_COUNT) {
+      console.log(
+        `>>> batch ${batch_id}: unseen ${next10.length}개, refill 시도...`
+      );
 
-    // 4) 이번에 내려줄 후보들 is_shown = 1 업데이트
+      const inserted = await refillRecommendationsForBatch(conn, batch_id);
+      console.log(">>> refill inserted:", inserted);
+
+      const remain = NEED_COUNT - next10.length;
+      if (remain > 0) {
+        const [refilled] = await conn.query(
+          `
+            SELECT
+              uri.id AS recommendation_item_id,
+              r.recipe_id,
+              r.name,
+              r.difficulty,
+              r.cooking_time
+            FROM user_recommendation_item uri
+            JOIN recipe r ON uri.recipe_id = r.recipe_id
+            WHERE uri.batch_id    = ?
+              AND uri.is_selected = 0
+              AND uri.is_rejected = 0
+              AND uri.is_shown    = 0
+            ORDER BY uri.rank_no
+            LIMIT ?
+          `,
+          [batch_id, remain]
+        );
+
+        next10 = next10.concat(refilled);
+      }
+    }
+
+    // 5) 이번에 내려줄 10개에 is_shown = 1
     const showIds = next10.map((row) => row.recommendation_item_id);
     if (showIds.length > 0) {
       await conn.query(
