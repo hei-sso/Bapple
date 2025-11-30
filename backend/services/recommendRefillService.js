@@ -1,7 +1,7 @@
 // user_recommend_item에 있는 레시피들을 UI에 다 띄우면 다시 AI 서버를 호출해서 새 item들로 채우기
 
 import axios from "axios";
-import defaults from "../config/recommendDefaults";
+import defaults from "../config/recommendDefaults.js";
 
 const AI_BASE_URL = process.env.AI_SERVICE_BASE_URL;
 
