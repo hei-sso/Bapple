@@ -40,7 +40,7 @@ export const getUserProfile = async (req, res) => {
             `SELECT 
                 email, 
                 nickname, 
-                birthday AS birthdate, 
+                birthday, 
                 gender, 
                 profile_image_url,
                 TIMESTAMPDIFF(YEAR, birthday, CURDATE()) AS age 
