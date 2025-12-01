@@ -100,7 +100,7 @@ export default function MyPageScreen() {
     if (isAuthLoading) {
         return (
             <View style={[Styles.indexContainer, styles.centeredLoading, { paddingTop: insets.top }]}>
-                <ActivityIndicator size="large" color="#0000ff" />
+                <ActivityIndicator size="large" color="#848484ff" />
                 <Text style={styles.loadingText}>인증 정보 확인 중...</Text>
             </View>
         );

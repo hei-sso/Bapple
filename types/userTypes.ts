@@ -22,7 +22,9 @@ export interface UserHealthPayload {
 export interface UserProfile {
     id: string; // 사용자 고유 ID (선택 사항)
     nickname: string;
-    // followers: number;
-    // following: number;
+    followers: number;
+    following: number;
     profileImageUrl: string | null; // 프로필 사진 URL
+    phoneNumber: string | null;
+    birthday: string | null;
 }
