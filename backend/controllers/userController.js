@@ -91,7 +91,7 @@ export const updateProfile = async (req, res) => {
         nickname, 
         email, 
         phone_number, 
-        birthdate, 
+        birthday, 
         gender, 
         allergies,          
         health_conditions   
@@ -111,7 +111,7 @@ export const updateProfile = async (req, res) => {
         if (nickname !== undefined) { userUpdates.push('nickname = ?'); userValues.push(nickname); }
         if (email !== undefined) { userUpdates.push('email = ?'); userValues.push(email); }
         if (phone_number !== undefined) { userUpdates.push('phone_number = ?'); userValues.push(phone_number); }
-        if (birthdate !== undefined) { userUpdates.push('birthday = ?'); userValues.push(birthdate); }
+        if (birthday !== undefined) { userUpdates.push('birthday = ?'); userValues.push(birthdate); }
         if (gender !== undefined) { userUpdates.push('gender = ?'); userValues.push(gender); }
 
         if (userUpdates.length > 0) {
@@ -151,7 +151,7 @@ export const updateProfile = async (req, res) => {
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("❌ 업데이트 실패:", error);
+        console.error("업데이트 실패:", error);
         res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     } finally {
         if (connection) connection.release();
