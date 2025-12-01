@@ -37,7 +37,7 @@ export const getUserProfile = async (req, res) => {
     try {
         // (1) 유저 기본 정보
         const [userRows] = await db.query(
-            `SELECT email, nickname, phone_number, birthdate, age, gender, profile_image_url 
+            `SELECT email, nickname, phone_number, birthday, age, gender, profile_image_url 
              FROM user WHERE user_id = ?`, 
             [userId]
         );
@@ -81,7 +81,7 @@ export const updateProfile = async (req, res) => {
     const userId = req.user.user_id; 
     
     const { 
-        nickname, email, phone_number, birthdate, age, gender, 
+        nickname, email, phone_number, birthday, age, gender, 
         allergies,          
         health_conditions   
     } = req.body;
@@ -100,7 +100,7 @@ export const updateProfile = async (req, res) => {
         if (nickname !== undefined) { userUpdates.push('nickname = ?'); userValues.push(nickname); }
         if (email !== undefined) { userUpdates.push('email = ?'); userValues.push(email); }
         if (phone_number !== undefined) { userUpdates.push('phone_number = ?'); userValues.push(phone_number); }
-        if (birthdate !== undefined) { userUpdates.push('birthdate = ?'); userValues.push(birthdate); }
+        if (birthdate !== undefined) { userUpdates.push('birthday = ?'); userValues.push(birthdate); }
         if (age !== undefined) { userUpdates.push('age = ?'); userValues.push(age); }
         if (gender !== undefined) { userUpdates.push('gender = ?'); userValues.push(gender); }
 
