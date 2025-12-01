@@ -2,10 +2,12 @@
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { RedirectProps, useRouter } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
+import { ChevronRight, RefreshCw } from 'lucide-react-native';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Dimensions,
+    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -17,15 +19,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // Style 임포트
 import { Styles } from '@/constants/styles'; // 공통
 
-const { width } = Dimensions.get('window');
+// Context 임포트
+import { useAuth } from '@/context/authContext';
 
-// Mock 데이터 및 상수
-const MOCK_USER = {
-    nickname: "Bapple",
-    followers: 22,
-    following: 22,
-    // 💡[추후 구현] 실제 DB에서 가져올 데이터
-};
+const { width } = Dimensions.get('window');
 
 // 하단 설정/정보 메뉴 목록
 const INFO_MENUS = [
@@ -37,8 +34,19 @@ const INFO_MENUS = [
 export default function MyPageScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    // 💡[추후 구현] useAuth 훅 등으로 사용자 정보 관리
-    const [user, setUser] = useState(MOCK_USER);
+    
+    // useAuth 훅을 사용하여 인증 및 프로필 데이터 가져오기
+    const { isAuthenticated, isLoading: isAuthLoading, userProfile: user, accessToken } = useAuth();
+
+    // 현재 화면의 로딩 상태 (API 실패 후 재시도를 위해 사용 가능)
+    const [isDataLoading, setIsDataLoading] = useState(false);
+    
+    // 인증되지 않은 경우 (토큰이 없거나 만료된 경우) 로그인 화면으로 리디렉션
+    useEffect(() => {
+        if (!isAuthLoading && !isAuthenticated) {
+            router.replace('/welcome' as RedirectProps['href']);
+        }
+    }, [isAuthenticated, isAuthLoading, router]);
 
     // 설정 페이지
     const handleSetting = useCallback(() => {
@@ -52,7 +60,6 @@ export default function MyPageScreen() {
 
     // 친구 추가 버튼
     const handleAddFriend = useCallback(() => {
-        // 💡[추후 구현] 친구 추가/검색 화면으로 이동
         console.log("친구 추가하기 버튼 클릭");
     }, []);
 
@@ -60,6 +67,19 @@ export default function MyPageScreen() {
     const handleNavigation = useCallback((path: string) => {
         router.push(path as RedirectProps['href']);
     }, [router]);
+
+    // 프로필 로드 실패 시 재시도 로직 (userProfile이 null인 경우)
+    const handleRefresh = useCallback(() => {
+        if (accessToken) {
+            console.log("프로필 로드 재시도 필요: Context의 프로필 로직 재실행 필요");
+            // 강제 리로드 또는 Context의 refresh 함수 호출을 가정
+            setIsDataLoading(true);
+            // 나중에 여기서 Context의 refreshProfile()을 호출하고 setIsDataLoading(false)로 마무리
+            setTimeout(() => {
+                setIsDataLoading(false); // 임시 로딩 해제
+            }, 1000); 
+        }
+    }, [accessToken]);
 
     const renderInfoItem = (item: (typeof INFO_MENUS)[0], index: number) => (
         <TouchableOpacity 
@@ -76,6 +96,37 @@ export default function MyPageScreen() {
         </TouchableOpacity>
     );
 
+    // 1. 초기 인증 로딩 중 (가장 먼저 체크)
+    if (isAuthLoading) {
+        return (
+            <View style={[Styles.indexContainer, styles.centeredLoading, { paddingTop: insets.top }]}>
+                <ActivityIndicator size="large" color="#0000ff" />
+                <Text style={styles.loadingText}>인증 정보 확인 중...</Text>
+            </View>
+        );
+    }
+
+    // 2. 인증은 되었으나, 프로필 로드 실패
+    if (isAuthenticated && !user) {
+        return (
+            <View style={[Styles.indexContainer, styles.centeredLoading, { paddingTop: insets.top }]}>
+                <Text style={styles.errorTitle}>앗! 프로필을 불러오지 못했습니다.</Text>
+                <Text style={styles.errorText}>서버 내부 오류(500)가 발생했거나 네트워크 연결에 문제가 있을 수 있습니다.</Text>
+                <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={isDataLoading}>
+                    {isDataLoading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <>
+                            <RefreshCw size={18} color="#fff" style={{ marginRight: 8 }} />
+                            <Text style={styles.refreshButtonText}>다시 시도</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+            </View>
+        );
+    }
+    
+    // 3. 프로필 로드가 완료된 정상 상태
     return (
         <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -90,12 +141,19 @@ export default function MyPageScreen() {
                 {/* 프로필 정보 영역 */}
                 <View style={styles.profileArea}>
                     
-                    {/* 프로필 이미지 및 수정 버튼 (겹치게 처리) */}
                     <View style={styles.profileImageContainer}>
-                        {/* 프로필 이미지 (회색 원) */}
-                        <View style={styles.profileImagePlaceholder} />
+                        {/* 프로필 이미지: URL이 있으면 Image 컴포넌트 사용, 없으면 플레이스홀더 */}
+                        {user!.profileImageUrl ? (
+                             <Image 
+                                source={{ uri: user!.profileImageUrl }} 
+                                style={styles.profileImage} 
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <View style={styles.profileImagePlaceholder} />
+                        )}
                         
-                        {/* 수정 버튼 (겹치는 검은색 원) */}
+                        {/* 수정 버튼 */}
                         <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
                             <FontAwesome name="pencil" size={16} color="#fff" />
                         </TouchableOpacity>
@@ -103,11 +161,11 @@ export default function MyPageScreen() {
 
                     {/* 닉네임, 팔로워/팔로잉 */}
                     <View style={styles.userInfo}>
-                        <Text style={styles.nicknameText}>{user.nickname}</Text>
+                        <Text style={styles.nicknameText}>{user!.nickname}</Text>
                         
                         <View style={styles.followStats}>
-                            <Text style={styles.statItem}>{user.followers} 팔로워</Text>
-                            <Text style={styles.statItem}>{user.following} 팔로잉</Text>
+                            <Text style={styles.statItem}>0 팔로워</Text>
+                            <Text style={styles.statItem}>0 팔로잉</Text>
                         </View>
                     </View>
                 </View>
@@ -130,7 +188,7 @@ export default function MyPageScreen() {
 // 💡스타일 시트💡
 const PROFILE_SIZE = 90;
 const EDIT_BUTTON_SIZE = 35;
-const EDIT_BUTTON_OFFSET = 5; // 프로필 사진 모서리에 겹치는 정도
+const EDIT_BUTTON_OFFSET = 5;
 
 const styles = StyleSheet.create({
     scrollContent: {
@@ -139,7 +197,42 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
     },
     
-    // 상단 설정 아이콘
+    // 중앙 로딩/에러 상태용 스타일 추가
+    centeredLoading: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: '#666',
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        color: '#D32F2F',
+    },
+    errorText: {
+        fontSize: 14,
+        color: '#999',
+        textAlign: 'center',
+        marginBottom: 20,
+        paddingHorizontal: 30,
+    },
+    refreshButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#000',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    refreshButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
     settingsHeader: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
@@ -147,8 +240,6 @@ const styles = StyleSheet.create({
         marginTop: 6,
         height: 44,
     },
-
-    // 프로필 정보 영역
     profileArea: {
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -160,6 +251,12 @@ const styles = StyleSheet.create({
         height: PROFILE_SIZE,
         marginRight: 20,
     },
+    // 실제 Image 컴포넌트용 스타일
+    profileImage: {
+        width: PROFILE_SIZE,
+        height: PROFILE_SIZE,
+        borderRadius: PROFILE_SIZE / 2,
+    },
     profileImagePlaceholder: {
         width: PROFILE_SIZE,
         height: PROFILE_SIZE,
@@ -169,17 +266,16 @@ const styles = StyleSheet.create({
     editButton: {
         position: 'absolute',
         bottom: 0,
-        right: -EDIT_BUTTON_OFFSET, // 프로필 오른쪽 모서리로 이동
+        right: -EDIT_BUTTON_OFFSET, 
         width: EDIT_BUTTON_SIZE,
         height: EDIT_BUTTON_SIZE,
         borderRadius: EDIT_BUTTON_SIZE / 2,
-        backgroundColor: '#000', // 검은색 배경
+        backgroundColor: '#000', 
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2, // 흰색 경계선 (선택 사항)
+        borderWidth: 2, 
         borderColor: '#fff',
     },
-    
     userInfo: {
         flex: 1,
         justifyContent: 'center',
@@ -198,8 +294,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
     },
-
-    // 친구 추가 버튼
     addFriendButton: {
         backgroundColor: '#000',
         paddingVertical: 14,
@@ -213,8 +307,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-
-    // 정보/설정 목록
     infoSection: {
         borderTopWidth: 1,
         borderColor: '#eee',
@@ -231,11 +323,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
     },
-    // 첫 번째 항목의 상단 테두리를 제거 (infoSection의 borderTopWidth로 대체)
     infoItemFirst: {
         borderTopWidth: 0,
     },
-    // 마지막 항목의 하단 테두리를 제거 (디자인에 따라 다름)
     infoItemLast: {
         borderBottomWidth: 0,
     }

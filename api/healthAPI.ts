@@ -1,30 +1,34 @@
 // api/healthAPI.ts
 
 import axios from 'axios';
+import * as SecureStore from 'expo-secure-store'; 
+
+// Type 임포트
 import { HealthOptions, UserHealthPayload } from '@/types/userTypes';
+
+// Constants 임포트
+import { AUTH_TOKEN_KEY } from '@/constants/keys';
 
 // RAILWAY BASE URL
 const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
 
-// 토큰 가져오는 함수 (localStorage, sessionStorage, cookies 등에서 가져올 수 있음)
-const getAuthToken = (): string | null => {
-    return localStorage.getItem('token'); // LocalStorage에서 가져오기
+// 토큰 가져오는 함수 (⭐ SecureStore를 사용하여 토큰을 가져오도록 수정)
+const getAuthToken = async (): Promise<string | null> => {
+    try {
+        // ⭐ SecureStore.getItemAsync()을 사용하여 보안 저장소에서 토큰을 불러옴
+        return await SecureStore.getItemAsync(AUTH_TOKEN_KEY); 
+    } catch (e) {
+        // 에러 메시지도 SecureStore에 맞게 수정
+        console.error("❌ SecureStore 토큰 로드 실패:", e); 
+        return null;
+    }
 }
 
 // 전체 건강/알레르기 옵션 목록을 DB에서 불러오는 함수
 export const fetchHealthOptions = async (): Promise<HealthOptions> => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            throw new Error("로그인이 필요합니다. 토큰이 존재하지 않습니다.");
-        }
-        
-        // 가정: GET /health/options 엔드포인트
-        const response = await axios.get(`${RAILWAY_BASE_URL}/health/options`, {
-            headers: {
-                Authorization: `Bearer ${token}`  // 토큰을 Authorization 헤더에 포함
-            }
-        }); 
+        // GET /health/options 엔드포인트
+        const response = await axios.get(`${RAILWAY_BASE_URL}/health/options`);
         
         if (response.data.success && response.data.data) {
             return response.data.data; // { health_condition: [...], allergy: [...] }
@@ -33,6 +37,7 @@ export const fetchHealthOptions = async (): Promise<HealthOptions> => {
         }
     } catch (error) {
         console.error("❌ 옵션 로드 실패:", error);
+        // Axios 에러 처리 강화
         throw new Error(axios.isAxiosError(error) ? `네트워크 오류: ${error.message}` : "서버 오류 발생");
     }
 };
@@ -40,8 +45,11 @@ export const fetchHealthOptions = async (): Promise<HealthOptions> => {
 // 사용자 프로필에서 현재 선택된 건강 정보 ID 목록을 불러오는 함수 (GET /user/profile 대응)
 export const fetchUserHealthData = async (): Promise<UserHealthPayload> => {
     try {
-        const token = getAuthToken();
+        // ⭐ await을 사용해 SecureStore에서 토큰 로드 대기
+        const token = await getAuthToken(); 
+        
         if (!token) {
+            // 토큰 부재 시 에러는 여전히 발생하지만, 이제는 저장소 문제 아님 (실제 로그인이 안 되었거나 만료)
             throw new Error("로그인이 필요합니다. 토큰이 존재하지 않습니다.");
         }
         // 백엔드: GET /user/profile
@@ -65,7 +73,12 @@ export const fetchUserHealthData = async (): Promise<UserHealthPayload> => {
 
     } catch (error) {
         console.error("❌ 프로필 조회 실패:", error);
-        throw new Error("네트워크 오류 또는 서버 응답 오류가 발생했습니다.");
+        // 에러 메시지 세분화 (네트워크/토큰/서버 응답 등)
+        if (axios.isAxiosError(error)) {
+            throw new Error(error.response?.data?.message || `프로필 조회 실패: ${error.message}`);
+        } else {
+            throw error; // 토큰 없음 등의 명시적 에러는 그대로 던지기
+        }
     }
 };
 
@@ -76,7 +89,9 @@ export const fetchUserHealthData = async (): Promise<UserHealthPayload> => {
  */
 export const saveUserHealthData = async (health_conditions: string[], allergies: string[]): Promise<void> => {
     try {
-        const token = getAuthToken();
+        // ⭐ await을 사용해 SecureStore에서 토큰 로드 대기
+        const token = await getAuthToken(); 
+        
         if (!token) {
             throw new Error("로그인이 필요합니다. 토큰이 존재하지 않습니다.");
         }

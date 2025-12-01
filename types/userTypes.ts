@@ -17,3 +17,12 @@ export interface UserHealthPayload {
     health_conditions: string[]; // 사용자가 선택한 질병 ID 목록 (health_condition_id 리스트)
     allergies: string[];         // 사용자가 선택한 알레르기 ID 목록 (allergy_id 리스트)
 }
+
+// 마이페이지에 필요한 사용자 프로필 정보 타입 추가
+export interface UserProfile {
+    id: string; // 사용자 고유 ID (선택 사항)
+    nickname: string;
+    // followers: number;
+    // following: number;
+    profileImageUrl: string | null; // 프로필 사진 URL
+}
