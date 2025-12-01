@@ -8,7 +8,7 @@ CREATE TABLE user (
     -- 3. 프로필(중복 가능)
     nickname VARCHAR(12),
     profile_image_url VARCHAR(2083),
-    birthday DATE,
+    birthday DATE DEFAULT NULL,
     gender VARCHAR(10),
     
     -- 4. 인증
