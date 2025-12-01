@@ -6,11 +6,25 @@ import { HealthOptions, UserHealthPayload } from '@/types/userTypes';
 // RAILWAY BASE URL
 const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
 
+// 토큰 가져오는 함수 (localStorage, sessionStorage, cookies 등에서 가져올 수 있음)
+const getAuthToken = (): string | null => {
+    return localStorage.getItem('token'); // LocalStorage에서 가져오기
+}
+
 // 전체 건강/알레르기 옵션 목록을 DB에서 불러오는 함수
 export const fetchHealthOptions = async (): Promise<HealthOptions> => {
     try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error("로그인이 필요합니다. 토큰이 존재하지 않습니다.");
+        }
+        
         // 가정: GET /health/options 엔드포인트
-        const response = await axios.get(`${RAILWAY_BASE_URL}/health/options`); 
+        const response = await axios.get(`${RAILWAY_BASE_URL}/health/options`, {
+            headers: {
+                Authorization: `Bearer ${token}`  // 토큰을 Authorization 헤더에 포함
+            }
+        }); 
         
         if (response.data.success && response.data.data) {
             return response.data.data; // { health_condition: [...], allergy: [...] }
@@ -26,8 +40,16 @@ export const fetchHealthOptions = async (): Promise<HealthOptions> => {
 // 사용자 프로필에서 현재 선택된 건강 정보 ID 목록을 불러오는 함수 (GET /user/profile 대응)
 export const fetchUserHealthData = async (): Promise<UserHealthPayload> => {
     try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error("로그인이 필요합니다. 토큰이 존재하지 않습니다.");
+        }
         // 백엔드: GET /user/profile
-        const response = await axios.get(`${RAILWAY_BASE_URL}/user/profile`); 
+        const response = await axios.get(`${RAILWAY_BASE_URL}/user/profile`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }); 
         
         // 백엔드에서 반환된 data 필드에서 health_conditions와 allergies만 추출
         if (response.data.success && response.data.data) {
@@ -54,10 +76,19 @@ export const fetchUserHealthData = async (): Promise<UserHealthPayload> => {
  */
 export const saveUserHealthData = async (health_conditions: string[], allergies: string[]): Promise<void> => {
     try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error("로그인이 필요합니다. 토큰이 존재하지 않습니다.");
+        }
+
         // 백엔드: PUT /user/profile
         const payload: UserHealthPayload = { health_conditions, allergies };
         
-        const response = await axios.put(`${RAILWAY_BASE_URL}/user/profile`, payload);
+        const response = await axios.put(`${RAILWAY_BASE_URL}/user/profile`, payload, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
         
         if (!response.data.success) {
             throw new Error(response.data.message || "정보 저장에 실패했습니다.");
