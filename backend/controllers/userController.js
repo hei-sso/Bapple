@@ -40,6 +40,7 @@ export const getUserProfile = async (req, res) => {
             `SELECT 
                 email, 
                 nickname, 
+                phone_number AS phoneNumber,
                 birthday, 
                 gender, 
                 profile_image_url,
@@ -90,7 +91,7 @@ export const updateProfile = async (req, res) => {
     const { 
         nickname, 
         email, 
-        phone_number, 
+        phoneNumber, 
         birthday, 
         gender, 
         allergies,          
@@ -110,7 +111,7 @@ export const updateProfile = async (req, res) => {
 
         if (nickname !== undefined) { userUpdates.push('nickname = ?'); userValues.push(nickname); }
         if (email !== undefined) { userUpdates.push('email = ?'); userValues.push(email); }
-        if (phone_number !== undefined) { userUpdates.push('phone_number = ?'); userValues.push(phone_number); }
+        if (phoneNumber !== undefined) { userUpdates.push('phone_number = ?'); userValues.push(phoneNumber); }
         if (birthday !== undefined) { userUpdates.push('birthday = ?'); userValues.push(birthday); }
         if (gender !== undefined) { userUpdates.push('gender = ?'); userValues.push(gender); }
 
