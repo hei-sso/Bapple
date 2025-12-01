@@ -35,9 +35,15 @@ export const getUserProfile = async (req, res) => {
     const userId = req.user.user_id;
 
     try {
-        // (1) 유저 기본 정보
+        // (1) 유저 기본 정보 조회
         const [userRows] = await db.query(
-            `SELECT email, nickname, phone_number, birthdate, age, gender, profile_image_url 
+            `SELECT 
+                email, 
+                nickname, 
+                birthday AS birthdate, 
+                gender, 
+                profile_image_url,
+                TIMESTAMPDIFF(YEAR, birthday, CURDATE()) AS age 
              FROM user WHERE user_id = ?`, 
             [userId]
         );
@@ -46,14 +52,14 @@ export const getUserProfile = async (req, res) => {
             return res.status(404).json({ message: "사용자 정보를 찾을 수 없습니다." });
         }
 
-        // (2) 선택한 알레르기 ID 목록 (문자열 ID)
+        // (2) 알레르기 ID 목록
         const [allergyRows] = await db.query(
             `SELECT allergy_id FROM user_allergy WHERE user_id = ?`,
             [userId]
         );
         const allergyIds = allergyRows.map(row => row.allergy_id); 
 
-        // (3) 선택한 건강 상태 ID 목록 (문자열 ID)
+        // (3) 건강 상태 ID 목록
         const [healthRows] = await db.query(
             `SELECT health_condition_id FROM user_health_condition WHERE user_id = ?`,
             [userId]
@@ -65,13 +71,13 @@ export const getUserProfile = async (req, res) => {
             success: true, 
             data: {
                 ...userRows[0],
-                allergies: allergyIds,          // ["A009", "A012"]
-                health_conditions: healthIds    // ["HC001", "HC002"]
+                allergies: allergyIds,          
+                health_conditions: healthIds    
             } 
         });
 
     } catch (error) {
-        console.error("❌ 프로필 조회 실패:", error);
+        console.error("프로필 조회 실패:", error);
         res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
 };
@@ -80,8 +86,13 @@ export const getUserProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
     const userId = req.user.user_id; 
     
+    // 프론트엔드에서 보내주는 데이터 받기
     const { 
-        nickname, email, phone_number, birthdate, age, gender, 
+        nickname, 
+        email, 
+        phone_number, 
+        birthdate, 
+        gender, 
         allergies,          
         health_conditions   
     } = req.body;
@@ -100,8 +111,7 @@ export const updateProfile = async (req, res) => {
         if (nickname !== undefined) { userUpdates.push('nickname = ?'); userValues.push(nickname); }
         if (email !== undefined) { userUpdates.push('email = ?'); userValues.push(email); }
         if (phone_number !== undefined) { userUpdates.push('phone_number = ?'); userValues.push(phone_number); }
-        if (birthdate !== undefined) { userUpdates.push('birthdate = ?'); userValues.push(birthdate); }
-        if (age !== undefined) { userUpdates.push('age = ?'); userValues.push(age); }
+        if (birthdate !== undefined) { userUpdates.push('birthday = ?'); userValues.push(birthdate); }
         if (gender !== undefined) { userUpdates.push('gender = ?'); userValues.push(gender); }
 
         if (userUpdates.length > 0) {
@@ -148,27 +158,17 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-// 5. [추가됨] 전체 건강 옵션 목록 조회 (GET /api/health/options)
-// 이 함수도 이제 userController 안에 있습니다.
+// 5. 전체 건강 옵션 조회
 export const getHealthOptions = async (req, res) => {
   try {
-    // 알레르기 목록 (DB 컬럼명 -> Front id, name)
-    const [allergies] = await db.query(`
-      SELECT allergy_id AS id, allergy_name AS name 
-      FROM allergy
-    `);
-    
-    // 건강 상태 목록 (DB 컬럼명 -> Front id, name)
-    const [healthConditions] = await db.query(`
-      SELECT health_condition_id AS id, health_condition_name AS name 
-      FROM health_condition
-    `);
+    const [allergies] = await db.query(`SELECT allergy_id AS id, allergy_name AS name FROM allergy`);
+    const [healthConditions] = await db.query(`SELECT health_condition_id AS id, health_condition_name AS name FROM health_condition`);
 
     res.status(200).json({
       success: true,
       data: {
-        allergy: allergies,           // [{id: "A009", name: "게"}, ...]
-        health_condition: healthConditions // [{id: "HC001", name: "당뇨"}, ...]
+        allergy: allergies,
+        health_condition: healthConditions
       }
     });
   } catch (error) {
