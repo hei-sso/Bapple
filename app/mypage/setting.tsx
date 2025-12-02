@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { Header } from '@/components/header'; // 헤더
 import { Styles } from '@/constants/styles'; // 공통
 
@@ -50,22 +50,22 @@ export default function SettingScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     content: {
-        padding: 20,
+        padding: 20
     },
     sectionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         color: '#000',
         marginTop: 20,
-        marginBottom: 10,
+        marginBottom: 10
     },
     menuItem: {
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderColor: '#eee',
+        borderColor: '#eee'
     },
     menuItemText: {
         fontSize: 16
@@ -75,11 +75,11 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         backgroundColor: '#f0f0f0',
         borderRadius: 8,
-        alignItems: 'center',
+        alignItems: 'center'
     },
     logoutButtonText: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
-    },
+        color: '#333'
+    }
 });

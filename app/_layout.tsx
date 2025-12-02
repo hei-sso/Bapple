@@ -11,8 +11,8 @@ import { View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Context 훅 임포트
-import { AuthProvider, useAuth } from '../context/authContext';
+// Context
+import { AuthProvider, useAuth } from '@/context/authContext';
 
 // ErrorBoundary를 사용하여 상위 컴포넌트(_layout.tsx)에서 발생하는 렌더링 오류 등을 처리
 export { ErrorBoundary } from 'expo-router';
@@ -45,7 +45,7 @@ export default function RootLayout() {
       if (fontsLoaded) {
          try {
           // =========================================================
-          // 1. 최소 대기 시간을 먼저 확보 (옵션)
+          // 최소 대기 시간을 먼저 확보 (옵션)
           await new Promise(resolve => setTimeout(resolve, 1500)); 
 
           //  여기서 AuthProvider 내부의 토큰 로딩을 기다려야 하지만, AuthProvider가 감싸고 있으므로 로직 단순화

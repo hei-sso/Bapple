@@ -14,12 +14,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { Header } from '@/components/header'; // 헤더
 import { Calendar } from '@/components/week-calendar'; // 달력
 import { Styles } from '@/constants/styles'; // 공통
-
-const { width } = Dimensions.get('window');
 
 // Mock 데이터 및 상수
 interface RecipeItem {
@@ -242,7 +240,9 @@ export default function DateDetailScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
     // 레시피 상세 카드
     recipeItemCard: {
@@ -263,36 +263,36 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 15,
-        marginBottom: 15,
+        marginBottom: 15
     },
     groupTagText: {
         fontSize: 12,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#333'
     },
     recipeCardContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'flex-start'
     },
     recipeName: {
         fontSize: 22, 
         fontWeight: 'bold',
         flex: 1,
         marginRight: 15,
-        lineHeight: 30,
+        lineHeight: 30
     },
     recipeImagePlaceholder: {
         width: 120,
         height: 120,
         backgroundColor: '#ccc',
         borderRadius: 8,
-        marginLeft: 'auto',
+        marginLeft: 'auto'
     },
     noRecipeText: {
         textAlign: 'center',
         fontSize: 16,
         color: '#999',
-        marginTop: 30,
+        marginTop: 30
     }
 });

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { authStyles } from '@/components/authStyles'; // Auth
 import { Header } from '@/components/header'; // 헤더
 import { Styles } from '@/constants/styles'; // 공통
@@ -35,35 +35,28 @@ export default function SetPasswordScreen() {
     router.back(); 
   };
 
-  // 인증번호 발송 핸들러 (register.tsx와 동일)
+  // ⭐ 인증번호 발송 핸들러
   const handleSendVerificationCode = async () => {
     if (!email) {
         Alert.alert("알림", "이메일을 입력해 주세요.");
         return;
     }
 
-    // ===============================================
-    // [백엔드 연동 필요] 이메일 인증번호 발송 로직
-    // (비밀번호 재설정용 토큰/세션 발급 로직 포함)
-    // ===============================================
-    
+    // ⭐ 이메일 인증번호 발송 로직 (비밀번호 재설정용 토큰/세션 발급 로직 포함)
     setVerificationCodeSent(true); 
     Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
   };
   
-  // 인증번호 확인 핸들러 (register.tsx와 동일)
+  // ⭐ 인증번호 확인 핸들러
   const handleVerifyCode = async () => {
     if (!verificationCode) {
         Alert.alert("알림", "인증번호를 입력해 주세요.");
         return;
     }
     
-    // =========================================================
-    // [백엔드 연동 필요] 인증번호 확인 로직
-    // (서버에서 인증번호 일치 확인 및 비밀번호 변경 권한 부여)
-    // =========================================================
+    // ⭐ 인증번호 확인 로직 (서버에서 인증번호 일치 확인 및 비밀번호 변경 권한 부여)
     
-    // 서버로부터 인증 성공 응답 가정
+    // ⭐ 서버로부터 인증 성공 응답 가정
     setIsEmailVerified(true);
     setVerificationCodeSent(false);
     Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다. 이제 새 비밀번호를 설정할 수 있습니다.");
@@ -80,11 +73,8 @@ export default function SetPasswordScreen() {
       Alert.alert("오류", "새 비밀번호가 일치하지 않습니다.");
       return;
     }
-    
-    // ===================================================
-    // [백엔드 연동 필요] 비밀번호 변경 API 호출
-    // (새 비밀번호, 인증 토큰/세션 ID 등을 서버로 전송)
-    // ===================================================
+
+    // ⭐ 비밀번호 변경 API 호출 (새 비밀번호, 인증 토큰/세션 ID 등을 서버로 전송)
 
     Alert.alert("성공", "비밀번호가 성공적으로 변경되었습니다.");
     router.replace('/(auth)/login' as RedirectProps['href']);
@@ -179,22 +169,22 @@ export default function SetPasswordScreen() {
   );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const localStyles = StyleSheet.create({
-  // 인증 필드 관련 스타일 (register.tsx랑 같음)
+  // 인증 필드 관련
   verificationInputGroup: {
     marginTop: -5, 
-    marginBottom: 5,
+    marginBottom: 5
   },
   inputWithButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 10, 
+    marginBottom: 10
   },
   inputField: {
     flex: 1, 
-    marginRight: 10, 
+    marginRight: 10
   },
   verificationButton: {
     paddingHorizontal: 15,
@@ -202,26 +192,26 @@ const localStyles = StyleSheet.create({
     borderRadius: 8,
     height: 50, 
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   unverifiedButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#000'
   },
   verifiedButton: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#ccc'
   },
   verificationButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
 
   // 비활성화 버튼 스타일
   disabledButton: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#ccc'
   },
 
-  // 비밀번호 변경 버튼 (기존 스타일)
+  // 비밀번호 변경 버튼
   changePasswordButton: {
     width: '100%',
     paddingVertical: 16,
@@ -229,11 +219,11 @@ const localStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#000', 
-    marginTop: 30,
+    marginTop: 30
   },
   changePasswordButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#fff'
   }
 });

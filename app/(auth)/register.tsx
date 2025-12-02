@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { authStyles } from '@/components/authStyles'; // Auth
 import { Header } from '@/components/header'; // 헤더
 import { KakaoLogin } from '@/components/kakao-login-btn'; // Kakao 로그인 버튼
@@ -26,7 +26,7 @@ import { Styles } from '@/constants/styles'; // 공통
 
 WebBrowser.maybeCompleteAuthSession(); 
 
-// 카카오 관련 상수와 로직을 제거 (UI 유지를 위해 RegisterScreen은 유지)
+// 카카오 관련 상수와 로직 제거 (UI 유지를 위해 RegisterScreen은 유지)
 export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -47,8 +47,9 @@ export default function RegisterScreen() {
     router.back(); 
   };
   
+  // ⭐ 유효성 체크 (임시)
   const handleRegister = async () => {
-    if (password.length < 6) { // 비밀번호 유효성 (임시) 체크
+    if (password.length < 6) {
       Alert.alert("알림", "비밀번호는 6자 이상이어야 합니다.");
       return;
     }
@@ -62,21 +63,21 @@ export default function RegisterScreen() {
     router.replace('/(auth)/login' as RedirectProps['href']); 
   };
 
-  // 인증번호 발송 핸들러
+  // ⭐ 인증번호 발송 핸들러
   const handleSendVerificationCode = async () => {
     if (!email) { Alert.alert("알림", "이메일을 입력해 주세요."); return; }
     setVerificationCodeSent(true); 
     Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
   };
   
-  // 인증번호 확인 핸들러
+  // ⭐ 인증번호 확인 핸들러
   const handleVerifyCode = async () => {
     if (!verificationCode) { Alert.alert("알림", "인증번호를 입력해 주세요."); return; }
     setIsEmailVerified(true);
     setVerificationCodeSent(false);
     Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다.");
   };
-  
+
   // 약관/정책 모달 띄우기 핸들러
   const handlePolicyLink = (type: 'privacy' | 'terms') => {
     if (type === 'privacy') {
@@ -86,12 +87,11 @@ export default function RegisterScreen() {
     }
   };
 
-  // 카카오 로그인 버튼 핸들러: WebView 스택 페이지로 이동
+  // 카카오 로그인 버튼 → WebView 스택 페이지
   const handleKakaoLogin = async () => {
       router.push('/(auth)/kakao-webview' as RedirectProps['href']);
   };
   
-  // 로그인 링크 핸들러
   const handleLoginLink = () => {
     router.replace('/(auth)/login' as RedirectProps['href']);
   };
@@ -235,24 +235,26 @@ export default function RegisterScreen() {
   );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const localStyles = StyleSheet.create({
   // 인증번호 입력 그룹
   verificationInputGroup: {
     marginTop: -5, 
-    marginBottom: 5,
+    marginBottom: 5
   },
+
   // 입력 필드와 버튼을 한 줄에 배치하기 위한 컨테이너
   inputWithButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 10, 
+    marginBottom: 10
   },
   inputField: {
     flex: 1, 
-    marginRight: 10, 
+    marginRight: 10
   },
+
   // 인증 버튼
   verificationButton: {
     paddingHorizontal: 15,
@@ -260,66 +262,68 @@ const localStyles = StyleSheet.create({
     borderRadius: 8,
     height: 50, 
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
+
   // 미인증 상태 버튼
   unverifiedButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#000'
   },
+
   // 인증 완료 시 버튼
   verifiedButton: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#ccc'
   },
   verificationButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
     
-  // 약관 동의 텍스트
+  // 약관 동의
   policyContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap', 
     justifyContent: 'center',
     marginBottom: 20,
     marginTop: 10,
-    width: '100%',
+    width: '100%'
   },
   policyText: {
     fontSize: 12,
     color: '#666',
-    lineHeight: 18,
+    lineHeight: 18
   },
   policyLinkText: {
     fontSize: 12,
     color: '#666',
     lineHeight: 18,
-    textDecorationLine: 'underline',
+    textDecorationLine: 'underline'
   },
   
   // '또는' 구분선
   orContainer: {
     alignItems: 'center',
-    marginVertical: 10,
+    marginVertical: 10
   },
   orText: {
     fontSize: 14,
-    color: '#999',
+    color: '#999'
   },
 
   // 이미 계정이 있으신가요? 로그인
   linkBaseText: {
     fontSize: 14,
-    color: '#666',
+    color: '#666'
   },
   loginLinkContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 20
   },
   loginLinkText: {
     fontSize: 14,
     color: '#666',
-    textDecorationLine: 'underline', 
+    textDecorationLine: 'underline'
   }
 });

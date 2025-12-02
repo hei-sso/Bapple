@@ -4,25 +4,27 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
-import { Header } from '@/components/header';
-import { Styles } from '@/constants/styles';
-
-// Context 및 API 임포트
+// API
 import { updateUserProfile } from '@/api/userAPI';
+
+// Style
+import { Header } from '@/components/header'; // 헤더
+import { Styles } from '@/constants/styles'; // 공통
+
+// Context
 import { useAuth } from '@/context/authContext';
 
 const PROFILE_IMAGE_SIZE = 120;
@@ -59,15 +61,15 @@ const formatBirthday = (text: string): string => {
     const match = cleaned.match(/^(\d{4})(\d{2})(\d{2})$/);
     
     if (match) {
-        return [match[1], match[2], match[3]].join('/');
+        return [match[1], match[2], match[3]].join('-');
     }
     
     // YYYY 또는 YYYYMM 입력 시 슬래시 미리보기
     if (cleaned.length > 4 && cleaned.length <= 6) {
-        return cleaned.slice(0, 4) + '/' + cleaned.slice(4);
+        return cleaned.slice(0, 4) + '-' + cleaned.slice(4);
     }
     if (cleaned.length > 6 && cleaned.length <= 8) {
-        return cleaned.slice(0, 4) + '/' + cleaned.slice(4, 6) + '/' + cleaned.slice(6);
+        return cleaned.slice(0, 4) + '-' + cleaned.slice(4, 6) + '-' + cleaned.slice(6);
     }
 
     return cleaned;
@@ -99,12 +101,17 @@ export default function ProfileScreen() {
         if (initialUser) {
             // Context의 userProfile에서 데이터 로드
             setNickname(initialUser.nickname || '');
-            // 이메일: Context에 없거나 API에서 가져온다고 가정
-            setEmail('apple@imsi.com'); 
+
+            // ★ 수정 1: 실제 이메일 데이터 연결 (하드코딩 'apple@imsi.com' 삭제)
+            setEmail(initialUser.email || ''); 
             
-            // API에서 가져온 전화번호/생년월일 초기화 (null일 경우 빈 문자열)
+            // 전화번호 연결
             setPhoneNumber(initialUser.phoneNumber || ''); 
-            setBirthday(initialUser.birthday || ''); 
+            
+            // ★ 수정 2: 생년월일 포맷팅 (YYYY-MM-DD 뒤에 붙은 시간 제거)
+            const rawBirthday = initialUser.birthday || '';
+            const cleanBirthday = rawBirthday.split('T')[0]; // "2004-10-18"만 남김
+            setBirthday(cleanBirthday); 
             
             // 초기 이메일 인증 상태는 DB 값으로 설정되어야 하지만, 일단 false로 가정
             setIsEmailVerified(false);
@@ -324,48 +331,48 @@ export default function ProfileScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     centeredLoading: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'center'
     },
     loadingText: {
         marginTop: 10,
         fontSize: 16,
-        color: '#666',
+        color: '#666'
     },
     errorText: {
         fontSize: 16,
         color: '#D32F2F',
-        textAlign: 'center',
+        textAlign: 'center'
     },
     profileImageArea: {
         alignItems: 'center',
         paddingVertical: 30,
         borderBottomWidth: 1,
         borderColor: '#eee',
-        marginBottom: 20,
+        marginBottom: 20
     },
     profileImagePlaceholder: {
         width: PROFILE_IMAGE_SIZE,
         height: PROFILE_IMAGE_SIZE,
         borderRadius: PROFILE_IMAGE_SIZE / 2,
         backgroundColor: '#eee', 
-        marginBottom: 10,
+        marginBottom: 10
     },
     changePhotoButton: {
         fontSize: 14,
         color: '#000',
-        textDecorationLine: 'underline',
+        textDecorationLine: 'underline'
     },
     label: {
         fontSize: 14,
         fontWeight: '600',
         marginTop: 15,
         marginBottom: 5,
-        color: '#333',
+        color: '#333'
     },
     input: {
         width: '100%',
@@ -375,7 +382,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 8,
         fontSize: 16,
-        marginBottom: 10, // 여백 추가
+        marginBottom: 10 // 여백 추가
     },
     primaryButton: { 
         width: '100%',
@@ -384,29 +391,29 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#000',
-        marginTop: 20,
+        marginTop: 20
     },
     primaryButtonText: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#fff',
-    },
+        color: '#fff'
+    }
 });
 
 const localStyles = StyleSheet.create({
     verificationInputGroup: {
         marginTop: -5, 
-        marginBottom: 5,
+        marginBottom: 5
     },
     inputWithButtonContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         width: '100%',
-        marginBottom: 10, 
+        marginBottom: 10
     },
     inputField: {
         flex: 1, 
-        marginRight: 10,
+        marginRight: 10
     },
     verificationButton: {
         paddingHorizontal: 15,
@@ -414,17 +421,17 @@ const localStyles = StyleSheet.create({
         borderRadius: 8,
         height: 50, 
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'center'
     },
     unverifiedButton: {
-        backgroundColor: '#000',
+        backgroundColor: '#000'
     },
     verifiedButton: {
-        backgroundColor: '#ccc',
+        backgroundColor: '#ccc'
     },
     verificationButtonText: {
         color: '#fff',
         fontSize: 14,
-        fontWeight: 'bold',
+        fontWeight: 'bold'
     }
 });

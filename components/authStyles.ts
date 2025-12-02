@@ -8,7 +8,7 @@ export const authStyles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 15,
     marginBottom: 5,
-    color: '#333',
+    color: '#333'
   },
   input: {
     width: '100%',
@@ -17,7 +17,7 @@ export const authStyles = StyleSheet.create({
     borderColor: '#e0e0e0',
     borderWidth: 1,
     borderRadius: 8,
-    fontSize: 16,
+    fontSize: 16
   },
   
   // 버튼 스타일
@@ -28,20 +28,20 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#000',
-    marginTop: 20,
+    marginTop: 20
   },
   primaryButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#fff'
   },
 
   // 이메일로 로그인
   emailButtonText: {
-    color: '#fff', 
+    color: '#fff'
   },
   placeholderText: {
     color: '#999',
-    fontSize: 12,
+    fontSize: 12
   }
 });

@@ -3,7 +3,7 @@
 import React from 'react';
 import { Modal, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 
-// Context 임포트
+// Context
 import { Recipe } from '@/context/recipeContext';
 
 interface RecipeModalProps {
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', // 어두운 배경
+    backgroundColor: 'rgba(0,0,0,0.5)' // 어두운 배경
   },
   modalView: {
     margin: 20,
@@ -81,24 +81,24 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 2
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    width: '80%', // 모달 너비
+    width: '80%' // 모달 너비
   },
   modalText: {
     marginBottom: 25,
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: '#333'
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
+    width: '100%'
   },
   button: {
     borderRadius: 5,
@@ -106,20 +106,20 @@ const styles = StyleSheet.create({
     elevation: 2,
     flex: 1,
     marginHorizontal: 5,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   buttonClose: {
-    backgroundColor: '#999',
+    backgroundColor: '#999'
   },
   buttonConfirm: {
-    backgroundColor: '#ff69b4', // 핑크색 (찜 강조 색상)
+    backgroundColor: '#ff69b4' // 핑크색 (찜 강조 색상)
   },
   textStyle: {
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
-    fontSize: 15,
-  },
+    fontSize: 15
+  }
 });
 
 export default RecipeModal;

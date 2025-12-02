@@ -31,7 +31,7 @@ export default function FriendsScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
         paddingTop: 50,
         paddingBottom: 15,
         borderBottomWidth: 1,
-        borderColor: '#eee',
+        borderColor: '#eee'
     },
     backButton: {
         fontSize: 24,
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     tabContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginBottom: 20,
+        marginBottom: 20
     },
     tabButton: {
         paddingHorizontal: 20,
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 5,
-        marginHorizontal: 5,
+        marginHorizontal: 5
     },
     activeTabText: {
         fontWeight: 'bold',

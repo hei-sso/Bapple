@@ -10,21 +10,21 @@ export const KakaoLogin = StyleSheet.create({
     backgroundColor: '#FFD100',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
+    marginTop: 6
   },
   ButtonAlign: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
+    width: '100%'
   },
   Icon: {
     position: 'absolute', 
-    left: 15,
+    left: 15
   },
   ButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000',
-  },
+    color: '#000'
+  }
 });

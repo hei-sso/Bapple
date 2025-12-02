@@ -7,7 +7,7 @@ export const Styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 30,
-    backgroundColor: '#fff',
+    backgroundColor: '#fff'
   },
   indexContainer: {
     flex: 1,
@@ -15,6 +15,6 @@ export const Styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 5,
+    paddingHorizontal: 5
   }
 });

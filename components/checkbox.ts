@@ -10,10 +10,10 @@ export const CheckBox = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#cfcfcfff',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   itemLabel: {
     fontSize: 15,
-    marginLeft: 10,
-  },
+    marginLeft: 10
+  }
 });

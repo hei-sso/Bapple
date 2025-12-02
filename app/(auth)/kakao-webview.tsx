@@ -14,10 +14,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
 
-// Style 임포트
-import { Header } from '@/components/header';
+// Style
+import { Header } from '@/components/header'; // 헤더
 
-// Context 임포트
+// Context
 import { useAuth } from '@/context/authContext';
 
 // 카카오 로그인 상수
@@ -62,14 +62,14 @@ export default function KakaoWebViewScreen() {
         }
     };
 
-    // ✨ 인가 코드를 백엔드로 바로 전송 (토큰 교환은 백엔드 담당)
+    // 인가 코드를 백엔드로 바로 전송 (토큰 교환은 백엔드 담당)
     const requestToken = async (code: string) => {
         const BACKEND_API_URL = `${RAILWAY_BASE_URL}/api/auth/kakao/token_exchange`; 
 
         try {
             console.log("➡ 백엔드로 로그인 요청 전송 중...");
 
-            // ✨ 백엔드가 { code: "..." } 형태의 JSON을 기다림
+            // 백엔드가 { code: "..." } 형태의 JSON을 기다림
             const response = await axios.post(BACKEND_API_URL, 
                 { 
                     code: code 
@@ -85,7 +85,7 @@ export default function KakaoWebViewScreen() {
             const serviceToken = response.data.token; 
             const isNewUser = response.data.isNewUser;
 
-            console.log(`✅ 로그인 성공! (신규 유저 여부: ${isNewUser})`);
+            console.log(`✅ 로그인 성공 (신규 유저 여부: ${isNewUser})`);
 
             // 로그인 완료 처리
             await signIn(serviceToken); // 토큰 저장
@@ -117,7 +117,7 @@ export default function KakaoWebViewScreen() {
                 style={styles.webView}
                 source={{ uri: KAKAO_AUTH_URL }}
                 
-                // 매번 새로운 로그인을 위해 쿠키/캐시 삭제 옵션 추가 (테스트용)
+                // ⭐ 매번 새로운 로그인을 위해 쿠키/캐시 삭제 옵션 추가 (테스트용)
                 incognito={true}             
                 sharedCookiesEnabled={false}
                 cacheEnabled={false}
@@ -135,13 +135,13 @@ export default function KakaoWebViewScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#fff'
     },
     webView: {
-        flex: 1,
+        flex: 1
     }
 });

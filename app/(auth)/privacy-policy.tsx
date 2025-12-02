@@ -38,11 +38,11 @@ export default function PrivacyPolicyScreen() {
   );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fff'
   },
   header: {
     flexDirection: 'row',
@@ -51,26 +51,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#eee'
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
   closeButton: {
-    padding: 5,
+    padding: 5
   },
   closeButtonText: {
     fontSize: 16,
-    color: '#007AFF', // iOS 기본 버튼 색상
+    color: '#007AFF' // iOS 기본 버튼 색상
   },
   content: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 10
   },
   contentText: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#333',
-  },
+    color: '#333'
+  }
 });

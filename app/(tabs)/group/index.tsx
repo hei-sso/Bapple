@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { Styles } from '@/constants/styles'; // 공통
 
 interface Group {
@@ -134,7 +134,7 @@ const AdBanner: React.FC = () => {
   );
 };
 
-// 메인 화면 처리
+// 메인 컴포넌트
 export default function GroupScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -144,7 +144,7 @@ export default function GroupScreen() {
 
   // 그룹 상세 화면 이동
   const handleGroupPress = (group: Group) => {
-    // 'group/detail'로 그룹 정보와 함께 이동
+    // ⭐ 'group/detail'로 그룹 정보와 함께 이동
     // @ts-ignore - 'group/detail' 라우트의 타입을 명시적으로 정의하지 않으므로 임시로 사용
     navigation.navigate('group/detail', { groupId: group.id, groupName: group.name });
   };
@@ -194,7 +194,7 @@ export default function GroupScreen() {
   );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
   // 광고 배너
   adBanner: {
@@ -202,26 +202,27 @@ const styles = StyleSheet.create({
     borderRadius: 12, // 둥근 모서리
     backgroundColor: '#FFEBEE', // 광고 배경색
     borderWidth: 2, // 테두리 추가
-    borderColor: '#808080ff', // 테두리 색
+    borderColor: '#808080ff' // 테두리 색
   },
   adContent: {
     height: 80,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 10,
+    padding: 10
   },
   adText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#333'
   },
   adSubText: {
     fontSize: 12,
-    color: '#555',
+    color: '#555'
   },
+
   // 그룹 리스트
   list: {
-    flex: 1,
+    flex: 1
   },
   listItem: {
     flexDirection: 'row',
@@ -229,54 +230,55 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#d1d1d1ff',
+    borderBottomColor: '#d1d1d1ff'
   },
   groupImageContainer: {
     marginLeft: 8,
-    marginRight: 15,
+    marginRight: 15
   },
   groupImage: {
     width: 55,
     height: 55,
     borderRadius: 30, // 원 모양
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#ddd'
   },
   imagePlaceholder: {
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#000',
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   placeholderText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#000'
   },
   groupInfo: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   groupName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#333'
   },
   groupDescription: {
     fontSize: 15,
     color: '#666',
-    marginTop: 5,
+    marginTop: 5
   },
   memberCount: {
     fontSize: 12,
     color: '#999',
-    marginTop: 20,
+    marginTop: 20
   },
   pinButton: {
     marginRight: 8,
-    padding: 5, // 터치 영역 확장
+    padding: 5 // 터치 영역 확장
   },
+  
   // 그룹 추가 버튼
   fab: {
     position: 'absolute',
@@ -293,6 +295,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
-    zIndex: 10, // 다른 요소 위에 표시
-  },
+    zIndex: 10 // 다른 요소 위에 표시
+  }
 });

@@ -25,6 +25,7 @@ export interface UserProfile {
     followers: number;
     following: number;
     profileImageUrl: string | null; // 프로필 사진 URL
+    email: string;
     phoneNumber: string | null;
     birthday: string | null;
 }

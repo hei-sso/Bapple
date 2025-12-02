@@ -1,7 +1,7 @@
 // app/(tabs)/recipe/index.tsx
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -13,13 +13,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Modal 임포트
-import RecipeModal from '@/components/RecipeModal';
+// Components
+import RecipeModal from '@/components/RecipeModal'; // 레시피 추가/삭제 모달
 
-// Context 임포트
-import { Recipe, Category, RecipeContextType } from '@/context/recipeContext';
+// Context
+import { Category, Recipe, RecipeContextType } from '@/context/recipeContext';
 
-// Mock 데이터
+// Mock Data
 const MOCK_CATEGORIES_DATA: Category[] = [
   {
     id: 'my_recipe',
@@ -181,160 +181,159 @@ const RecipeItem: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 // 레시피 그리드를 카테고리별로 그룹화하여 표시하는 컴포넌트 (찜 전용)
 const FavoriteRecipeGroup: React.FC<{ recipes: Recipe[] }> = ({ recipes }) => {
     
-    // 카테고리별로 레시피를 그룹화
-    const groupedRecipes = useMemo(() => {
-        return recipes.reduce((acc, recipe) => {
-            const categoryName = MOCK_CATEGORIES_DATA.find(cat => cat.id === recipe.category)?.name || '기타';
-            if (!acc[categoryName]) {
-                acc[categoryName] = [];
-            }
-            acc[categoryName].push(recipe);
-            return acc;
-        }, {} as { [key: string]: Recipe[] });
-    }, [recipes]);
+  // 카테고리별로 레시피를 그룹화
+  const groupedRecipes = useMemo(() => {
+    return recipes.reduce((acc, recipe) => {
+      const categoryName = MOCK_CATEGORIES_DATA.find(cat => cat.id === recipe.category)?.name || '기타';
+      if (!acc[categoryName]) {
+        acc[categoryName] = [];
+      }
+      acc[categoryName].push(recipe);
+      return acc;
+    }, {} as { [key: string]: Recipe[] });
+  }, [recipes]);
     
-    // 카테고리 이름 목록 (순서 유지를 위해)
-    const categoryNames = Object.keys(groupedRecipes);
-    
-    if (recipes.length === 0) {
-        return (
-            <Text style={styles.noRecipeText}>
-                찜 목록에 등록된 레시피가 없습니다.
-            </Text>
-        );
-    }
-
+  // 카테고리 이름 목록 (순서 유지용)
+  const categoryNames = Object.keys(groupedRecipes);
+  
+  if (recipes.length === 0) {
     return (
-        <>
-            {categoryNames.map(categoryName => (
-                <View key={categoryName} style={styles.categoryGroup}>
-                    <Text style={styles.groupTitle}>{categoryName}</Text>
-                    <View style={styles.gridRow}>
-                        {groupedRecipes[categoryName].map((rec, index) => (
-                            <RecipeItem key={rec.id + index} recipe={rec} />
-                        ))}
-                    </View>
-                </View>
-            ))}
-        </>
+      <Text style={styles.noRecipeText}>
+        찜 목록에 등록된 레시피가 없습니다.
+      </Text>
     );
-};
+  }
 
+  return (
+    <>
+      {categoryNames.map(categoryName => (
+        <View key={categoryName} style={styles.categoryGroup}>
+          <Text style={styles.groupTitle}>{categoryName}</Text>
+          <View style={styles.gridRow}>
+            {groupedRecipes[categoryName].map((rec, index) => (
+              <RecipeItem key={rec.id + index} recipe={rec} />
+            ))}
+          </View>
+        </View>
+      ))}
+    </>
+  );
+};
 
 // 메인 화면 처리
 const RecipeScreenContent = () => {
-    const { 
-        allCategories, 
-        myFavoriteRecipes, 
-        selectedCategory, 
-        setSelectedCategory 
-    } = useRecipe();
+  const { 
+    allCategories, 
+    myFavoriteRecipes, 
+    selectedCategory, 
+    setSelectedCategory 
+  } = useRecipe();
+  
+  const insets = useSafeAreaInsets();
+
+  // 현재 선택된 카테고리의 레시피 목록을 계산 (찜 목록이 아닌 경우에만)
+  const currentRecipes = useMemo(() => {
+    if (selectedCategory === 'my_recipe') {
+      // '찜'은 그룹화된 뷰를 별도로 사용
+      return []; 
+    }
+    const category = allCategories.find(cat => cat.id === selectedCategory);
+    return category ? category.recipes : [];
+  }, [selectedCategory, allCategories]);
+
+  // 카테고리 목록 렌더링 함수
+  const renderCategoryItem = (category: Category) => {
+    const isSelected = category.id === selectedCategory;
     
-    const insets = useSafeAreaInsets();
-
-    // 현재 선택된 카테고리의 레시피 목록을 계산 (찜 목록이 아닌 경우에만)
-    const currentRecipes = useMemo(() => {
-        if (selectedCategory === 'my_recipe') {
-            // '찜'은 그룹화된 뷰를 별도로 사용
-            return []; 
-        }
-        const category = allCategories.find(cat => cat.id === selectedCategory);
-        return category ? category.recipes : [];
-    }, [selectedCategory, allCategories]);
-
-    // 카테고리 목록 렌더링 함수
-    const renderCategoryItem = (category: Category) => {
-        const isSelected = category.id === selectedCategory;
-        
-        // 선택된 카테고리 스타일
-        const categoryTextStyle = isSelected
-          ? styles.selectedCategoryText
-          : styles.categoryText;
-        
-        // 선택된 카테고리 컨테이너 스타일 (흰색 바탕)
-        const categoryContainerStyle = isSelected
-          ? styles.selectedCategoryContainer
-          : styles.categoryContainer;
-
-        return (
-            <TouchableOpacity
-                key={category.id}
-                style={categoryContainerStyle}
-                onPress={() => setSelectedCategory(category.id)}
-            >
-                <Text style={categoryTextStyle}>{category.name}</Text>
-            </TouchableOpacity>
-        );
-    };
+    // 선택된 카테고리 스타일
+    const categoryTextStyle = isSelected
+      ? styles.selectedCategoryText
+      : styles.categoryText;
+    
+    // 선택된 카테고리 컨테이너 스타일 (흰색 바탕)
+    const categoryContainerStyle = isSelected
+      ? styles.selectedCategoryContainer
+      : styles.categoryContainer;
 
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-          {/* 검색 영역 */}
-          <View style={styles.searchContainer}>
-              <View style={styles.searchInputWrapper}>
-                  <TextInput
-                      style={styles.searchInput}
-                      placeholder="검색"
-                      placeholderTextColor="#888"
-                  />
-                  <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
-              </View>
-          </View>
-
-          {/* 카테고리 + 레시피 그리드 */}
-          <View style={styles.contentArea}>
-              
-              {/* 왼쪽: 카테고리 목록 */}
-              <View style={styles.categoryListContainer}>
-                  <ScrollView
-                      showsVerticalScrollIndicator={false}
-                      contentContainerStyle={styles.categoryListContent}
-                  >
-                      {allCategories.map(renderCategoryItem)}
-                  </ScrollView>
-              </View>
-
-              {/* 오른쪽: 레시피 그리드 */}
-              <View style={styles.recipeGridContainer}>
-                  <ScrollView 
-                      showsVerticalScrollIndicator={false}
-                      contentContainerStyle={styles.recipeGridContent}
-                  >
-                      <Text style={styles.currentCategoryTitle}>
-                          {allCategories.find(c => c.id === selectedCategory)?.name || '카테고리'}
-                      </Text>
-                      
-                      {/* '찜' 카테고리인 경우 */}
-                      {selectedCategory === 'my_recipe' ? (
-                          <FavoriteRecipeGroup recipes={myFavoriteRecipes} />
-                      ) : (
-                          // 일반 카테고리인 경우
-                          <View style={styles.gridRow}>
-                              {currentRecipes.length > 0 ? (
-                                  currentRecipes.map((rec, index) => (
-                                      <RecipeItem key={rec.id + index} recipe={rec} />
-                                  ))
-                              ) : (
-                                  <Text style={styles.noRecipeText}>
-                                      이 카테고리에 등록된{"\n"}레시피가 없습니다.
-                                  </Text>
-                              )}
-                          </View>
-                      )}
-                  </ScrollView>
-              </View>
-          </View>
-      </View>
+      <TouchableOpacity
+        key={category.id}
+        style={categoryContainerStyle}
+        onPress={() => setSelectedCategory(category.id)}
+      >
+        <Text style={categoryTextStyle}>{category.name}</Text>
+      </TouchableOpacity>
     );
+  };
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* 검색 영역 */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputWrapper}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="검색"
+            placeholderTextColor="#888"
+          />
+          <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
+        </View>
+      </View>
+
+      {/* 카테고리 + 레시피 그리드 */}
+      <View style={styles.contentArea}>
+          
+        {/* 왼쪽: 카테고리 목록 */}
+        <View style={styles.categoryListContainer}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.categoryListContent}
+          >
+            {allCategories.map(renderCategoryItem)}
+          </ScrollView>
+        </View>
+
+        {/* 오른쪽: 레시피 그리드 */}
+        <View style={styles.recipeGridContainer}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.recipeGridContent}
+          >
+            <Text style={styles.currentCategoryTitle}>
+              {allCategories.find(c => c.id === selectedCategory)?.name || '카테고리'}
+            </Text>
+              
+            {/* '찜' 카테고리인 경우 */}
+            {selectedCategory === 'my_recipe' ? (
+              <FavoriteRecipeGroup recipes={myFavoriteRecipes} />
+            ) : (
+              // 일반 카테고리인 경우
+              <View style={styles.gridRow}>
+                {currentRecipes.length > 0 ? (
+                  currentRecipes.map((rec, index) => (
+                    <RecipeItem key={rec.id + index} recipe={rec} />
+                  ))
+                ) : (
+                  <Text style={styles.noRecipeText}>
+                    이 카테고리에 등록된{"\n"}레시피가 없습니다.
+                  </Text>
+                )}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </View>
+  );
 };
 
 // 메인 Export 컴포넌트: Provider로 감싸기
 export default function RecipeScreen() {
-    return (
-        <RecipeProvider>
-            <RecipeScreenContent />
-        </RecipeProvider>
-    );
+  return (
+    <RecipeProvider>
+      <RecipeScreenContent />
+    </RecipeProvider>
+  );
 }
 
 // 💡스타일 시트💡

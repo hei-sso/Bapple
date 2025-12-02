@@ -15,14 +15,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { authStyles } from '@/components/authStyles'; // Auth
 import { Header } from '@/components/header'; // 헤더
 import { KakaoLogin } from '@/components/kakao-login-btn'; // Kakao 로그인 버튼
 import { Styles } from '@/constants/styles'; // 공통
 
-// Context 훅 임포트
-import { useAuth } from '../../context/authContext';
+// Context
+import { useAuth } from '@/context/authContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -43,7 +43,7 @@ export default function LoginScreen() {
   // 기존 핸들러 유지
   const handleGoBack = () => { router.back(); };
   
-  // 이메일 로그인 (임시)
+  // ⭐ 이메일 로그인 (임시)
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("경고", "이메일과 비밀번호를 입력해주세요.");
@@ -106,7 +106,7 @@ export default function LoginScreen() {
         <Text style={localStyles.orDividerText}>또는</Text>
       </View>
 
-      {/* 카카오 로그인 버튼 (handleKakaoLogin 연결) */}
+      {/* 카카오 로그인 버튼 */}
       <TouchableOpacity style={KakaoLogin.ButtonBackground} onPress={handleKakaoLogin}>
         <View style={KakaoLogin.ButtonAlign}>
           <FontAwesome name="comment" size={20} color="#000" style={KakaoLogin.Icon} />
@@ -126,18 +126,18 @@ export default function LoginScreen() {
   );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const localStyles = StyleSheet.create({
   // 비밀번호 재설정 링크
   setPasswordLinkContainer: {
     width: '100%',
     alignItems: 'flex-end',
-    marginTop: 8,
+    marginTop: 8
   },
   setPasswordLinkText: {
     fontSize: 12,
     color: '#999',
-    textDecorationLine: 'underline', 
+    textDecorationLine: 'underline'
   },
   
   // 이메일로 로그인 버튼
@@ -148,13 +148,13 @@ const localStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#000', 
-    marginTop: 20,
+    marginTop: 20
   },
 
   // '또는' 컨테이너
   orContainer: {
     alignItems: 'center',
-    marginVertical: 15,
+    marginVertical: 15
   },
   orDividerText: {
     fontSize: 14,
@@ -166,15 +166,15 @@ const localStyles = StyleSheet.create({
   registerLinkContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 25,
+    marginTop: 25
   },
   registerLinkTextBase: {
     fontSize: 14,
-    color: '#666',
+    color: '#666'
   },
   registerLinkText: {
     fontSize: 14,
     color: '#666',
-    textDecorationLine: 'underline', 
+    textDecorationLine: 'underline'
   }
 });

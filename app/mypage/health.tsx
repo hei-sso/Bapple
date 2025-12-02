@@ -15,16 +15,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
-import { CheckBox } from '@/components/checkbox';
-import { Header } from '@/components/header';
-import { Styles } from '@/constants/styles';
-
-// Type 임포트
-import { HealthItem } from '@/types/userTypes';
-
-// API 임포트
+// API
 import { fetchHealthOptions, fetchUserHealthData, saveUserHealthData } from '@/api/healthAPI';
+
+// Style
+import { CheckBox } from '@/components/checkbox'; // 체크박스
+import { Header } from '@/components/header'; // 헤더
+import { Styles } from '@/constants/styles'; // 공통
+
+// Type
+import { HealthItem } from '@/types/userTypes';
 
 export default function HealthScreen() {
     const router = useRouter();
@@ -191,30 +191,31 @@ export default function HealthScreen() {
     );
 }
 
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     tabRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         paddingHorizontal: 40,
-        marginTop: 10,
+        marginTop: 10
     },
     arrow: {
         fontSize: 22,
-        fontWeight: "700",
+        fontWeight: "700"
     },
     tabTitle: {
         fontSize: 18,
-        fontWeight: "700",
+        fontWeight: "700"
     },
     section: {
         marginTop: 20,
-        marginBottom: 20,
+        marginBottom: 20
     },
     label: {
         fontSize: 18,
         fontWeight: "700",
-        marginBottom: 5,
+        marginBottom: 5
     },
     divider: {
         height: 1,
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         width: "50%", // 한 줄에 2개
         marginVertical: 10,
-        paddingRight: 10,
+        paddingRight: 10
     },
     mapWrapper: {
         flexDirection: "row",

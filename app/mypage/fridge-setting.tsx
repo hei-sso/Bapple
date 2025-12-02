@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { Header } from '@/components/header'; // 헤더
 import { Styles } from '@/constants/styles'; // 공통
 
@@ -39,8 +39,15 @@ export default function FridgeSettingsScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
-    content: { flex: 1, justifyContent: 'center', alignItems: 'center', },
-    contentText: { fontSize: 16, color: '#999', },
+    content: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    contentText: {
+        fontSize: 16,
+        color: '#999'
+    }
 });

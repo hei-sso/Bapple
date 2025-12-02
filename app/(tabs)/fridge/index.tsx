@@ -1,7 +1,7 @@
 // app/(tabs)/fridge/index.tsx
 
 import { Ionicons } from '@expo/vector-icons';
-import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -13,13 +13,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Modal 임포트
-import IngredientModal from '@/components/IngredientModal';
+// Components
+import IngredientModal from '@/components/IngredientModal'; // 재료 추가/삭제 모달
 
-// Context 임포트
-import { Ingredient, Category, FridgeContextType } from '@/context/fridgeContext';
+// Context
+import { Category, FridgeContextType, Ingredient } from '@/context/fridgeContext';
 
-// Mock 데이터
+// Mock Data
 const MOCK_CATEGORIES_DATA = [
   {
     id: 'my_fridge',
@@ -85,12 +85,12 @@ const useFridge = () => {
 // 냉장고 상태 관리 Provider
 const FridgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('my_fridge');
-  // 초기 냉장고 재료 상태 (현재는 빈 배열로 시작)
+  // 초기 냉장고 재료 상태 (빈 배열로 시작)
   const [myFridgeIngredients, setMyFridgeIngredients] = useState<Ingredient[]>([]);
 
   // 'my_fridge'를 제외한 모든 카테고리 (UI용)
   const allCategories = useMemo(() => {
-    // 나중에 DB 적용할 예정 (initialData 계산 로직 제거 -> MOCK_CATEGORIES_DATA 직접 사용)
+    // ⭐ DB 적용 예정 (현재 MOCK_CATEGORIES_DATA 직접 사용)
     return MOCK_CATEGORIES_DATA;
   }, []);
 
@@ -174,152 +174,151 @@ const IngredientItem: React.FC<{ ingredient: Ingredient }> = ({ ingredient }) =>
 // 재료 그리드를 카테고리별로 그룹화하여 표시하는 컴포넌트 (내 냉장고 전용)
 const FridgeIngredientGroup: React.FC<{ ingredients: Ingredient[] }> = ({ ingredients }) => {
     
-    // 카테고리별로 재료를 그룹화
-    const groupedIngredients = useMemo(() => {
-        return ingredients.reduce((acc, ingredient) => {
-            const categoryName = MOCK_CATEGORIES_DATA.find(cat => cat.id === ingredient.category)?.name || '기타';
-            if (!acc[categoryName]) {
-                acc[categoryName] = [];
-            }
-            acc[categoryName].push(ingredient);
-            return acc;
-        }, {} as { [key: string]: Ingredient[] });
-    }, [ingredients]);
-    
-    // 카테고리 이름 목록 (순서 유지를 위해)
-    const categoryNames = Object.keys(groupedIngredients);
-    
-    if (ingredients.length === 0) {
-        return (
-            <Text style={styles.noIngredientText}>
-                냉장고에 등록된 재료가 없습니다.
-            </Text>
-        );
-    }
+  // 카테고리별로 재료를 그룹화
+  const groupedIngredients = useMemo(() => {
+      return ingredients.reduce((acc, ingredient) => {
+          const categoryName = MOCK_CATEGORIES_DATA.find(cat => cat.id === ingredient.category)?.name || '기타';
+          if (!acc[categoryName]) {
+              acc[categoryName] = [];
+          }
+          acc[categoryName].push(ingredient);
+          return acc;
+      }, {} as { [key: string]: Ingredient[] });
+  }, [ingredients]);
+  
+  // 카테고리 이름 목록 (순서 유지용)
+  const categoryNames = Object.keys(groupedIngredients);
+  
+  if (ingredients.length === 0) {
+      return (
+          <Text style={styles.noIngredientText}>
+              냉장고에 등록된 재료가 없습니다.
+          </Text>
+      );
+  }
 
-    return (
-        <>
-            {categoryNames.map(categoryName => (
-                <View key={categoryName} style={styles.categoryGroup}>
-                    <Text style={styles.groupTitle}>{categoryName}</Text>
-                    <View style={styles.gridRow}>
-                        {groupedIngredients[categoryName].map((ing, index) => (
-                            <IngredientItem key={ing.id + index} ingredient={ing} />
-                        ))}
-                    </View>
-                </View>
-            ))}
-        </>
-    );
+  return (
+    <>
+      {categoryNames.map(categoryName => (
+          <View key={categoryName} style={styles.categoryGroup}>
+              <Text style={styles.groupTitle}>{categoryName}</Text>
+              <View style={styles.gridRow}>
+                  {groupedIngredients[categoryName].map((ing, index) => (
+                      <IngredientItem key={ing.id + index} ingredient={ing} />
+                  ))}
+              </View>
+          </View>
+      ))}
+    </>
+  );
 };
 
-// 여기부터 메인 화면 처리
+// 메인 화면 처리
 const FridgeScreenContent = () => {
-    const { 
-        allCategories, 
-        myFridgeIngredients, 
-        selectedCategory, 
-        setSelectedCategory 
-    } = useFridge();
-    
-    const insets = useSafeAreaInsets();
+  const { 
+      allCategories, 
+      myFridgeIngredients, 
+      selectedCategory, 
+      setSelectedCategory 
+  } = useFridge();
+  
+  const insets = useSafeAreaInsets();
 
-    // 현재 선택된 카테고리의 식재료 목록을 계산 (내 냉장고가 아닌 경우에만)
-    const currentIngredients = useMemo(() => {
-        if (selectedCategory === 'my_fridge') {
-            // '내 냉장고'는 그룹화된 뷰를 별도로 사용
-            return []; 
-        }
-        const category = allCategories.find(cat => cat.id === selectedCategory);
-        return category ? category.ingredients : [];
-    }, [selectedCategory, allCategories]);
+  // 현재 선택된 카테고리의 식재료 목록을 계산 (내 냉장고가 아닌 경우에만)
+  const currentIngredients = useMemo(() => {
+      if (selectedCategory === 'my_fridge') {
+          // '내 냉장고'는 그룹화된 뷰를 별도로 사용
+          return []; 
+      }
+      const category = allCategories.find(cat => cat.id === selectedCategory);
+      return category ? category.ingredients : [];
+  }, [selectedCategory, allCategories]);
 
-    // 카테고리 목록 렌더링 함수
-    const renderCategoryItem = (category: Category) => {
-        const isSelected = category.id === selectedCategory;
-        
-        // ... (스타일 로직은 동일) ...
-        const categoryTextStyle = isSelected
-          ? styles.selectedCategoryText
-          : styles.categoryText;
-        
-        const categoryContainerStyle = isSelected
-          ? styles.selectedCategoryContainer
-          : styles.categoryContainer;
+  // 카테고리 목록 렌더링 함수
+  const renderCategoryItem = (category: Category) => {
+      const isSelected = category.id === selectedCategory;
 
-        return (
-            <TouchableOpacity
-                key={category.id}
-                style={categoryContainerStyle}
-                onPress={() => setSelectedCategory(category.id)}
-            >
-                <Text style={categoryTextStyle}>{category.name}</Text>
-            </TouchableOpacity>
-        );
-    };
+      const categoryTextStyle = isSelected
+        ? styles.selectedCategoryText
+        : styles.categoryText;
+      
+      const categoryContainerStyle = isSelected
+        ? styles.selectedCategoryContainer
+        : styles.categoryContainer;
 
-    return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            {/* 검색 영역 */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchInputWrapper}>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="검색"
-                        placeholderTextColor="#888"
-                    />
-                    <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
-                </View>
-            </View>
+      return (
+          <TouchableOpacity
+              key={category.id}
+              style={categoryContainerStyle}
+              onPress={() => setSelectedCategory(category.id)}
+          >
+              <Text style={categoryTextStyle}>{category.name}</Text>
+          </TouchableOpacity>
+      );
+  };
 
-            {/* 카테고리 + 식재료 그리드 */}
-            <View style={styles.contentArea}>
-                
-                {/* 왼쪽: 카테고리 목록 */}
-                <View style={styles.categoryListContainer}>
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.categoryListContent}
-                    >
-                        {allCategories.map(renderCategoryItem)}
-                    </ScrollView>
-                </View>
-
-                {/* 오른쪽: 식재료 그리드 */}
-                <View style={styles.ingredientGridContainer}>
-                    <ScrollView 
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.ingredientGridContent}
-                    >
-                        <Text style={styles.currentCategoryTitle}>
-                            {allCategories.find(c => c.id === selectedCategory)?.name || '카테고리'}
-                        </Text>
-                        
-                        {/* '내 냉장고' 카테고리인 경우 */}
-                        {selectedCategory === 'my_fridge' ? (
-                            <FridgeIngredientGroup ingredients={myFridgeIngredients} />
-                        ) : (
-                            // 일반 카테고리인 경우
-                            <View style={styles.gridRow}>
-                                {currentIngredients.length > 0 ? (
-                                    currentIngredients.map((ing, index) => (
-                                        <IngredientItem key={ing.id + index} ingredient={ing} />
-                                    ))
-                                ) : (
-                                    <Text style={styles.noIngredientText}>
-                                        이 카테고리에 등록된{"\n"}재료가 없습니다.
-                                    </Text>
-                                )}
-                            </View>
-                        )}
-                    </ScrollView>
-                </View>
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* 검색 영역 */}
+        <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="검색"
+                    placeholderTextColor="#888"
+                />
+                <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
             </View>
         </View>
-    );
+
+        {/* 카테고리 + 식재료 그리드 */}
+        <View style={styles.contentArea}>
+            
+            {/* 왼쪽: 카테고리 목록 */}
+            <View style={styles.categoryListContainer}>
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.categoryListContent}
+                >
+                    {allCategories.map(renderCategoryItem)}
+                </ScrollView>
+            </View>
+
+            {/* 오른쪽: 식재료 그리드 */}
+            <View style={styles.ingredientGridContainer}>
+                <ScrollView 
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.ingredientGridContent}
+                >
+                    <Text style={styles.currentCategoryTitle}>
+                        {allCategories.find(c => c.id === selectedCategory)?.name || '카테고리'}
+                    </Text>
+                    
+                    {/* '내 냉장고' 카테고리인 경우 */}
+                    {selectedCategory === 'my_fridge' ? (
+                        <FridgeIngredientGroup ingredients={myFridgeIngredients} />
+                    ) : (
+                        // 일반 카테고리인 경우
+                        <View style={styles.gridRow}>
+                            {currentIngredients.length > 0 ? (
+                                currentIngredients.map((ing, index) => (
+                                    <IngredientItem key={ing.id + index} ingredient={ing} />
+                                ))
+                            ) : (
+                                <Text style={styles.noIngredientText}>
+                                    이 카테고리에 등록된{"\n"}재료가 없습니다.
+                                </Text>
+                            )}
+                        </View>
+                    )}
+                </ScrollView>
+            </View>
+        </View>
+    </View>
+  );
 };
 
-// 메인 Export 컴포넌트: Provider로 감싸기
+// 메인 컴포넌트: Provider로 감싸기
 export default function FridgeScreen() {
     return (
         <FridgeProvider>
@@ -328,21 +327,21 @@ export default function FridgeScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const { width } = Dimensions.get('window');
 const CATEGORY_WIDTH = width * 0.4; // 왼쪽 카테고리 영역 너비
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fff'
   },
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    backgroundColor: '#fff',
+    backgroundColor: '#fff'
   },
   searchInputWrapper: {
     flexDirection: 'row',
@@ -350,110 +349,112 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 25,
     paddingHorizontal: 15,
-    height: 40,
+    height: 40
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
+    color: '#000'
   },
   searchIcon: {
-    marginLeft: 10,
+    marginLeft: 10
   },
   contentArea: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'row'
   },
   categoryListContainer: {
     width: CATEGORY_WIDTH,
     backgroundColor: '#f7f7f7',
     borderRightWidth: 1,
-    borderRightColor: '#eee',
+    borderRightColor: '#eee'
   },
   categoryListContent: {
-    paddingVertical: 10,
+    paddingVertical: 10
   },
   categoryContainer: {
     paddingVertical: 15,
     paddingLeft: 20,
-    backgroundColor: '#f7f7f7',
+    backgroundColor: '#f7f7f7'
   },
   selectedCategoryContainer: {
     paddingVertical: 15,
     paddingLeft: 20,
     backgroundColor: '#fff',
     borderLeftWidth: 5,
-    borderLeftColor: '#404040ff',
+    borderLeftColor: '#404040ff'
   },
   categoryText: {
     fontSize: 16,
     color: '#555',
-    fontWeight: '400',
+    fontWeight: '400'
   },
   selectedCategoryText: {
     fontSize: 16,
     color: '#000',
-    fontWeight: '700',
+    fontWeight: '700'
   },
   ingredientGridContainer: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 15,
+    paddingHorizontal: 15
   },
   ingredientGridContent: {
-    paddingVertical: 20,
+    paddingVertical: 20
   },
   currentCategoryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 15,
+    marginBottom: 15
   },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    marginRight: -10,
+    marginRight: -10
   },
+
+  // 식재료 카드/텍스트 (3열 그리드 레이아웃)
   ingredientCard: {
-    // 3열 그리드 레이아웃
     width: (width - CATEGORY_WIDTH - 30) / 3 - 10, 
     marginRight: 10,
     marginBottom: 15,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   ingredientImagePlaceholder: {
     width: '100%',
     aspectRatio: 1, 
     backgroundColor: '#eee',
     borderRadius: 8,
-    marginBottom: 5,
+    marginBottom: 5
   },
   ingredientName: {
     fontSize: 13,
     color: '#444',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 4
   },
   noIngredientText: {
     fontSize: 16,
     color: '#888',
     marginTop: 20,
     textAlign: 'center',
-    width: '100%',
+    width: '100%'
   },
-  // --- '내 냉장고' 카테고리 그룹화 관련 스타일 ---
+
+  // '내 냉장고' 카테고리 그룹화
   categoryGroup: {
     marginBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    paddingBottom: 10,
+    paddingBottom: 10
   },
   groupTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#666',
     marginBottom: 10,
-    paddingLeft: 5, // 그리드와 시각적 정렬
+    paddingLeft: 5
   }
 });

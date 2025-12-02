@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { Header } from '@/components/header';
 import { Styles } from '@/constants/styles';
 
@@ -39,6 +39,7 @@ export default function RecipeDetailScreen() {
     );
 }
 
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     content: {
         flex: 1,

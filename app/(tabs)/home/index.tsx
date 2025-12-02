@@ -281,80 +281,80 @@ export default function HomeScreen() {
   const BORDER_WIDTH = 1;
 
   const renderCalendarCell = (dayData: (typeof calendarDays)[0]) => {
-  const filteredRecipes = getFilteredRecipes(dayData.recipes);
-  const cellWidth = (width - (CALENDAR_PADDING_H * 2) - BORDER_WIDTH * 2) / 7; 
+    const filteredRecipes = getFilteredRecipes(dayData.recipes);
+    const cellWidth = (width - (CALENDAR_PADDING_H * 2) - BORDER_WIDTH * 2) / 7; 
 
-  return (
-    <TouchableOpacity
-      key={dayData.dateString}
-      style={[
-        styles.calendarCell,
-        { width: cellWidth, minHeight: cellWidth * 1.5 }, 
-      ]}
-      onPress={() => handleDatePress(dayData)}
-    >
-      {/* 날짜 번호 */}
-      <View style={[
-        styles.dayNumberContainer,
-        dayData.isToday && styles.todayIndicator, 
-      ]}>
-        <Text style={[
-          styles.dayNumber,
-          dayData.isToday && styles.todayText,
-          !dayData.isCurrentMonth && styles.otherMonthText,
+    return (
+      <TouchableOpacity
+        key={dayData.dateString}
+        style={[
+          styles.calendarCell,
+          { width: cellWidth, minHeight: cellWidth * 1.5 }, 
+        ]}
+        onPress={() => handleDatePress(dayData)}
+      >
+        {/* 날짜 번호 */}
+        <View style={[
+          styles.dayNumberContainer,
+          dayData.isToday && styles.todayIndicator, 
         ]}>
-          {dayData.date}
-        </Text>
-      </View>
+          <Text style={[
+            styles.dayNumber,
+            dayData.isToday && styles.todayText,
+            !dayData.isCurrentMonth && styles.otherMonthText,
+          ]}>
+            {dayData.date}
+          </Text>
+        </View>
 
-      {/* 레시피 아이템 목록 (색상 점) */}
-      <View style={styles.recipeList}>
-        {/* 3개까지만 보여주기 */}
-        {filteredRecipes.slice(0, 3).map((recipe, index) => (
-          <View key={index} style={styles.recipeItem}>
-            <View 
-              style={[
-                styles.recipeDot, 
-                { backgroundColor: GROUP_COLORS[recipe.group] || '#ccc' }
-              ]} 
-            />
-            <Text style={styles.recipeText} numberOfLines={1}>
-              {recipe.recipe}
-            </Text>
-          </View>
-        ))}
-        {/* 3개 초과 시에는 'view more' 렌더링 */}
-        {filteredRecipes.length > 3 && ( 
-            <Text style={styles.viewMoreText}>view more</Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-};
+        {/* 레시피 아이템 목록 (색상 점) */}
+        <View style={styles.recipeList}>
+          {/* 3개까지만 보여주기 */}
+          {filteredRecipes.slice(0, 3).map((recipe, index) => (
+            <View key={index} style={styles.recipeItem}>
+              <View 
+                style={[
+                  styles.recipeDot, 
+                  { backgroundColor: GROUP_COLORS[recipe.group] || '#ccc' }
+                ]} 
+              />
+              <Text style={styles.recipeText} numberOfLines={1}>
+                {recipe.recipe}
+              </Text>
+            </View>
+          ))}
+          {/* 3개 초과 시에는 'view more' 렌더링 */}
+          {filteredRecipes.length > 3 && ( 
+              <Text style={styles.viewMoreText}>view more</Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderGroupButton = (group: string) => {
-  const isActive = activeGroups.includes(group);
-  const color = GROUP_COLORS[group] || '#ccc';
+    const isActive = activeGroups.includes(group);
+    const color = GROUP_COLORS[group] || '#ccc';
 
-  return (
-    <TouchableOpacity
-      key={group}
-      style={[
-        styles.groupButton,
-        { backgroundColor: isActive ? color : '#fff', borderColor: color },
-      ]}
-      onPress={() => toggleGroup(group)}
-    >
-      <Text style={[
-        styles.groupButtonText,
-        { color: isActive ? '#fff' : color },
-        !isActive && styles.disabledGroupText
-      ]}>
-        {group}
-      </Text>
-    </TouchableOpacity>
-  );
-};
+    return (
+      <TouchableOpacity
+        key={group}
+        style={[
+          styles.groupButton,
+          { backgroundColor: isActive ? color : '#fff', borderColor: color },
+        ]}
+        onPress={() => toggleGroup(group)}
+      >
+        <Text style={[
+          styles.groupButtonText,
+          { color: isActive ? '#fff' : color },
+          !isActive && styles.disabledGroupText
+        ]}>
+          {group}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   // 메인 뷰
   return (
@@ -423,7 +423,7 @@ export default function HomeScreen() {
   );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
   scrollContent: {
     justifyContent: 'center', // 수평 중앙
@@ -431,6 +431,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 80,
     paddingBottom: 50
   },
+
   // 헤더 (검색 및 설정)
   header: {
     flexDirection: 'row',
@@ -438,10 +439,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    marginBottom: 10,
+    marginBottom: 10
   },
   profileButton: { 
-    marginRight: 15,
+    marginRight: 15
   },
   searchBar: {
     flexDirection: 'row',
@@ -451,18 +452,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 8,
     flex: 1,
-    marginRight: 15,
+    marginRight: 15
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
+    color: '#000'
   },
   searchIcon: {
-    marginLeft: 10,
+    marginLeft: 10
   },
   settingsIcon: {
-    color: '#000',
+    color: '#000'
   },
 
   // 그룹 필터
@@ -470,61 +471,61 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 24,
     marginBottom: 20,
-    gap: 10,
+    gap: 10
   },
   groupButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
-    borderWidth: 1,
+    borderWidth: 1
   },
   groupButtonText: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
   disabledGroupText: {
-    color: '#ccc',
+    color: '#ccc'
   },
 
   // 달력
   calendarContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 20
   },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 10
   },
   monthText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
   monthNav: {
     flexDirection: 'row',
-    gap: 15,
+    gap: 15
   },
   navArrow: {
     color: '#000',
-    fontWeight: '300',
+    fontWeight: '300'
   },
   navArrowSize: {
-    fontSize: 21,
+    fontSize: 21
   },
-  
+
   dayOfWeekHeader: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     borderBottomWidth: 1,
     borderTopWidth: 1,
     borderColor: '#eee',
-    paddingVertical: 8,
+    paddingVertical: 8
   },
   dayOfWeekText: {
     fontSize: 14,
     fontWeight: '600',
     width: (width - 40) / 7,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   
   calendarGrid: {
@@ -532,14 +533,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     borderBottomWidth: 1,
     borderLeftWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#eee'
   },
   calendarCell: {
     borderRightWidth: 1,
     borderTopWidth: 1,
     borderColor: '#eee',
     padding: 3,
-    alignItems: 'flex-start',
+    alignItems: 'flex-start'
   },
   
   // 날짜 번호 및 오늘 표시
@@ -551,21 +552,21 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   dayNumber: {
     fontSize: 12,
-    color: '#000',
+    color: '#000'
   },
   todayIndicator: {
-    backgroundColor: '#000',
+    backgroundColor: '#000'
   },
   todayText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
   otherMonthText: {
-    color: '#ccc',
+    color: '#ccc'
   },
 
   // 레시피 목록
@@ -573,43 +574,43 @@ const styles = StyleSheet.create({
     marginTop: 2,
     width: '100%',
     maxHeight: 45,
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
   recipeItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: 1,
+    marginTop: 1
   },
   recipeDot: {
     width: 5,
     height: 5,
     borderRadius: 2,
     marginRight: 4,
-    marginTop: 4,
+    marginTop: 4
   },
   recipeText: {
     fontSize: 10,
     color: '#333',
     lineHeight: 10,
-    flexShrink: 1,
+    flexShrink: 1
   },
   viewMoreText: {
     fontSize: 8,
     color: '#007AFF',
     marginTop: 2,
     textAlign: 'right',
-    width: '100%',
+    width: '100%'
   },
 
   // 레시피 추천 영역
   recommendationContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 20
   },
   recommendationTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#333'
   },
   recipeCard: {
     backgroundColor: '#fff',
@@ -621,26 +622,26 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 3
   },
   recipeCardText: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 15,
-    color: '#000',
+    color: '#000'
   },
   recipeCardImagePlaceholder: {
     width: '100%',
     height: 150,
     backgroundColor: '#ccc',
-    borderRadius: 8,
+    borderRadius: 8
   },
 
   // 사이드 메뉴 스타일
   menuOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 100,
+    zIndex: 100
   },
   sideMenuContainer: {
     position: 'absolute',
@@ -652,31 +653,31 @@ const styles = StyleSheet.create({
     zIndex: 101,
     paddingHorizontal: 15,
     borderRightWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#eee'
   },
   sideMenuTitle: {
       fontSize: 22,
       fontWeight: 'bold',
       marginTop: 20,
-      marginBottom: 15,
+      marginBottom: 15
   },
   sideMenuScrollContent: {
-      paddingBottom: 20,
+      paddingBottom: 20
   },
   menuItem: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: 12,
       borderBottomWidth: 1,
-      borderColor: '#f0f0f0',
+      borderColor: '#f0f0f0'
   },
   menuGroupDot: {
       width: 10,
       height: 10,
       borderRadius: 5,
-      marginRight: 10,
+      marginRight: 10
   },
   menuItemText: {
-      fontSize: 16,
-  },
+      fontSize: 16
+  }
 });

@@ -59,12 +59,11 @@ export default function WelcomeScreen() {
                 <Text style={[styles.buttonText, styles.secondaryButtonText]}>회원가입</Text>
             </TouchableOpacity>
         </View>
-        
     </View>
   );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     // safeArea 대신 전체 화면을 덮도록 container 스타일 조정
     container: { 
@@ -72,44 +71,44 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         paddingHorizontal: 24,
         justifyContent: 'space-between', 
-        alignItems: 'center',
+        alignItems: 'center'
         // paddingTop/paddingBottom은 useSafeAreaInsets에서 동적으로 처리
     },
     logoContainer: {
         flex: 1, 
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'center'
     },
     logoImage: {
         width: 300,
-        height: 200,
+        height: 200
     },
     buttonGroup: {
         width: '100%',
-        gap: 12,
+        gap: 12
     },
     button: {
         paddingVertical: 16,
         borderRadius: 8,
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'center'
     },
     buttonText: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: 'bold'
     },
     primaryButton: {
-        backgroundColor: '#000',
+        backgroundColor: '#000'
     },
     primaryButtonText: {
-        color: '#fff',
+        color: '#fff'
     },
     secondaryButton: {
         backgroundColor: '#fff',
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: '#ccc'
     },
     secondaryButtonText: {
-        color: '#000',
-    },
+        color: '#000'
+    }
 });

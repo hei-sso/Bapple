@@ -4,14 +4,14 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import React, { createContext, ReactNode, useContext, useEffect, useState, useCallback } from 'react';
 
-// API 임포트
+// API
 import { fetchUserProfile } from '@/api/userAPI';
 
-// Type 임포트
-import { UserProfile } from '@/types/userTypes';
-
-// Constants 임포트
+// Constants
 import { AUTH_TOKEN_KEY } from '@/constants/keys';
+
+// Type
+import { UserProfile } from '@/types/userTypes';
 
 // 타입 정의
 interface AuthContextType {

@@ -1,24 +1,23 @@
 // api/healthAPI.ts
 
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store'; 
+import * as SecureStore from 'expo-secure-store';
 
-// Type 임포트
-import { HealthOptions, UserHealthPayload } from '@/types/userTypes';
-
-// Constants 임포트
+// Constants
 import { AUTH_TOKEN_KEY } from '@/constants/keys';
+
+// Type
+import { HealthOptions, UserHealthPayload } from '@/types/userTypes';
 
 // RAILWAY BASE URL
 const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
 
-// 토큰 가져오는 함수 (⭐ SecureStore를 사용하여 토큰을 가져오도록 수정)
+// 토큰 가져오는 함수
 const getAuthToken = async (): Promise<string | null> => {
     try {
-        // ⭐ SecureStore.getItemAsync()을 사용하여 보안 저장소에서 토큰을 불러옴
+        // SecureStore.getItemAsync()을 사용하여 보안 저장소에서 토큰을 불러옴
         return await SecureStore.getItemAsync(AUTH_TOKEN_KEY); 
     } catch (e) {
-        // 에러 메시지도 SecureStore에 맞게 수정
         console.error("❌ SecureStore 토큰 로드 실패:", e); 
         return null;
     }
@@ -45,11 +44,11 @@ export const fetchHealthOptions = async (): Promise<HealthOptions> => {
 // 사용자 프로필에서 현재 선택된 건강 정보 ID 목록을 불러오는 함수 (GET /user/profile 대응)
 export const fetchUserHealthData = async (): Promise<UserHealthPayload> => {
     try {
-        // ⭐ await을 사용해 SecureStore에서 토큰 로드 대기
+        // await을 사용해 SecureStore에서 토큰 로드 대기
         const token = await getAuthToken(); 
         
         if (!token) {
-            // 토큰 부재 시 에러는 여전히 발생하지만, 이제는 저장소 문제 아님 (실제 로그인이 안 되었거나 만료)
+            // 로그인이 안 되었거나 토큰 만료 시
             throw new Error("로그인이 필요합니다. 토큰이 존재하지 않습니다.");
         }
         // 백엔드: GET /user/profile
@@ -89,8 +88,7 @@ export const fetchUserHealthData = async (): Promise<UserHealthPayload> => {
  */
 export const saveUserHealthData = async (health_conditions: string[], allergies: string[]): Promise<void> => {
     try {
-        // ⭐ await을 사용해 SecureStore에서 토큰 로드 대기
-        const token = await getAuthToken(); 
+        const token = await getAuthToken();
         
         if (!token) {
             throw new Error("로그인이 필요합니다. 토큰이 존재하지 않습니다.");

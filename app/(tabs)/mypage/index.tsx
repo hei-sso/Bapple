@@ -6,7 +6,6 @@ import { ChevronRight, RefreshCw } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Dimensions,
     Image,
     ScrollView,
     StyleSheet,
@@ -16,13 +15,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { Styles } from '@/constants/styles'; // 공통
 
-// Context 임포트
+// Context
 import { useAuth } from '@/context/authContext';
-
-const { width } = Dimensions.get('window');
 
 // 하단 설정/정보 메뉴 목록
 const INFO_MENUS = [
@@ -74,7 +71,7 @@ export default function MyPageScreen() {
             console.log("프로필 로드 재시도 필요: Context의 프로필 로직 재실행 필요");
             // 강제 리로드 또는 Context의 refresh 함수 호출을 가정
             setIsDataLoading(true);
-            // 나중에 여기서 Context의 refreshProfile()을 호출하고 setIsDataLoading(false)로 마무리
+            // ⭐ 나중에 여기서 Context의 refreshProfile()을 호출하고 setIsDataLoading(false)로 마무리
             setTimeout(() => {
                 setIsDataLoading(false); // 임시 로딩 해제
             }, 1000); 
@@ -185,7 +182,7 @@ export default function MyPageScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const PROFILE_SIZE = 90;
 const EDIT_BUTTON_SIZE = 35;
 const EDIT_BUTTON_OFFSET = 5;
@@ -194,31 +191,31 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingTop: 0,
         paddingBottom: 50,
-        paddingHorizontal: 24,
+        paddingHorizontal: 24
     },
     
     // 중앙 로딩/에러 상태용 스타일 추가
     centeredLoading: {
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'center'
     },
     loadingText: {
         marginTop: 10,
         fontSize: 16,
-        color: '#666',
+        color: '#666'
     },
     errorTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 8,
-        color: '#D32F2F',
+        color: '#D32F2F'
     },
     errorText: {
         fontSize: 14,
         color: '#999',
         textAlign: 'center',
         marginBottom: 20,
-        paddingHorizontal: 30,
+        paddingHorizontal: 30
     },
     refreshButton: {
         flexDirection: 'row',
@@ -226,42 +223,43 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
         paddingHorizontal: 20,
         paddingVertical: 10,
-        borderRadius: 8,
+        borderRadius: 8
     },
     refreshButtonText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: 'bold'
     },
     settingsHeader: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
         paddingVertical: 10,
         marginTop: 6,
-        height: 44,
+        height: 44
     },
     profileArea: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         marginTop: -15,
-        marginBottom: 30,
+        marginBottom: 30
     },
     profileImageContainer: {
         width: PROFILE_SIZE,
         height: PROFILE_SIZE,
-        marginRight: 20,
+        marginRight: 20
     },
-    // 실제 Image 컴포넌트용 스타일
+
+    // Image 컴포넌트용 스타일
     profileImage: {
         width: PROFILE_SIZE,
         height: PROFILE_SIZE,
-        borderRadius: PROFILE_SIZE / 2,
+        borderRadius: PROFILE_SIZE / 2
     },
     profileImagePlaceholder: {
         width: PROFILE_SIZE,
         height: PROFILE_SIZE,
         borderRadius: PROFILE_SIZE / 2,
-        backgroundColor: '#eee', // 회색 배경
+        backgroundColor: '#eee' // 회색 배경
     },
     editButton: {
         position: 'absolute',
@@ -274,25 +272,25 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2, 
-        borderColor: '#fff',
+        borderColor: '#fff'
     },
     userInfo: {
         flex: 1,
         justifyContent: 'center',
-        marginTop: 10,
+        marginTop: 10
     },
     nicknameText: {
         fontSize: 26,
         fontWeight: 'bold',
-        marginBottom: 10,
+        marginBottom: 10
     },
     followStats: {
         flexDirection: 'row',
-        gap: 20,
+        gap: 20
     },
     statItem: {
         fontSize: 16,
-        color: '#666',
+        color: '#666'
     },
     addFriendButton: {
         backgroundColor: '#000',
@@ -300,16 +298,16 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
         marginBottom: 30,
-        width: '100%',
+        width: '100%'
     },
     addFriendButtonText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: 'bold'
     },
     infoSection: {
         borderTopWidth: 1,
-        borderColor: '#eee',
+        borderColor: '#eee'
     },
     infoItem: {
         flexDirection: 'row',
@@ -317,16 +315,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 15,
         borderBottomWidth: 1,
-        borderColor: '#eee',
+        borderColor: '#eee'
     },
     infoItemText: {
         fontSize: 16,
-        color: '#333',
+        color: '#333'
     },
     infoItemFirst: {
-        borderTopWidth: 0,
+        borderTopWidth: 0
     },
     infoItemLast: {
-        borderBottomWidth: 0,
+        borderBottomWidth: 0
     }
 });

@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Style 임포트
+// Style
 import { Header } from '@/components/header'; // 헤더
 import { Calendar } from '@/components/week-calendar'; // 달력
 import { Styles } from '@/constants/styles'; // 공통
@@ -91,7 +91,7 @@ const getWeekDays = (weekStartString: string, currentSelectedDateString: string)
 // 초기 메모장 내용 (빈 칸)
 const initialMemo = '';
 
-// 메인 화면 처리
+// 메인 컴포넌트
 export default function GroupDetailScreen() {
     const router = useRouter(); 
     const route = useRoute();
@@ -285,17 +285,17 @@ export default function GroupDetailScreen() {
     );
 }
 
-// 💡스타일 시트💡
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     // 레시피 상세 카드
     recipeListTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 10,
+        marginBottom: 10
     },
     recipeCardScrollContent: {
-        paddingBottom: 10, 
+        paddingBottom: 10
     },
     recipeItemCard: {
         backgroundColor: '#fff',
@@ -308,20 +308,20 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
-        flexShrink: 0, 
+        flexShrink: 0
     },
     recipeCardMarginRight: {
-        marginRight: 15,
+        marginRight: 15
     },
     recipeCardContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'flex-start'
     },
     recipeName: {
         fontSize: 20, 
         fontWeight: 'bold',
-        lineHeight: 30,
+        lineHeight: 30
     },
     recipeImagePlaceholder: {
         width: 80, 
@@ -329,13 +329,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#ccc',
         borderRadius: 8,
         marginLeft: 'auto',
-        flexShrink: 0,
+        flexShrink: 0
     },
     noRecipeText: {
         textAlign: 'center',
         fontSize: 16,
         color: '#999',
-        marginTop: 30,
+        marginTop: 30
     },
 
     // 메모장
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         backgroundColor: '#e4e4e4ff',
         marginBottom: 10,
-        borderRadius: 8, 
+        borderRadius: 8
     },
     memoInputContainer: {
         borderWidth: 1,
@@ -362,17 +362,17 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 10,
         minHeight: 120,
-        backgroundColor: '#fff',
+        backgroundColor: '#fff'
     },
     memoInput: {
         fontSize: 16,
         flex: 1,
-        maxHeight: 100,
+        maxHeight: 100
     },
     charCount: {
         textAlign: 'right',
         fontSize: 12,
         color: '#999',
-        marginTop: 5,
+        marginTop: 5
     }
 });
