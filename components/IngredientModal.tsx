@@ -1,4 +1,4 @@
-// components/IngredientModal.tsx (수정된 최종 코드)
+// components/IngredientModal.tsx
 
 import React from 'react';
 import { 
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
     alignItems: 'center',
-    height: 40, // 높이를 고정하여 로딩 인디케이터가 표시되어도 레이아웃이 깨지지 않도록 함
+    height: 40, // 높이 고정, 레이아웃 안 깨지도록 함
     justifyContent: 'center'
   },
   buttonClose: {
