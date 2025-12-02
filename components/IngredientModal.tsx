@@ -1,17 +1,26 @@
-// components/IngredientModal.tsx
+// components/IngredientModal.tsx (수정된 최종 코드)
 
 import React from 'react';
-import { Modal, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { 
+  Modal, 
+  Text, 
+  TouchableOpacity, 
+  View, 
+  StyleSheet, 
+  ActivityIndicator
+} from 'react-native';
 
-// Context
-import { Ingredient } from '@/context/fridgeContext';
+// Type
+import type { Ingredient } from '@/types/fridgeTypes';
 
 interface IngredientModalProps {
   isVisible: boolean;
   onClose: () => void;
   ingredient: Ingredient | null; // 현재 선택된 재료
   isInFridge: boolean; // 냉장고에 있는지 여부
-  onConfirm: (ingredient: Ingredient) => void; // 확인 버튼 클릭 시 실행할 함수
+  // onConfirm 함수 = 비동기 (Promise를 반환)
+  onConfirm: (ingredient: Ingredient) => Promise<void>; 
+  isLoading: boolean; 
 }
 
 const IngredientModal: React.FC<IngredientModalProps> = ({
@@ -20,6 +29,7 @@ const IngredientModal: React.FC<IngredientModalProps> = ({
   ingredient,
   isInFridge,
   onConfirm,
+  isLoading, // props로 받기
 }) => {
   if (!ingredient) return null;
 
@@ -28,17 +38,18 @@ const IngredientModal: React.FC<IngredientModalProps> = ({
     ? `'${ingredient.name}'을(를) 내 냉장고에서 삭제하시겠습니까?`
     : `'${ingredient.name}'을(를) 내 냉장고에 추가하시겠습니까?`;
   
+  // onConfirm 호출 시 모달을 닫지 않음 (API 호출이 성공해야 닫힘)
+  // 모달 닫기 로직 → 호출하는 부모 컴포넌트(IngredientItem)가 담당
   const confirmHandler = () => {
     onConfirm(ingredient);
-    onClose();
   };
 
   return (
     <Modal
-      animationType="fade"
-      transparent={true}
-      visible={isVisible}
-      onRequestClose={onClose}
+        animationType="fade"
+        transparent={true}
+        visible={isVisible}
+        onRequestClose={onClose}
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
@@ -48,15 +59,23 @@ const IngredientModal: React.FC<IngredientModalProps> = ({
             <TouchableOpacity
               style={[styles.button, styles.buttonClose]}
               onPress={onClose}
+              disabled={isLoading} // 로딩 중 비활성화
             >
               <Text style={styles.textStyle}>닫기</Text>
             </TouchableOpacity>
+              
             {/* 확인 (추가/삭제) 버튼 */}
             <TouchableOpacity
               style={[styles.button, styles.buttonConfirm]}
               onPress={confirmHandler}
+              disabled={isLoading} // 로딩 중 비활성화
             >
-              <Text style={styles.textStyle}>{actionText}</Text>
+              {/* 로딩 상태에 따라 텍스트 또는 ActivityIndicator 표시 */}
+              {isLoading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.textStyle}>{actionText}</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -106,7 +125,9 @@ const styles = StyleSheet.create({
     elevation: 2,
     flex: 1,
     marginHorizontal: 5,
-    alignItems: 'center'
+    alignItems: 'center',
+    height: 40, // 높이를 고정하여 로딩 인디케이터가 표시되어도 레이아웃이 깨지지 않도록 함
+    justifyContent: 'center'
   },
   buttonClose: {
     backgroundColor: '#999'
