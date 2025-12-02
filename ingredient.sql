@@ -7,7 +7,7 @@ CREATE TABLE ingredient (
   name         VARCHAR(100) NOT NULL,
   quantity     DECIMAL(10,2) DEFAULT 1.00,
   unit         VARCHAR(20) NULL,        -- g, ml, 개 등
-  category_id  BIGINT NULL,
+  category_id  VARCHAR(50) NULL,
   expire_date  DATE NULL,
   status       ENUM('fresh','near_expiry','expired') DEFAULT 'fresh',
 
