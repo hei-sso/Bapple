@@ -4,7 +4,7 @@ import {  kakaoTokenExchange, refreshAccessToken, sendVerificationEmail, verifyE
 const router = express.Router();
 
 router.get('/kakao/callback', (req, res) => {
-  res.redirect(`exp://kakao?code=${req.query.code}`); 
+  res.send("   "); 
 });
 router.post('/refresh-token', refreshAccessToken);
 //router.post("/api/auth/kakao/callback", kakaoCallback);
