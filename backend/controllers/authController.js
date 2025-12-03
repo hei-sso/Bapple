@@ -7,7 +7,6 @@ import crypto from 'crypto';
 import qs from 'qs';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-
 const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
 const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
@@ -15,7 +14,7 @@ console.log(`[DEBUG] JWT_SECRET 로드 여부: ${JWT_SECRET ? 'OK' : 'UNDEFINED 
 console.log(`[DEBUG] KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY}`); 
 console.log(`[DEBUG] KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}`);
 
-// 카카오 토큰 교환 및 로그인/회원가입
+// 1. 카카오 토큰 교환 및 로그인/회원가입 (Access + Refresh Token 발급)
 export const kakaoTokenExchange = async (req, res) => {
   console.log("--- KAKAO TOKEN EXCHANGE 시작 ---");
   const code = req.body.code || req.query.code;
@@ -30,12 +29,12 @@ export const kakaoTokenExchange = async (req, res) => {
   let connection;
   
   try {
-    // 2. [수정] code로 카카오 access token 교환 요청
+    // 1. code로 카카오 access token 교환 요청
     console.log("DEBUG: 카카오 토큰 교환 요청 중...");
     
     const tokenResponse = await axios.post(
       "https://kauth.kakao.com/oauth/token",
-      qs.stringify({ // [핵심 수정] 데이터를 Body로 보냅니다.
+      qs.stringify({
         grant_type: "authorization_code",
         client_id: KAKAO_REST_API_KEY,
         redirect_uri: KAKAO_REDIRECT_URI,
@@ -54,7 +53,7 @@ export const kakaoTokenExchange = async (req, res) => {
     // [수정] 템플릿 리터럴(백틱) 적용
     console.log(`DEBUG: KAKAO 토큰 길이: ${KAKAO_ACCESS_TOKEN.length}`);
 
-    // 3. access_token으로 사용자 정보 받기
+    // 2. access_token으로 사용자 정보 받기
     console.log("DEBUG: 카카오 사용자 정보 요청 중...");
     const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
       headers: { Authorization: `Bearer ${KAKAO_ACCESS_TOKEN}` },
@@ -69,7 +68,7 @@ export const kakaoTokenExchange = async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // 4. DB 연동
+    // 3. DB 연동 (유저 확인)
     let [rows] = await connection.query('SELECT * FROM user WHERE kakao_id = ?', [kakao_id]);
     let user = rows[0];
     let isNewUser = false;
@@ -89,42 +88,24 @@ export const kakaoTokenExchange = async (req, res) => {
 
       const newUserId = insertResult.insertId;
 
-      // 2. Fridge 테이블에 깡통 냉장고 생성 (스키마 반영)
-      // - owner_user_id: 방금 가입한 유저 ID
-      // - name: "{닉네임}님의 냉장고"
-      // - is_default: 첫 냉장고이므로 1 (True)로 설정
+      // 냉장고 생성
       const defaultFridgeName = `${nickname}님의 냉장고`;
-      
       const [insertFridgeResult] = await connection.query(
         `INSERT INTO fridge (owner_user_id, name, is_default, visibility) VALUES (?, ?, 1, 'private')`, 
         [newUserId, defaultFridgeName] 
       );
       
-      // (참고) insertFridgeResult.insertId 가 생성된 냉장고의 id 입니다.
-
-      // 3. 방금 가입시킨 유저 정보 다시 조회
-      [rows] = await connection.query('SELECT * FROM user WHERE user_id = ?', [newUserId]);
-      user = rows[0];
-      
-      console.log(`DEBUG: 신규 유저 및 기본 냉장고 생성 완료 (user_id: ${user.user_id}, fridge_id: ${insertFridgeResult.insertId})`);
-      
       // 방금 가입시킨 유저 정보 다시 조회
       [rows] = await connection.query('SELECT * FROM user WHERE user_id = ?', [newUserId]);
       user = rows[0];
-      console.log(`DEBUG: 신규 유저 회원가입 완료 (user_id: ${user.user_id})`);
+      
+      console.log(`DEBUG: 신규 유저 및 기본 냉장고 생성 완료 (user_id: ${user.user_id})`);
     } else {
-      // 기존 유저 -> 정보 업데이트 및 로그인 처리
+      // 기존 유저 -> 정보 업데이트
       console.log(`DEBUG: 기존 카카오 유저 (user_id: ${user.user_id}), 정보 업데이트 진행 중...`);
       
-      // (선택) 기존 유저 정보 업데이트
       await connection.query(
-        `UPDATE user SET 
-          nickname = ?, 
-          email = ?,
-          status = 'ACTIVE',
-          deleted_at = NULL,
-          last_login_at = NOW() 
-          WHERE kakao_id = ?`,
+        `UPDATE user SET nickname = ?, email = ?, status = 'ACTIVE', deleted_at = NULL, last_login_at = NOW() WHERE kakao_id = ?`,
         [nickname, email, kakao_id]
       );
 
@@ -134,24 +115,35 @@ export const kakaoTokenExchange = async (req, res) => {
       user.status = 'ACTIVE';
     }
 
-    await connection.commit();
-
+    // [수정됨] 토큰 발급 로직: Access Token(1시간) + Refresh Token(7일)
     const payload = {
       userId: user.user_id,
       email: user.email,
       nickname: user.nickname
     };
 
-    const token = jwt.sign(
-      payload,
-      JWT_SECRET,
-      { expiresIn: "7d" }
+    // A. Access Token 생성 (유효기간 1시간)
+    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+
+    // B. Refresh Token 생성 (랜덤 문자열)
+    const refreshToken = crypto.randomBytes(64).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 현재 시간 + 7일
+
+    // C. DB 저장 (refresh_token 테이블)
+    await connection.query(
+      `INSERT INTO refresh_token (user_id, token, expires_at) VALUES (?, ?, ?)`,
+      [user.user_id, refreshToken, expiresAt]
     );
 
-    // 6. 성공 응답
+    // 트랜잭션 커밋
+    await connection.commit();
+
+    // 4. 성공 응답 (두 토큰 모두 전달)
     res.status(isNewUser ? 201 : 200).json({
       message: isNewUser ? "카카오 신규 회원가입 및 로그인 성공" : "카카오 로그인 성공",
-      token, 
+      accessToken,    // [중요] API 요청용 (짧은 수명)
+      refreshToken,   // [중요] 자동 로그인용 (긴 수명 - DB저장됨)
       user: {
         userId: user.user_id,
         friend_code: user.friend_code,
@@ -172,19 +164,12 @@ export const kakaoTokenExchange = async (req, res) => {
     
     // Axios 에러 응답이 있는 경우 (카카오가 거절한 경우)
     if (error.response) {
-        console.error("- Status Code:", error.response.status);
-        console.error("- Error Data:", error.response.data);
-        
-        // 401 에러 처리
-        if (error.response.status === 401) {
-            return res.status(401).json({
-                message: "유효하지 않은 카카오 토큰입니다.",
-                code: "KAKAO_TOKEN_INVALID"
-            });
-        }
-        
-        // 그 외 카카오 에러 그대로 전달
-        return res.status(error.response.status).json(error.response.data);
+       console.error("- Status Code:", error.response.status);
+       console.error("- Error Data:", error.response.data);
+       if (error.response.status === 401) {
+           return res.status(401).json({ message: "유효하지 않은 카카오 토큰입니다.", code: "KAKAO_TOKEN_INVALID" });
+       }
+       return res.status(error.response.status).json(error.response.data);
     }
     
     // 그 외 일반적인 서버 에러
@@ -197,8 +182,74 @@ export const kakaoTokenExchange = async (req, res) => {
   }
 };
 
-// --- 아래 이메일 관련 코드는 변경 없음 ---
 
+// [추가됨] 2. 토큰 갱신 (자동 로그인) API
+// 앱 시작 시 Access Token이 만료되었다면 이 API를 호출
+export const refreshAccessToken = async (req, res) => {
+  const { refreshToken } = req.body; 
+
+  if (!refreshToken) {
+    return res.status(400).json({ message: "Refresh Token이 누락되었습니다." });
+  }
+
+  let connection;
+  try {
+    connection = await db.getConnection();
+
+    // 1. DB에서 토큰 조회
+    const [rows] = await connection.query(
+      'SELECT * FROM refresh_token WHERE token = ?', 
+      [refreshToken]
+    );
+    const dbToken = rows[0];
+
+    // 2. 토큰이 없거나 만료되었는지 확인
+    if (!dbToken) {
+      return res.status(401).json({ message: "유효하지 않은 Refresh Token입니다. 재로그인이 필요합니다." });
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(dbToken.expires_at);
+
+    if (now > expiresAt) {
+      // 만료된 토큰은 삭제
+      await connection.query('DELETE FROM refresh_token WHERE token = ?', [refreshToken]);
+      return res.status(401).json({ message: "로그인 세션이 만료되었습니다. 다시 로그인해주세요." });
+    }
+
+    // 3. 유저 정보 조회
+    const [userRows] = await connection.query('SELECT * FROM user WHERE user_id = ?', [dbToken.user_id]);
+    const user = userRows[0];
+
+    if (!user) {
+      return res.status(401).json({ message: "존재하지 않는 사용자입니다." });
+    }
+
+    // 4. 새로운 Access Token 발급 (1시간)
+    const payload = {
+      userId: user.user_id,
+      email: user.email,
+      nickname: user.nickname
+    };
+    const newAccessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+
+    console.log(`[DEBUG] User ${user.user_id} : Access Token 갱신 완료`);
+
+    // 5. 응답
+    res.json({
+      message: "토큰 갱신 성공",
+      accessToken: newAccessToken
+    });
+
+  } catch (error) {
+    console.error("토큰 갱신 중 오류:", error);
+    res.status(500).json({ message: "서버 오류 발생" });
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
+// (이메일 관련 코드는 기존과 동일하므로 아래에 유지)
 const getTransporter = () => {
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey) {
@@ -228,10 +279,10 @@ export const sendVerificationEmail = async (req, res) => {
     const transport = getTransporter();
     const query = 
       `INSERT INTO email_verification (email, code, expires_at) 
-      VALUES (?, ?, ?) 
-      ON DUPLICATE KEY UPDATE 
-      code = VALUES(code), 
-      expires_at = VALUES(expires_at)`;
+       VALUES (?, ?, ?) 
+       ON DUPLICATE KEY UPDATE 
+       code = VALUES(code), 
+       expires_at = VALUES(expires_at)`;
     
     await db.query(query, [email, verificationCode, expirationTime]);
 
