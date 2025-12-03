@@ -1,12 +1,9 @@
-SET FOREIGN_KEY_CHECKS = 0;
-SET FOREIGN_KEY_CHECKS = 1;
-
 CREATE TABLE ingredient_category (
   id         BIGINT AUTO_INCREMENT PRIMARY KEY,
   name       VARCHAR(60) NOT NULL,
   parent_id  BIGINT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+  
   UNIQUE KEY uq_category_name (name),
   CONSTRAINT fk_category_parent
     FOREIGN KEY (parent_id) REFERENCES ingredient_category(id)
