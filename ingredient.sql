@@ -1,13 +1,11 @@
-SET FOREIGN_KEY_CHECKS = 0;
-SET FOREIGN_KEY_CHECKS = 1;
-
 CREATE TABLE ingredient (
   id           BIGINT AUTO_INCREMENT PRIMARY KEY,
   fridge_id    BIGINT NOT NULL,
   name         VARCHAR(100) NOT NULL,
   quantity     DECIMAL(10,2) DEFAULT 1.00,
-  unit         VARCHAR(20) NULL,        -- g, ml, 개 등
-  category_id  VARCHAR(50) NULL,
+  unit         VARCHAR(20) NULL,
+  category_id  BIGINT NULL,  -- ★ 여기 다시 BIGINT
+
   expire_date  DATE NULL,
   status       ENUM('fresh','near_expiry','expired') DEFAULT 'fresh',
 
