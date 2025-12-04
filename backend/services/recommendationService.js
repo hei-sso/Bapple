@@ -27,7 +27,7 @@ export const syncUserToBatch = async (userId) => {
         COALESCE(
           (SELECT JSON_ARRAYAGG(fi.ingredient_id) 
            FROM fridge_ingredient fi 
-           JOIN fridge f ON fi.fridge_id = f.fridge_id 
+           JOIN fridge f ON fi.fridge_id = f.id 
            WHERE f.owner_user_id = ?), 
         '[]')
     `;
