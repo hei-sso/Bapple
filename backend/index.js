@@ -51,7 +51,7 @@ app.get('/', (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use('/api/group', groupRoutes);
-app.use('/api/fridge', fridgeRoutes);
+app.use('/fridge', fridgeRoutes);
 app.use("/api/recommend", recommendRoutes);
 app.use("/health", healthRoutes);
 

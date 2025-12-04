@@ -1,11 +1,16 @@
 import express from 'express';
-import { addIngredient, deleteIngredient, getIngredients } from '../controllers/fridgeController.js';
-import authenticateToken from '../middleware/authenticateToken.js';
+import { verifyToken } from '../middlewares/authMiddleware.js';
+import { 
+  getMyIngredients, 
+  addIngredientToMyFridge, 
+  removeIngredientFromMyFridge 
+} from '../controllers/fridgeController.js';
 
 const router = express.Router();
 
-router.post('/ingredient', authenticateToken, addIngredient);
-router.delete('/ingredient/:ingredientId', authenticateToken, deleteIngredient);
-router.get('/:fridgeId/ingredients', authenticateToken, getIngredients);
+// URL이 프론트엔드 API 요청(/fridge/my)과 정확히 일치해야 합니다.
+router.get('/my', verifyToken, getMyIngredients);
+router.post('/my', verifyToken, addIngredientToMyFridge);
+router.delete('/my/:ingredientId', verifyToken, removeIngredientFromMyFridge);
 
 export default router;

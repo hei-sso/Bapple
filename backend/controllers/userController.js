@@ -1,4 +1,6 @@
 import db from '../db.js';
+// [추가됨] 추천 데이터 동기화 서비스 임포트
+import { syncUserToBatch } from '../services/recommendationService.js';
 
 // 1. 로그아웃
 export const logout = (req, res) => {
@@ -148,6 +150,10 @@ export const updateProfile = async (req, res) => {
         }
 
         await connection.commit();
+
+        // [추가됨] 변경 사항이 저장되었으므로 배치 테이블 동기화 실행
+        syncUserToBatch(userId);
+        
         res.status(200).json({ success: true, message: '저장되었습니다.' });
 
     } catch (error) {
