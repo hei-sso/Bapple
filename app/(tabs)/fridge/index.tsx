@@ -19,6 +19,8 @@ import IngredientModal from '@/components/IngredientModal';
 
 // Context
 import { FridgeProvider, useFridge } from '@/context/fridgeContext';
+
+// Type
 import type { Category, Ingredient } from '@/types/fridgeTypes';
 
 
