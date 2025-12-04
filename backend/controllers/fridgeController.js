@@ -91,7 +91,7 @@ export const getMyIngredients = async (req, res) => {
     // API 명세에 맞춰 필요한 컬럼만 정확히 조회
     const query = `
       SELECT 
-        fi.id AS key_id,            
+        fi.id AS id,            
         i.id AS ingredient_id,      
         i.name AS ingredient_name, 
         i.category_id,               
@@ -186,7 +186,7 @@ export const removeIngredientFromMyFridge = async (req, res) => {
     // 해당 냉장고에 있는 해당 재료 삭제 (LIMIT 1)
     const [result] = await db.query(`
       DELETE FROM fridge_ingredient 
-      WHERE fridge_id = ? AND ingredient_id = ?
+      WHERE fridge_id = ? AND id = ?
       LIMIT 1
     `, [fridgeId, ingredientId]);
 
