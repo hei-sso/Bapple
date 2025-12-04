@@ -1,5 +1,6 @@
 import express from 'express';
-import { verifyToken } from '../middlewares/authMiddleware.js';
+import authenticateToken from '../middleware/authenticateToken.js'; 
+
 import { 
   getMyIngredients, 
   addIngredientToMyFridge, 
@@ -8,9 +9,9 @@ import {
 
 const router = express.Router();
 
-// URL이 프론트엔드 API 요청(/fridge/my)과 정확히 일치해야 합니다.
-router.get('/my', verifyToken, getMyIngredients);
-router.post('/my', verifyToken, addIngredientToMyFridge);
-router.delete('/my/:ingredientId', verifyToken, removeIngredientFromMyFridge);
+// [수정] 변수명도 authenticateToken으로 변경
+router.get('/my', authenticateToken, getMyIngredients);
+router.post('/my', authenticateToken, addIngredientToMyFridge);
+router.delete('/my/:ingredientId', authenticateToken, removeIngredientFromMyFridge);
 
 export default router;
