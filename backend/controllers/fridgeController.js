@@ -27,17 +27,18 @@ export const getAllIngredients = async (req, res) => {
     // (만약 카테고리 테이블이 없다면 그냥 ingredient만 조회하세요)
     const query = `
       SELECT 
-        c.id as category_id, 
-        c.name as category_name, 
+        c.category_id, 
+        c.category_name, 
         i.id as ingredient_id, 
         i.name as ingredient_name
-      FROM category c
-      JOIN ingredient i ON c.id = i.category_id
-      ORDER BY c.sort_order ASC, i.name ASC
+      FROM ingredient_category c
+      JOIN ingredient i ON c.category_id = i.category_id
+      ORDER BY c.category_id ASC, i.name ASC
     `;
     
     const [rows] = await db.query(query);
-
+    console.log(`[DEBUG] 재료 데이터 ${rows.length}개 로드 성공`);
+    
     // DB 결과를 앱이 원하는 형태(Category[])로 변환
     // 예: [{ title: '육류', data: [...] }, { title: '채소', data: [...] }]
     const groupedData = rows.reduce((acc, row) => {
@@ -50,10 +51,14 @@ export const getAllIngredients = async (req, res) => {
         };
         acc.push(category);
       }
-      category.ingredients.push({
-        id: row.ingredient_id,
-        name: row.ingredient_name
-      });
+      
+     // 재료 정보 추가
+      if (row.ingredient_id) {
+         category.ingredients.push({
+            id: row.ingredient_id,
+            name: row.ingredient_name
+         });
+      }
       return acc;
     }, []);
 
@@ -128,7 +133,8 @@ export const addIngredientToMyFridge = async (req, res) => {
     const today = new Date();
     today.setDate(today.getDate() + 14);
     expire_date = today.toISOString().split('T')[0];
-    logs.push(`유통기한(+14일: ${expire_date})`);
+    //logs.push(`유통기한(+14일: ${expire_date})`);
+    console.log(`[DEBUG] 유통기한 자동 설정 (+14일): ${expire_date}`);
   }
 
   try {
