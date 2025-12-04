@@ -1,17 +1,26 @@
 // components/RecipeModal.tsx
 
 import React from 'react';
-import { Modal, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 // Context
-import { Recipe } from '@/context/recipeContext';
+import { Recipe } from '@/types/recipeTypes';
 
 interface RecipeModalProps {
   isVisible: boolean;
   onClose: () => void;
-  recipe: Recipe | null; // 현재 선택된 레시피
-  isFavorite: boolean; // 찜 목록에 있는지 여부
-  onConfirm: (recipe: Recipe) => void; // 확인 버튼 클릭 시 실행할 함수
+  recipe: Recipe | null; 
+  isFavorite: boolean; 
+  // onConfirm 함수: 비동기(Promise 반환)
+  onConfirm: (recipe: Recipe) => Promise<void>; 
+  isLoading: boolean; // 로딩 상태 추가
 }
 
 const RecipeModal: React.FC<RecipeModalProps> = ({
@@ -19,7 +28,8 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
   onClose,
   recipe,
   isFavorite,
-  onConfirm,
+  onConfirm, 
+  isLoading, // props로 받기
 }) => {
   if (!recipe) return null;
 
@@ -28,9 +38,9 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
     ? `'${recipe.name}'을(를) 찜 목록에서 삭제하시겠습니까?`
     : `'${recipe.name}'을(를) 찜 목록에 추가하시겠습니까?`;
   
+  // 모달을 즉시 닫지 않음 → 로딩이 끝나고 RecipeItem에서 닫음
   const confirmHandler = () => {
     onConfirm(recipe);
-    onClose();
   };
 
   return (
@@ -48,6 +58,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
             <TouchableOpacity
               style={[styles.button, styles.buttonClose]}
               onPress={onClose}
+              disabled={isLoading} // 로딩 중 비활성화
             >
               <Text style={styles.textStyle}>닫기</Text>
             </TouchableOpacity>
@@ -55,8 +66,14 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
             <TouchableOpacity
               style={[styles.button, styles.buttonConfirm]}
               onPress={confirmHandler}
+              disabled={isLoading} // 로딩 중 비활성화
             >
-              <Text style={styles.textStyle}>{actionText}</Text>
+               {/* 로딩 상태에 따라 텍스트 또는 ActivityIndicator 표시 */}
+              {isLoading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.textStyle}>{actionText}</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -65,12 +82,13 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
   );
 };
 
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
   centeredView: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)' // 어두운 배경
+    backgroundColor: 'rgba(0,0,0,0.5)'
   },
   modalView: {
     margin: 20,
@@ -86,7 +104,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    width: '80%' // 모달 너비
+    width: '80%'
   },
   modalText: {
     marginBottom: 25,
@@ -106,13 +124,15 @@ const styles = StyleSheet.create({
     elevation: 2,
     flex: 1,
     marginHorizontal: 5,
-    alignItems: 'center'
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center'
   },
   buttonClose: {
     backgroundColor: '#999'
   },
   buttonConfirm: {
-    backgroundColor: '#ff69b4' // 핑크색 (찜 강조 색상)
+    backgroundColor: '#ff69b4' 
   },
   textStyle: {
     color: 'white',
