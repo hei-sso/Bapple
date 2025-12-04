@@ -3,23 +3,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  ActivityIndicator
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Components
-import IngredientModal from '@/components/IngredientModal'; 
+import IngredientModal from '@/components/IngredientModal';
 
 // Context
-import { useFridge, FridgeProvider } from '@/context/fridgeContext';
-import type { Category, Ingredient } from '@/types/fridgeTypes'; 
+import { FridgeProvider, useFridge } from '@/context/fridgeContext';
+import type { Category, Ingredient } from '@/types/fridgeTypes';
 
 
 // 식재료 아이템 컴포넌트
@@ -28,21 +28,28 @@ const IngredientItem: React.FC<{ ingredient: Ingredient }> = ({ ingredient }) =>
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false); 
 
-  const isInFridge = useMemo(
-    () => myFridgeIngredients.some(item => item.id === ingredient.id),
-    [myFridgeIngredients, ingredient.id]
-  );
+  // 1. 이 재료가 내 냉장고에 있는지 확인 (ingredient_id로 비교)
+  // 리스트의 아이템이 '전체목록'에서 왔다면 id가 재료ID이고, '내 냉장고'에서 왔다면 ingredient_id가 재료ID임
+  const matchedFridgeItem = useMemo(() => {
+    const targetIngredientId = (ingredient as any).ingredient_id || ingredient.id;
+    return myFridgeIngredients.find(item => (item as any).ingredient_id === targetIngredientId);
+  }, [myFridgeIngredients, ingredient]);
+
+  const isInFridge = !!matchedFridgeItem;
 
   const handleConfirm = async (ing: Ingredient) => {
     setIsActionLoading(true);
     try {
-      if (isInFridge) {
-        await removeIngredient(ing.id);
+      if (isInFridge && matchedFridgeItem) {
+        // 삭제 시: 냉장고 테이블의 PK(id)를 사용하여 삭제
+        await removeIngredient(matchedFridgeItem.id);
       } else {
+        // 추가 시: 재료 정보 그대로 전달
         await addIngredient(ing);
       }
       setIsModalVisible(false);
     } catch (e) {
+      console.error("작업 실패:", e);
     } finally {
       setIsActionLoading(false);
     }
@@ -56,8 +63,11 @@ const IngredientItem: React.FC<{ ingredient: Ingredient }> = ({ ingredient }) =>
         style={styles.ingredientCard}
         onPress={() => setIsModalVisible(true)} 
         disabled={isDisabled}
-    >
-        <View style={styles.ingredientImagePlaceholder} />
+      >
+        <View style={[
+          styles.ingredientImagePlaceholder,
+          isInFridge && { borderWidth: 2, borderColor: '#404040ff' } // 냉장고에 있으면 테두리 표시 (옵션)
+        ]} />
         <Text style={styles.ingredientName} numberOfLines={1}>
           {ingredient.name}
         </Text>
@@ -105,8 +115,9 @@ const FridgeIngredientGroup: React.FC<{ ingredients: Ingredient[]; allCategories
         <View key={categoryName} style={styles.categoryGroup}>
           <Text style={styles.groupTitle}>{categoryName}</Text>
           <View style={styles.gridRow}>
-            {groupedIngredients[categoryName].map((ing, index) => (
-              <IngredientItem key={ing.id + index} ingredient={ing} />
+            {groupedIngredients[categoryName].map((ing) => (
+              // key에서 index 제거하고 고유 ID 사용
+              <IngredientItem key={ing.id} ingredient={ing} />
             ))}
           </View>
         </View>
@@ -225,8 +236,9 @@ const FridgeScreenContent = () => {
               // 일반 카테고리인 경우
               <View style={styles.gridRow}>
                 {currentIngredients.length > 0 ? (
-                  currentIngredients.map((ing, index) => (
-                    <IngredientItem key={ing.id + index} ingredient={ing} />
+                  currentIngredients.map((ing) => (
+                    // key에서 index 제거하고 고유 ID 사용
+                    <IngredientItem key={ing.id} ingredient={ing} />
                   ))
                 ) : (
                   <Text style={styles.noIngredientText}>

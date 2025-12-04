@@ -69,7 +69,6 @@ export default function KakaoWebViewScreen() {
         try {
             console.log("➡ 백엔드로 로그인 요청 전송 중...");
 
-            // 백엔드가 { code: "..." } 형태의 JSON을 기다림
             const response = await axios.post(BACKEND_API_URL, 
                 { 
                     code: code 
@@ -81,14 +80,17 @@ export default function KakaoWebViewScreen() {
                 }
             );
             
-            // 백엔드에서 받은 서비스용 JWT 토큰
-            const serviceToken = response.data.token; 
-            const isNewUser = response.data.isNewUser;
+            // 백엔드에서 주는 변수명과 일치하게 할 것!
+            // 백엔드 응답: { accessToken, refreshToken, user, ... }
+            const { accessToken, refreshToken, isNewUser } = response.data;
 
-            console.log(`✅ 로그인 성공 (신규 유저 여부: ${isNewUser})`);
+            console.log(`✅ 로그인 성공 (신규 유저: ${isNewUser})`);
+            console.log(`🔑 Access Token: ${accessToken.substring(0, 10)}...`);
+            console.log(`🔄 Refresh Token: ${refreshToken.substring(0, 10)}...`);
 
-            // 로그인 완료 처리
-            await signIn(serviceToken); // 토큰 저장
+            // authContext.tsx의 signIn 함수에 두 토큰을 모두 넘겨줘야 함
+            await signIn(accessToken, refreshToken); 
+            
             router.replace('/(tabs)/home'); // 메인 화면으로 이동
 
         } catch (e: any) {
