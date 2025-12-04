@@ -1,7 +1,7 @@
 CREATE TABLE ingredient (
   id           BIGINT AUTO_INCREMENT PRIMARY KEY,
   name         VARCHAR(100) NOT NULL,
-  category_id  BIGINT NULL,
+  category_id  VARCHAR(50)  NOT NULL,
   updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                ON UPDATE CURRENT_TIMESTAMP,
 
