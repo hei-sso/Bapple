@@ -9,6 +9,7 @@ import groupRoutes from './routes/groupRoutes.js';
 import fridgeRoutes from './routes/fridgeRoutes.js';
 import recommendRoutes from "./routes/recommendRoutes.js";
 import healthRoutes from './routes/healthRoutes.js'; 
+import recipeRoutes from './routes/recipeRoutes.js';
 
 // 환경 변수 로드
 dotenv.config();
@@ -54,6 +55,7 @@ app.use('/api/group', groupRoutes);
 app.use('/fridge', fridgeRoutes);
 app.use("/api/recommend", recommendRoutes);
 app.use("/health", healthRoutes);
+app.use('/recipe', recipeRoutes);
 
 // 서버 시작
 app.listen(PORT, '0.0.0.0', () => {
