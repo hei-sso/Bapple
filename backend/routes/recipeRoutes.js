@@ -6,7 +6,7 @@ import {
   addRecipeToFavorite, 
   removeRecipeFromFavorite 
 } from '../controllers/recipeController.js'; // 컨트롤러 경로는 실제 위치에 맞게 수정
-import { authenticateToken } from '../middleware/authMiddleware.js'; // 인증 미들웨어
+import authenticateToken from '../middleware/authenticateToken.js';
 
 const router = express.Router();
 
