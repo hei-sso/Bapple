@@ -1,22 +1,56 @@
+// controllers/recipeController.js
 import db from '../db.js';
 import { syncUserToBatch } from '../services/recommendationService.js';
 
 // 1. 전체 레시피 조회 (GET /recipe/all)
+// [수정] cuisine_type을 기준으로 카테고리를 생성하여 반환합니다.
 export const getAllRecipes = async (req, res) => {
   console.log('[DEBUG] [GET] 전체 레시피 조회 요청');
   try {
-    // [수정] DB 컬럼명(recipe_id, name, img_url)에 맞춰 조회
-    const query = `
-      SELECT recipe_id, name, img_url 
-      FROM recipe 
-    `;
-    
-    const [rows] = await db.query(query);
-    console.log(`[DEBUG] 레시피 ${rows.length}개 로드 성공`);
-    
-    // 프론트엔드에서 'id'라는 이름을 기대할 수도 있으니 
-    // 필요하다면 map으로 변환해줄 수도 있지만, 일단 그대로 보냅니다.
-    res.status(200).json({ success: true, data: rows });
+    // 1. DB에서 전체 레시피 가져오기
+    // (cuisine_type 컬럼이 있다고 가정하고 SELECT * 로 다 가져옵니다)
+    const query = `SELECT * FROM recipe`;
+    const [recipes] = await db.query(query);
+    console.log(`[DEBUG] 레시피 ${recipes.length}개 로드 성공`);
+
+    // 2. 데이터 가공 시작
+    // (1) '전체' 카테고리 생성 (모든 레시피 포함)
+    const result = [{
+      id: 'all',
+      name: '전체',
+      recipes: recipes
+    }];
+
+    // (2) cuisine_type(요리 종류)별로 레시피 분류
+    const categoryMap = {};
+
+    recipes.forEach(recipe => {
+      // DB 컬럼명이 cuisine_type 이라고 하셨으므로 해당 필드 사용
+      const type = recipe.cuisine_type; 
+      
+      if (type) {
+        // 혹시 데이터에 공백이 있을 수 있으니 trim() 처리
+        const cleanType = type.trim();
+
+        if (!categoryMap[cleanType]) {
+          categoryMap[cleanType] = [];
+        }
+        categoryMap[cleanType].push(recipe);
+      }
+    });
+
+    // (3) 분류된 그룹을 result 배열에 추가
+    Object.keys(categoryMap).forEach(typeName => {
+      result.push({
+        id: typeName,   // 카테고리 ID (예: '한식')
+        name: typeName, // 화면에 보여줄 이름 (예: '한식')
+        recipes: categoryMap[typeName]
+      });
+    });
+
+    // 3. 최종 응답
+    res.status(200).json({ success: true, data: result });
+
   } catch (error) {
     console.error('[ERROR] 전체 레시피 조회 실패:', error);
     res.status(500).json({ message: '서버 오류', error: error.message });
@@ -24,17 +58,15 @@ export const getAllRecipes = async (req, res) => {
 };
 
 // 2. 찜 목록 조회 (GET /recipe/favorite)
+// (여기는 수정할 필요 없이 그대로 둡니다)
 export const getMyFavorites = async (req, res) => {
   const userId = req.user.user_id;
   console.log(`[DEBUG] [GET] 찜 목록 조회 요청 (User: ${userId})`);
 
   try {
-    // [수정] recipe_id(문자열)를 기준으로 JOIN
     const query = `
       SELECT 
-        r.recipe_id, 
-        r.name, 
-        r.img_url, 
+        r.*, 
         rf.created_at as liked_at
       FROM recipe_favorite rf
       JOIN recipe r ON rf.recipe_id = r.recipe_id 
@@ -43,8 +75,6 @@ export const getMyFavorites = async (req, res) => {
     `;
 
     const [rows] = await db.query(query, [userId]);
-    console.log(`[DEBUG] 찜한 레시피 ${rows.length}개 로드 완료`);
-    
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error('[ERROR] 찜 목록 조회 실패:', error);
@@ -57,10 +87,7 @@ export const addRecipeToFavorite = async (req, res) => {
   const userId = req.user.user_id;
   const { recipe_id } = req.body; 
 
-  console.log(`[DEBUG] 찜 추가 요청: User ${userId}, Recipe ${recipe_id}`);
-
   try {
-    // [수정] recipe_id 기준 중복 체크
     const [exists] = await db.query(
       'SELECT 1 FROM recipe_favorite WHERE user_id = ? AND recipe_id = ?',
       [userId, recipe_id]
@@ -70,13 +97,11 @@ export const addRecipeToFavorite = async (req, res) => {
       return res.status(409).json({ message: '이미 찜한 레시피입니다.' });
     }
 
-    // [수정] recipe_id 저장
     await db.query(
       'INSERT INTO recipe_favorite (user_id, recipe_id, created_at) VALUES (?, ?, NOW())',
       [userId, recipe_id]
     );
 
-    // 추천 동기화 (에러 무시)
     try { syncUserToBatch(userId); } catch (e) { console.warn('추천 동기화 실패:', e.message); }
 
     res.status(201).json({ success: true, message: '찜 추가됨' });
@@ -91,10 +116,7 @@ export const removeRecipeFromFavorite = async (req, res) => {
   const userId = req.user.user_id;
   const { recipeId } = req.params; 
 
-  console.log(`[DEBUG] 찜 삭제 요청: User ${userId}, Recipe ${recipeId}`);
-
   try {
-    // [수정] recipe_id 기준 삭제
     const [result] = await db.query(
       'DELETE FROM recipe_favorite WHERE user_id = ? AND recipe_id = ?',
       [userId, recipeId]
