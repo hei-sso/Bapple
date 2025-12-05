@@ -1,36 +1,25 @@
-// controllers/recipeController.js
 import db from '../db.js';
-// ✅ 추천 시스템 동기화 (사용자가 찜을 하면 취향이 바뀌므로 AI에게 알려줌)
 import { syncUserToBatch } from '../services/recommendationService.js';
 
 // 1. 전체 레시피 조회 (GET /recipe/all)
 export const getAllRecipes = async (req, res) => {
   console.log('[DEBUG] [GET] 전체 레시피 조회 요청');
   try {
-    // 카테고리 정보까지 포함해서 조회
+    // [수정] DB 컬럼명(recipe_id, name, img_url)에 맞춰 조회
     const query = `
-      SELECT 
-        r.id, 
-        r.name, 
-        r.image_url, 
-        r.time, 
-        r.difficulty, 
-        c.category_name 
-      FROM recipe r
-      LEFT JOIN recipe_category c ON r.category_id = c.id
-      ORDER BY r.id ASC
+      SELECT recipe_id, name, img_url 
+      FROM recipe 
     `;
     
     const [rows] = await db.query(query);
+    console.log(`[DEBUG] 레시피 ${rows.length}개 로드 성공`);
     
-    // 프론트엔드가 카테고리별 그룹화를 원한다면 아래처럼 가공 (선택사항)
-    // 현재 프론트엔드 로직(recipeAPI.ts)을 보니 단순히 리스트를 받아서 처리하는 것으로 보입니다.
-    // 전체 리스트를 반환합니다.
-    
+    // 프론트엔드에서 'id'라는 이름을 기대할 수도 있으니 
+    // 필요하다면 map으로 변환해줄 수도 있지만, 일단 그대로 보냅니다.
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error('[ERROR] 전체 레시피 조회 실패:', error);
-    res.status(500).json({ message: '서버 오류' });
+    res.status(500).json({ message: '서버 오류', error: error.message });
   }
 };
 
@@ -40,40 +29,38 @@ export const getMyFavorites = async (req, res) => {
   console.log(`[DEBUG] [GET] 찜 목록 조회 요청 (User: ${userId})`);
 
   try {
-    // recipe_favorite 테이블과 recipe 테이블을 JOIN 하여 실제 정보를 가져옴
+    // [수정] recipe_id(문자열)를 기준으로 JOIN
     const query = `
       SELECT 
-        r.id, 
+        r.recipe_id, 
         r.name, 
-        r.image_url, 
-        r.time, 
-        r.difficulty, 
+        r.img_url, 
         rf.created_at as liked_at
       FROM recipe_favorite rf
-      JOIN recipe r ON rf.recipe_id = r.id
+      JOIN recipe r ON rf.recipe_id = r.recipe_id 
       WHERE rf.user_id = ?
       ORDER BY rf.created_at DESC
     `;
 
     const [rows] = await db.query(query, [userId]);
     console.log(`[DEBUG] 찜한 레시피 ${rows.length}개 로드 완료`);
-
+    
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error('[ERROR] 찜 목록 조회 실패:', error);
-    res.status(500).json({ message: '서버 오류' });
+    res.status(500).json({ message: '서버 오류', error: error.message });
   }
 };
 
 // 3. 찜 추가 (POST /recipe/favorite)
 export const addRecipeToFavorite = async (req, res) => {
   const userId = req.user.user_id;
-  const { recipe_id } = req.body;
+  const { recipe_id } = req.body; 
 
-  console.log(`[DEBUG] [POST] 찜 추가 요청 (User: ${userId}, Recipe: ${recipe_id})`);
+  console.log(`[DEBUG] 찜 추가 요청: User ${userId}, Recipe ${recipe_id}`);
 
   try {
-    // 1. 이미 찜했는지 확인 (중복 방지)
+    // [수정] recipe_id 기준 중복 체크
     const [exists] = await db.query(
       'SELECT 1 FROM recipe_favorite WHERE user_id = ? AND recipe_id = ?',
       [userId, recipe_id]
@@ -83,47 +70,45 @@ export const addRecipeToFavorite = async (req, res) => {
       return res.status(409).json({ message: '이미 찜한 레시피입니다.' });
     }
 
-    // 2. 찜 저장
+    // [수정] recipe_id 저장
     await db.query(
       'INSERT INTO recipe_favorite (user_id, recipe_id, created_at) VALUES (?, ?, NOW())',
       [userId, recipe_id]
     );
 
-    // ✅ 3. 추천 데이터 동기화 (취향이 변했으므로 업데이트)
-    console.log(`[DEBUG] 찜 추가 -> 추천 시스템 데이터 동기화 요청...`);
-    syncUserToBatch(userId);
+    // 추천 동기화 (에러 무시)
+    try { syncUserToBatch(userId); } catch (e) { console.warn('추천 동기화 실패:', e.message); }
 
-    res.status(201).json({ success: true, message: '찜 목록에 추가되었습니다.' });
+    res.status(201).json({ success: true, message: '찜 추가됨' });
   } catch (error) {
     console.error('[ERROR] 찜 추가 실패:', error);
-    res.status(500).json({ message: '서버 오류' });
+    res.status(500).json({ message: '서버 오류', error: error.message });
   }
 };
 
 // 4. 찜 삭제 (DELETE /recipe/favorite/:recipeId)
 export const removeRecipeFromFavorite = async (req, res) => {
   const userId = req.user.user_id;
-  const { recipeId } = req.params;
+  const { recipeId } = req.params; 
 
-  console.log(`[DEBUG] [DELETE] 찜 삭제 요청 (User: ${userId}, Recipe: ${recipeId})`);
+  console.log(`[DEBUG] 찜 삭제 요청: User ${userId}, Recipe ${recipeId}`);
 
   try {
+    // [수정] recipe_id 기준 삭제
     const [result] = await db.query(
       'DELETE FROM recipe_favorite WHERE user_id = ? AND recipe_id = ?',
       [userId, recipeId]
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ message: '찜 목록에 없는 레시피입니다.' });
+      return res.status(404).json({ message: '찜 목록에 없습니다.' });
     }
 
-    // ✅ 3. 추천 데이터 동기화 (취향이 변했으므로 업데이트)
-    console.log(`[DEBUG] 찜 삭제 -> 추천 시스템 데이터 동기화 요청...`);
-    syncUserToBatch(userId);
+    try { syncUserToBatch(userId); } catch (e) { console.warn('추천 동기화 실패:', e.message); }
 
-    res.status(200).json({ success: true, message: '찜 목록에서 삭제되었습니다.' });
+    res.status(200).json({ success: true, message: '삭제 완료' });
   } catch (error) {
     console.error('[ERROR] 찜 삭제 실패:', error);
-    res.status(500).json({ message: '서버 오류' });
+    res.status(500).json({ message: '서버 오류', error: error.message });
   }
 };
