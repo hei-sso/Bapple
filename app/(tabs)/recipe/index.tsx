@@ -28,7 +28,7 @@ import type { Category, Recipe } from '@/types/recipeTypes';
 const RecipeItem: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const { myFavoriteRecipes, addFavorite, removeFavorite } = useRecipe();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isActionLoading, setIsActionLoading] = useState(false); // 개별 아이템의 로딩 상태
+  const [isActionLoading, setIsActionLoading] = useState(false); 
 
   // 현재 레시피가 찜 목록에 있는지 확인
   const isFavorite = useMemo(
@@ -48,7 +48,7 @@ const RecipeItem: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       setIsModalVisible(false); // 성공 시에만 모달 닫기
 
     } catch (error) {
-      // 에러 처리는 Context에서 이미 Alert으로 진행하지만 혹시 몰라서..
+      // Alert 처리는 Context에서 진행됨
     } finally {
       setIsActionLoading(false);
     }
@@ -94,6 +94,7 @@ const FavoriteRecipeGroup: React.FC<{ recipes: Recipe[], allCategories: Category
     return recipes.reduce((acc, recipe) => {
       // allCategories에서 categoryId에 해당하는 name 찾기
       const categoryName = allCategories.find(cat => cat.id === recipe.category)?.name || '기타';
+      
       if (!acc[categoryName]) {
         acc[categoryName] = [];
       }
@@ -103,12 +104,11 @@ const FavoriteRecipeGroup: React.FC<{ recipes: Recipe[], allCategories: Category
   }, [recipes, allCategories]);
     
   // 카테고리 이름 목록 (순서 유지용)
-  // 'my_recipe'를 제외한 카테고리 이름만 사용
   const categoryNames = allCategories
     .filter(cat => cat.id !== 'my_recipe' && groupedRecipes[cat.name])
     .map(cat => cat.name);
     
-if (recipes.length === 0) {
+  if (recipes.length === 0) {
     return (
       <Text style={styles.noRecipeText}>
         찜 목록에 등록된 레시피가 없습니다.
@@ -117,13 +117,14 @@ if (recipes.length === 0) {
   }
 
   return (
+    // Key 오류 방지를 위해 최상위 Fragment 대신 <View> 사용
     <View> 
       {categoryNames.map(categoryName => (
         <View key={categoryName} style={styles.categoryGroup}>
           <Text style={styles.groupTitle}>{categoryName}</Text>
           <View style={styles.gridRow}>
             {groupedRecipes[categoryName].map((rec) => (
-              <RecipeItem key={rec.id} recipe={rec} />
+              <RecipeItem key={rec.id} recipe={rec} /> // key={rec.id}만 사용
             ))}
           </View>
         </View>
@@ -177,7 +178,7 @@ const RecipeScreenContent = () => {
         key={category.id}
         style={categoryContainerStyle}
         onPress={() => setSelectedCategory(category.id)}
-        disabled={isLoading} // 로딩 중 비활성화
+        disabled={isLoading} 
       >
         <Text style={categoryTextStyle}>{category.name}</Text>
       </TouchableOpacity>
@@ -215,7 +216,7 @@ const RecipeScreenContent = () => {
             style={styles.searchInput}
             placeholder="검색"
             placeholderTextColor="#888"
-            editable={!isLoading} // 로딩 중 비활성화
+            editable={!isLoading} 
           />
           <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
         </View>
@@ -239,7 +240,7 @@ const RecipeScreenContent = () => {
           <ScrollView 
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.recipeGridContent}
-            refreshControl={ // 당겨서 새로고침 추가
+            refreshControl={ 
               <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
             }
           >

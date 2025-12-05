@@ -32,24 +32,38 @@ export const FridgeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 1. 초기 데이터 로드 함수 (API 호출)
   const loadInitialData = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated) { 
       // 로그아웃 상태일 경우 데이터 초기화
       setAllCategories([]);
       setMyFridgeIngredients([]);
       setIsLoading(false);
       return; 
     }
-
+    
     setIsLoading(true);
     setIsError(false);
     try {
-      const [categories, fridge] = await Promise.all([
-        fetchIngredients(), // 전체 재료 로드
-        fetchMyFridge(),   // 내 냉장고 재료 로드 (인증 필요)
+      const [allCategoriesFromDB, myFridgeList] = await Promise.all([
+        fetchIngredients(), // 전체 재료 카테고리 로드
+        fetchMyFridge(),   // 내 냉장고 재료 목록 로드
       ]);
 
-      setAllCategories(categories);
-      setMyFridgeIngredients(fridge);
+      // '내 냉장고' 카테고리 객체 수동 생성 및 고정
+      const myFridgeCategory: Category = {
+          id: 'my_fridge',
+          name: '내 냉장고',
+          ingredients: myFridgeList, // 로드된 내 냉장고 목록을 포함
+      };
+
+      // '내 냉장고' 카테고리를 DB 데이터의 맨 앞에 합치기
+      const finalCategories = [
+          myFridgeCategory,
+          // DB에서 불러온 카테고리 목록
+          ...allCategoriesFromDB 
+      ];
+
+      setAllCategories(finalCategories);
+      setMyFridgeIngredients(myFridgeList);
 
     } catch (error) {
       console.error("❌ 냉장고 데이터 로드 실패:", error);
@@ -76,6 +90,11 @@ export const FridgeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         
       // 성공 시 즉시 업데이트
       setMyFridgeIngredients(prev => [...prev, ingredient]);
+      
+      // allCategories의 'my_fridge' 카테고리도 업데이트
+      setAllCategories(prev => prev.map(cat => 
+        cat.id === 'my_fridge' ? { ...cat, ingredients: [...cat.ingredients, ingredient] } : cat
+      ));
         
     } catch (error) {
       Alert.alert("오류", "재료 추가에 실패했습니다.");
@@ -92,6 +111,11 @@ export const FridgeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       // 성공 시 즉시 업데이트
       setMyFridgeIngredients(prev => prev.filter(item => item.id !== ingredientId));
+      
+      // allCategories의 'my_fridge' 카테고리도 업데이트
+      setAllCategories(prev => prev.map(cat => 
+        cat.id === 'my_fridge' ? { ...cat, ingredients: cat.ingredients.filter(i => i.id !== ingredientId) } : cat
+      ));
 
     } catch (error) {
       Alert.alert("오류", "재료 삭제에 실패했습니다.");

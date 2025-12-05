@@ -17,7 +17,7 @@ const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
 // 레시피 상태 관리 Provider
 export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // 인증 상태 확인 (로그인 여부에 따라 찜 목록 로드)
+  // 인증 상태 확인
   const { isAuthenticated } = useAuth(); 
   
   // DB에서 가져올 데이터 상태
@@ -43,20 +43,25 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsLoading(true);
     setIsError(false);
     try {
-      const [categories, favorites] = await Promise.all([
-        fetchAllRecipes(), // 전체 레시피 로드
-        fetchMyFavorites(),   // 내 찜 레시피 로드 (인증 필요)
+      const [allCategoriesFromDB, favorites] = await Promise.all([
+        fetchAllRecipes(), // 전체 레시피 로드 (DB 카테고리)
+        fetchMyFavorites(),   // 내 찜 레시피 로드
       ]);
 
-      // 첫 번째 카테고리인 '찜' 카테고리에 찜 레시피 목록을 반영 (UI 로직)
-      const categoriesWithFavorites = categories.map(cat => {
-          if (cat.id === 'my_recipe') {
-              return { ...cat, recipes: favorites };
-          }
-          return cat;
-      });
+      // '찜' 카테고리 객체 수동 생성 및 고정
+      const myFavoriteCategory: Category = {
+          id: 'my_recipe',
+          name: '♡ 찜',
+          recipes: favorites, // 로드된 찜 목록을 포함
+      };
 
-      setAllCategories(categoriesWithFavorites);
+      // '찜' 카테고리를 DB 데이터의 맨 앞에 합치기
+      const finalCategories = [
+          myFavoriteCategory,
+          ...allCategoriesFromDB 
+      ];
+
+      setAllCategories(finalCategories);
       setMyFavoriteRecipes(favorites);
 
     } catch (error) {
@@ -77,7 +82,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addFavorite = useCallback(async (recipe: Recipe) => {
     if (!isAuthenticated) { Alert.alert("오류", "로그인이 필요합니다."); return; }
     
-    if (myFavoriteRecipes.find(item => item.id === recipe.id)) return; // 이미 찜
+    if (myFavoriteRecipes.find(item => item.id === recipe.id)) return;
 
     try {
       await addRecipeToFavorite(recipe.id); 

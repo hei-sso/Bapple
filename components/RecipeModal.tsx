@@ -1,26 +1,25 @@
 // components/RecipeModal.tsx
 
 import React from 'react';
-import {
-  ActivityIndicator,
-  Modal,
+import { 
+  Modal, 
+  Text, 
+  TouchableOpacity, 
+  View, 
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+  ActivityIndicator
 } from 'react-native';
 
-// Context
-import { Recipe } from '@/types/recipeTypes';
+// Type
+import type { Recipe } from '@/types/recipeTypes';
 
 interface RecipeModalProps {
   isVisible: boolean;
   onClose: () => void;
   recipe: Recipe | null; 
   isFavorite: boolean; 
-  // onConfirm 함수: 비동기(Promise 반환)
   onConfirm: (recipe: Recipe) => Promise<void>; 
-  isLoading: boolean; // 로딩 상태 추가
+  isLoading: boolean;
 }
 
 const RecipeModal: React.FC<RecipeModalProps> = ({
@@ -29,7 +28,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
   recipe,
   isFavorite,
   onConfirm, 
-  isLoading, // props로 받기
+  isLoading,
 }) => {
   if (!recipe) return null;
 
@@ -38,8 +37,8 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
     ? `'${recipe.name}'을(를) 찜 목록에서 삭제하시겠습니까?`
     : `'${recipe.name}'을(를) 찜 목록에 추가하시겠습니까?`;
   
-  // 모달을 즉시 닫지 않음 → 로딩이 끝나고 RecipeItem에서 닫음
   const confirmHandler = () => {
+    // onConfirm 호출 (모달 닫기는 RecipeItem에서 성공 시 처리)
     onConfirm(recipe);
   };
 
@@ -58,7 +57,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
             <TouchableOpacity
               style={[styles.button, styles.buttonClose]}
               onPress={onClose}
-              disabled={isLoading} // 로딩 중 비활성화
+              disabled={isLoading}
             >
               <Text style={styles.textStyle}>닫기</Text>
             </TouchableOpacity>
@@ -66,9 +65,8 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
             <TouchableOpacity
               style={[styles.button, styles.buttonConfirm]}
               onPress={confirmHandler}
-              disabled={isLoading} // 로딩 중 비활성화
+              disabled={isLoading}
             >
-               {/* 로딩 상태에 따라 텍스트 또는 ActivityIndicator 표시 */}
               {isLoading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
@@ -97,10 +95,7 @@ const styles = StyleSheet.create({
     padding: 35,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
@@ -125,14 +120,14 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
     alignItems: 'center',
-    height: 40,
+    height: 40, 
     justifyContent: 'center'
   },
   buttonClose: {
     backgroundColor: '#999'
   },
   buttonConfirm: {
-    backgroundColor: '#ff69b4' 
+    backgroundColor: '#ff69b4'
   },
   textStyle: {
     color: 'white',
