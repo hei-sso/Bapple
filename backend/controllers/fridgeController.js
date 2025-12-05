@@ -1,3 +1,5 @@
+// controllers/fridgeController.js
+
 import db from '../db.js';
 // [추가됨] 추천 데이터 동기화 서비스 임포트
 import { syncUserToBatch } from '../services/recommendationService.js';
@@ -18,8 +20,7 @@ const findDefaultFridge = async (userId) => {
   return rows[0].id;
 };
 
-// 0. [New] 전체 재료 목록 조회 (GET /fridge/ingredients)
-// 설명: 앱에서 재료를 추가할 때 보여줄 전체 리스트입니다.
+// 0. [수정됨] 전체 재료 목록 조회 (GET /fridge/ingredients)
 export const getAllIngredients = async (req, res) => {
   console.log(`[DEBUG] [GET] 전체 재료 목록 조회 요청`);
   try {
@@ -39,14 +40,15 @@ export const getAllIngredients = async (req, res) => {
     const [rows] = await db.query(query);
     console.log(`[DEBUG] 재료 데이터 ${rows.length}개 로드 성공`);
     
-    // DB 결과를 앱이 원하는 형태(Category[])로 변환
-    // 예: [{ title: '육류', data: [...] }, { title: '채소', data: [...] }]
+    // [핵심 수정] 프론트엔드가 { id, name }을 기대하므로 변수명을 맞춰줍니다.
     const groupedData = rows.reduce((acc, row) => {
-      let category = acc.find(c => c.category_id === row.category_id);
+      // 이미 생성된 카테고리인지 확인 (id로 찾기)
+      let category = acc.find(c => c.id === row.category_id);
+      
       if (!category) {
         category = {
-          category_id: row.category_id,
-          category_name: row.category_name,
+          id: row.category_id,       // category_id -> id 로 변경
+          name: row.category_name,   // category_name -> name 로 변경
           ingredients: []
         };
         acc.push(category);
@@ -54,10 +56,10 @@ export const getAllIngredients = async (req, res) => {
       
      // 재료 정보 추가
       if (row.ingredient_id) {
-         category.ingredients.push({
-            id: row.ingredient_id,
-            name: row.ingredient_name
-         });
+          category.ingredients.push({
+             id: row.ingredient_id,
+             name: row.ingredient_name
+          });
       }
       return acc;
     }, []);
@@ -91,14 +93,14 @@ export const getMyIngredients = async (req, res) => {
     // API 명세에 맞춰 필요한 컬럼만 정확히 조회
     const query = `
       SELECT 
-        fi.id AS id,            
-        i.id AS ingredient_id,      
+        fi.id AS id,                 
+        i.id AS ingredient_id,       
         i.name AS ingredient_name, 
-        i.category_id,               
-        fi.quantity,               
-        fi.unit,                   
-        fi.expire_date,            
-        fi.status,                   
+        i.category_id,                
+        fi.quantity,                
+        fi.unit,                    
+        fi.expire_date,             
+        fi.status,                    
         DATEDIFF(fi.expire_date, NOW()) AS d_day 
       FROM fridge_ingredient fi
       JOIN ingredient i ON fi.ingredient_id = i.id
@@ -133,7 +135,6 @@ export const addIngredientToMyFridge = async (req, res) => {
     const today = new Date();
     today.setDate(today.getDate() + 14);
     expire_date = today.toISOString().split('T')[0];
-    //logs.push(`유통기한(+14일: ${expire_date})`);
     console.log(`[DEBUG] 유통기한 자동 설정 (+14일): ${expire_date}`);
   }
 
@@ -170,7 +171,7 @@ export const addIngredientToMyFridge = async (req, res) => {
 };
 
 // 3. 냉장고 재료 삭제 (DELETE /fridge/my/:ingredientId)
-// 주의: 여기서 param으로 받는건 '재료 원본 ID'(예: 사과 ID)입니다.
+// 설명: 냉장고 테이블의 고유 ID(PK)를 받아 해당 항목을 삭제합니다.
 export const removeIngredientFromMyFridge = async (req, res) => {
   const userId = req.user.user_id;
   const { ingredientId } = req.params; 
@@ -183,7 +184,7 @@ export const removeIngredientFromMyFridge = async (req, res) => {
     const fridgeId = await findDefaultFridge(userId);
     if (!fridgeId) return res.status(404).json({ message: '기본 냉장고가 없습니다.' });
 
-    // 해당 냉장고에 있는 해당 재료 삭제 (LIMIT 1)
+    // 해당 냉장고에 있는 해당 재료 삭제 (PK로 삭제)
     const [result] = await db.query(`
       DELETE FROM fridge_ingredient 
       WHERE fridge_id = ? AND id = ?
