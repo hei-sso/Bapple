@@ -108,7 +108,7 @@ const FavoriteRecipeGroup: React.FC<{ recipes: Recipe[], allCategories: Category
     .filter(cat => cat.id !== 'my_recipe' && groupedRecipes[cat.name])
     .map(cat => cat.name);
     
-  if (recipes.length === 0) {
+if (recipes.length === 0) {
     return (
       <Text style={styles.noRecipeText}>
         찜 목록에 등록된 레시피가 없습니다.
@@ -117,18 +117,18 @@ const FavoriteRecipeGroup: React.FC<{ recipes: Recipe[], allCategories: Category
   }
 
   return (
-    <>
+    <View> 
       {categoryNames.map(categoryName => (
         <View key={categoryName} style={styles.categoryGroup}>
           <Text style={styles.groupTitle}>{categoryName}</Text>
           <View style={styles.gridRow}>
-            {groupedRecipes[categoryName].map((rec, index) => (
-              <RecipeItem key={rec.id + index} recipe={rec} />
+            {groupedRecipes[categoryName].map((rec) => (
+              <RecipeItem key={rec.id} recipe={rec} />
             ))}
           </View>
         </View>
       ))}
-    </>
+    </View>
   );
 };
 
@@ -259,8 +259,8 @@ const RecipeScreenContent = () => {
               // 일반 카테고리인 경우
               <View style={styles.gridRow}>
                 {currentRecipes.length > 0 ? (
-                  currentRecipes.map((rec, index) => (
-                    <RecipeItem key={rec.id + index} recipe={rec} />
+                  currentRecipes.map((rec) => (
+                    <RecipeItem key={rec.id} recipe={rec} />
                   ))
                 ) : (
                   <Text style={styles.noRecipeText}>
