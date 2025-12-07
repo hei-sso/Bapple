@@ -3,52 +3,59 @@ import db from '../db.js';
 import { syncUserToBatch } from '../services/recommendationService.js';
 
 // 1. 전체 레시피 조회 (GET /recipe/all)
-// [수정] cuisine_type을 기준으로 카테고리를 생성하여 반환합니다.
 export const getAllRecipes = async (req, res) => {
   console.log('[DEBUG] [GET] 전체 레시피 조회 요청');
   try {
-    // 1. DB에서 전체 레시피 가져오기
-    // (cuisine_type 컬럼이 있다고 가정하고 SELECT * 로 다 가져옵니다)
     const query = `SELECT * FROM recipe`;
     const [recipes] = await db.query(query);
     console.log(`[DEBUG] 레시피 ${recipes.length}개 로드 성공`);
 
-    // 2. 데이터 가공 시작
-    // (1) '전체' 카테고리 생성 (모든 레시피 포함)
+    // [전체] 카테고리 데이터 생성
+    // 프론트엔드가 'id', 'category'를 쓰므로 변환해서 넣어줍니다.
+    const allRecipesMapped = recipes.map(r => ({
+      id: r.recipe_id,          // recipe_id -> id 로 변환
+      name: r.name,
+      category: r.cuisine_type, // cuisine_type -> category 로 변환
+      img_url: r.img_url
+    }));
+
     const result = [{
       id: 'all',
       name: '전체',
-      recipes: recipes
+      recipes: allRecipesMapped
     }];
 
-    // (2) cuisine_type(요리 종류)별로 레시피 분류
+    // [종류별] 카테고리 분류
     const categoryMap = {};
 
     recipes.forEach(recipe => {
-      // DB 컬럼명이 cuisine_type 이라고 하셨으므로 해당 필드 사용
       const type = recipe.cuisine_type; 
       
       if (type) {
-        // 혹시 데이터에 공백이 있을 수 있으니 trim() 처리
         const cleanType = type.trim();
 
         if (!categoryMap[cleanType]) {
           categoryMap[cleanType] = [];
         }
-        categoryMap[cleanType].push(recipe);
+
+        // 여기서도 프론트엔드 변수명에 맞춰서 push 합니다.
+        categoryMap[cleanType].push({
+          id: recipe.recipe_id,          // [중요] 프론트엔드는 item.id를 찾음
+          name: recipe.name,
+          category: recipe.cuisine_type, // [중요] 프론트엔드는 item.category를 찾음
+          img_url: recipe.img_url
+        });
       }
     });
 
-    // (3) 분류된 그룹을 result 배열에 추가
     Object.keys(categoryMap).forEach(typeName => {
       result.push({
-        id: typeName,   // 카테고리 ID (예: '한식')
-        name: typeName, // 화면에 보여줄 이름 (예: '한식')
+        id: typeName,   
+        name: typeName, 
         recipes: categoryMap[typeName]
       });
     });
 
-    // 3. 최종 응답
     res.status(200).json({ success: true, data: result });
 
   } catch (error) {
@@ -58,15 +65,18 @@ export const getAllRecipes = async (req, res) => {
 };
 
 // 2. 찜 목록 조회 (GET /recipe/favorite)
-// (여기는 수정할 필요 없이 그대로 둡니다)
 export const getMyFavorites = async (req, res) => {
   const userId = req.user.user_id;
   console.log(`[DEBUG] [GET] 찜 목록 조회 요청 (User: ${userId})`);
 
   try {
+    // [중요] SQL 단계에서부터 이름을 'id', 'category'로 바꿔서 가져옵니다.
     const query = `
       SELECT 
-        r.*, 
+        r.recipe_id AS id,        -- 프론트엔드: item.id
+        r.name, 
+        r.img_url, 
+        r.cuisine_type AS category, -- 프론트엔드: item.category
         rf.created_at as liked_at
       FROM recipe_favorite rf
       JOIN recipe r ON rf.recipe_id = r.recipe_id 
@@ -75,6 +85,8 @@ export const getMyFavorites = async (req, res) => {
     `;
 
     const [rows] = await db.query(query, [userId]);
+    console.log(`[DEBUG] 찜한 레시피 ${rows.length}개 로드 완료`);
+    
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error('[ERROR] 찜 목록 조회 실패:', error);
@@ -85,7 +97,11 @@ export const getMyFavorites = async (req, res) => {
 // 3. 찜 추가 (POST /recipe/favorite)
 export const addRecipeToFavorite = async (req, res) => {
   const userId = req.user.user_id;
-  const { recipe_id } = req.body; 
+  // 프론트엔드가 { id: "..." } 로 보내줄 수도 있고 { recipe_id: "..." } 로 보낼 수도 있습니다.
+  // 둘 다 받도록 처리합니다.
+  const recipe_id = req.body.recipe_id || req.body.id; 
+
+  console.log(`[DEBUG] 찜 추가 요청: User ${userId}, Recipe ${recipe_id}`);
 
   try {
     const [exists] = await db.query(
@@ -115,6 +131,8 @@ export const addRecipeToFavorite = async (req, res) => {
 export const removeRecipeFromFavorite = async (req, res) => {
   const userId = req.user.user_id;
   const { recipeId } = req.params; 
+
+  console.log(`[DEBUG] 찜 삭제 요청: User ${userId}, Recipe ${recipeId}`);
 
   try {
     const [result] = await db.query(
