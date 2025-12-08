@@ -1,14 +1,16 @@
 // api/groupAPI.ts
 
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from 'expo-secure-store'; 
 
 // Constants
 import { AUTH_TOKEN_KEY } from '@/constants/keys';
-const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
 
 // Type
-import type { Group, GroupCreationData, GroupRecipeItem, RecipeSchedule } from '@/types/groupTypes';
+import type { Group, GroupCreationData, RecipeSchedule, GroupRecipeItem } from '@/types/groupTypes'; 
+
+// RAILWAY BASE URL
+const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
 
 // 토큰 헬퍼 함수
 const getAuthToken = async (): Promise<string | null> => {

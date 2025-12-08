@@ -2,8 +2,8 @@
 
 import { useRoute } from '@react-navigation/native';
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
-import { useRouter } from 'expo-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { RedirectProps, useRouter } from 'expo-router';
+import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Alert,
@@ -25,7 +25,10 @@ import { Calendar } from '@/components/week-calendar';
 import { Styles } from '@/constants/styles';
 
 // Context
-import { useGroups } from '@/context/groupContext';
+import { GroupProvider, useGroups } from '@/context/groupContext';
+
+// Components
+import ShareCodeModal from '@/components/ShareCodeModal';
 
 // Type
 import type { GroupRecipeItem, RecipeSchedule } from '@/types/groupTypes';
@@ -75,27 +78,26 @@ const getWeekDays = (
 
 const initialMemo = '';
 
-// 메인 컴포넌트
-export default function GroupDetailScreen() {
+function GroupDetailScreenContent() {
     const router = useRouter(); 
     const route = useRoute();
     const insets = useSafeAreaInsets();
     const { fetchSchedulesForWeek, groupSchedules } = useGroups();
 
-    // groupName과 groupId를 필수 값으로 간주하며, 없을 경우 오류 처리 (그룹 목록에서만 진입하도록 보장)
-    const params = route.params as { groupName?: string; groupId?: string } || {};
+    const params = route.params as { groupName?: string; groupId?: string; inviteCode?: string } || {};
     const groupId = params.groupId;
     const groupName = params.groupName || '그룹 상세';
+    const inviteCode = params.inviteCode || null; 
 
-    // 필수 값 체크 (groupId가 없으면 뒤로 돌아가거나 경고)
+    // 모달 상태 관리
+    const [isShareModalVisible, setIsShareModalVisible] = useState(false);
+
     useEffect(() => {
         if (!groupId) {
             Alert.alert("오류", "그룹 정보 없이 상세 화면에 접근했습니다.", [{ text: "확인", onPress: () => router.back() }]);
         }
     }, [groupId, router]);
 
-
-    // 달력 상태 관리
     const initialDateString = TODAY_STRING;
     const initialWeekStart = startOfWeek(new Date(), { weekStartsOn: WEEK_STARTS_ON }); 
 
@@ -104,22 +106,17 @@ export default function GroupDetailScreen() {
     
     const currentWeekStartString = useMemo(() => dateToDateString(currentWeekStartDate), [currentWeekStartDate]);
     
-    // 메모장 상태 관리
     const [memoText, setMemoText] = useState(initialMemo);
     const MAX_MEMO_LENGTH = 100;
     
-    // 주간 스케줄 데이터 로드 (Context 연동)
     useEffect(() => {
-        // 유효한 groupId가 있을 때만 스케줄을 로드
         if (groupId) {
             fetchSchedulesForWeek(currentWeekStartString);
         }
     }, [currentWeekStartString, fetchSchedulesForWeek, groupId]);
 
-    // Context에서 현재 주차의 스케줄 데이터 가져오기
-    const schedulesForCurrentWeek = groupSchedules[currentWeekStartString] || [];
+    const schedulesForCurrentWeek = groupSchedules[currentWeekStartString] || []; 
 
-    // 주간 달력 데이터 생성 (스케줄 데이터 기반)
     const weekDays = useMemo(() => 
         getWeekDays(currentWeekStartString, currentDateString, schedulesForCurrentWeek), 
         [currentWeekStartString, currentDateString, schedulesForCurrentWeek]
@@ -129,7 +126,6 @@ export default function GroupDetailScreen() {
         router.back();
     };
 
-    // 주 단위 이동 핸들러
     const changeWeek = useCallback((delta: number) => {
         setCurrentWeekStartDate(prev => {
             const newWeekStart = delta > 0 ? addWeeks(prev, 1) : subWeeks(prev, 1);
@@ -142,21 +138,18 @@ export default function GroupDetailScreen() {
         });
     }, [currentDateString]);
 
-    // 현재 선택된 날짜의 레시피 목록 (groupId로 필터링)
     const currentRecipes = useMemo(() => {
-        if (!groupId) return []; // groupId가 없으면 빈 배열
+        if (!groupId) return []; 
         
         const selectedDay = schedulesForCurrentWeek.find(s => s.date === currentDateString);
         if (!selectedDay) return [];
         
-        // 그룹 ID로 필터링
         return selectedDay.recipes.filter(recipe => recipe.groupId === groupId); 
         
     }, [currentDateString, schedulesForCurrentWeek, groupId]); 
     
     const RECIPE_CARD_WIDTH = width * 0.87;
 
-    // 추천 레시피의 아이디와 이름을 recipe/detail.tsx로 전달
     const handleRecipeDetail = (recipe: GroupRecipeItem) => {
         router.push({
             pathname: '/recipe/detail',
@@ -164,10 +157,9 @@ export default function GroupDetailScreen() {
                 id: recipe.id.toString(),
                 name: recipe.recipeName, 
             },
-        });
+        } as RedirectProps['href']);
     };
     
-    // groupId가 없으면 아무것도 렌더링하지 않고 useEffect에서 Alert 처리
     if (!groupId) {
         return <View style={Styles.container} />;
     }
@@ -175,16 +167,24 @@ export default function GroupDetailScreen() {
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
 
-            {/* Header 영역 (그룹 이름 표시) */}
-            <View style={Header.HeaderAlign}>
+            {/* Header 영역 (그룹 이름 표시 및 공유 버튼) */}
+            <View style={[Header.HeaderAlign]}>
                 <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
                     <ChevronLeft size={28} color="#000" />
                 </TouchableOpacity>
                 <Text style={Header.Title}>{groupName}</Text>
+                
+                {/* 공유 버튼 */}
+                <TouchableOpacity onPress={() => setIsShareModalVisible(true)} style={styles.shareButton}>
+                    <Share2 size={24} color="#000" />
+                </TouchableOpacity>
             </View>
             
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                <ScrollView contentContainerStyle={Styles.scrollContent}>
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <ScrollView>
                     {/* 주간 달력 표시 */}
                     <View style={Calendar.calendarArea}>
                         
@@ -210,10 +210,8 @@ export default function GroupDetailScreen() {
                         {/* 달력 그리드 */}
                         <View style={Calendar.weekCalendarGrid}>
                             {weekDays.map(dayData => {
-                                // 찌부 방지
                                 const cellWidth = (width - (24 * 2) - 1) / 7;
 
-                                // 현재 그룹에 해당하는 레시피만 카운트
                                 const recipeCount = dayData.recipes.filter(r => r.groupId === groupId).length; 
 
                                 return (
@@ -304,18 +302,44 @@ export default function GroupDetailScreen() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+            
+            {/* 초대 코드 공유 모달 렌더링 */}
+            <ShareCodeModal 
+                isVisible={isShareModalVisible}
+                onClose={() => setIsShareModalVisible(false)}
+                groupName={groupName}
+                inviteCode={inviteCode}
+            />
+
         </View>
+    );
+}
+
+// 메인 Export 함수: GroupProvider로 감싸기
+export default function GroupDetailScreen() {
+    return (
+        <GroupProvider>
+            <GroupDetailScreenContent />
+        </GroupProvider>
     );
 }
 
 // 🎨 스타일 시트
 const styles = StyleSheet.create({
-    // 레시피 상세 카드
+    shareButton: { 
+        position: 'absolute',
+        right: 15,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        paddingLeft: 10
+    },
     recipeListTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 10
+        marginBottom: 10,
+        marginTop: 15
     },
     recipeCardScrollContent: {
         paddingBottom: 10
@@ -344,7 +368,8 @@ const styles = StyleSheet.create({
     recipeName: {
         fontSize: 20, 
         fontWeight: 'bold',
-        lineHeight: 30
+        lineHeight: 30,
+        flexShrink: 1
     },
     recipeImagePlaceholder: {
         width: 80, 
