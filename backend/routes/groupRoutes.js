@@ -1,16 +1,26 @@
-import express from "express";
-import * as recommendController from "../controllers/recommendController.js";
-import authenticateToken from "../middleware/authenticateToken.js";
+// backend/routes/groupRoutes.js
+
+import express from 'express';
+import groupController from '../controllers/groupController.js'; 
+import authenticateToken from '../middleware/authenticateToken.js';
 
 const router = express.Router();
 
-// 1) 단일 추천 리스트
-router.post("/", authenticateToken, recommendController.getSingleRecommendation);
+// 1. 내 그룹 목록 조회
+router.get('/groups/my', authenticateToken, groupController.getMyGroups);
 
-// 2) 주간 식단 추천 (통합됨: 동기화 + AI 호출 + 결과 저장)
-router.post("/week", authenticateToken, recommendController.getWeeklyRecommendation);
+// 2. 그룹 생성 (GroupCreationModal에서 호출)
+router.post('/groups', authenticateToken, groupController.createGroup);
 
-// 3) 다음 추천 불러오기
-router.post("/week/next", authenticateToken, recommendController.getNextWeeklyRecommendation);
+// 3. 그룹 가입 (초대 코드 입력)
+router.post('/groups/join', authenticateToken, groupController.joinGroup);
+
+// 4. 그룹 핀 고정 토글
+router.patch('/groups/:groupId/pin', authenticateToken, groupController.togglePin);
+
+// 5. 식단(스케줄) 관련 (meal_plan 테이블 사용)
+router.get('/schedule/my', authenticateToken, groupController.getMySchedules);
+router.post('/schedule', authenticateToken, groupController.addSchedule);
+router.delete('/schedule/:scheduleId', authenticateToken, groupController.deleteSchedule);
 
 export default router;
