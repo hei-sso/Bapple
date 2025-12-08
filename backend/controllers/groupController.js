@@ -11,7 +11,13 @@ const generateInviteCode = () => {
 const groupController = {
     // 1. 내 그룹 목록 조회 (GET /groups/my)
     getMyGroups: async (req, res) => {
-        const userId = req.user.id; 
+      const userId = req.user.id || req.user.user_id;
+
+      // 확인용 (필요 없으면 삭제)
+      if (!userId) {
+        console.error(" User ID not found in token:", req.user);
+      return res.status(401).json({ success: false, message: "인증 실패" });
+      }
 
         try {
             // user_group과 group_member 조인
@@ -55,14 +61,20 @@ const groupController = {
 
             res.json({ success: true, data: formattedGroups });
         } catch (error) {
-            console.error('❌ 그룹 조회 실패:', error);
+            console.error(' 그룹 조회 실패:', error);
             res.status(500).json({ success: false, message: '서버 오류 발생' });
         }
     },
 
     // 2. 그룹 생성 (POST /groups)
     createGroup: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req.user.id || req.user.user_id;
+
+        // 확인용 (필요 없으면 삭제)
+        if (!userId) {
+          console.error(" User ID not found in token:", req.user);
+        return res.status(401).json({ success: false, message: "인증 실패" });
+        }
         // GroupCreationModal.tsx에서 보내주는 데이터
         const { name, description, isFridgeShared } = req.body;
         
@@ -112,7 +124,7 @@ const groupController = {
             res.json({ success: true, data: newGroupData });
         } catch (error) {
             await connection.rollback();
-            console.error('❌ 그룹 생성 실패:', error);
+            console.error(' 그룹 생성 실패:', error);
             res.status(500).json({ success: false, message: '그룹 생성 실패' });
         } finally {
             connection.release();
@@ -121,7 +133,14 @@ const groupController = {
 
     // 3. 그룹 가입 (POST /groups/join)
     joinGroup: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req.user.id || req.user.user_id;
+
+        // 확인용 (필요 없으면 삭제)
+        if (!userId) {
+          console.error(" User ID not found in token:", req.user);
+        return res.status(401).json({ success: false, message: "인증 실패" });
+        }
+
         const { invite_code } = req.body;
 
         try {
@@ -162,14 +181,21 @@ const groupController = {
 
             res.json({ success: true, data: joinedGroupData });
         } catch (error) {
-            console.error('❌ 그룹 가입 실패:', error);
+            console.error('그룹 가입 실패:', error);
             res.status(500).json({ success: false, message: '그룹 가입 실패' });
         }
     },
 
     // 4. 핀 고정 토글 (PATCH /groups/:groupId/pin)
     togglePin: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req.user.id || req.user.user_id;
+
+        // 확인용 (필요 없으면 삭제)
+        if (!userId) {
+          console.error(" User ID not found in token:", req.user);
+        return res.status(401).json({ success: false, message: "인증 실패" });
+        }
+
         const { groupId } = req.params;
 
         try {
@@ -180,14 +206,21 @@ const groupController = {
             );
             res.json({ success: true });
         } catch (error) {
-            console.error('❌ 핀 토글 실패:', error);
+            console.error('핀 토글 실패:', error);
             res.status(500).json({ success: false, message: '핀 설정 실패' });
         }
     },
 
     // 5. 식단 추가 (POST /schedule)
     addSchedule: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req.user.id || req.user.user_id;
+
+        // 확인용 (필요 없으면 삭제)
+        if (!userId) {
+          console.error(" User ID not found in token:", req.user);
+        return res.status(401).json({ success: false, message: "인증 실패" });
+        }
+
         // recipeAPI.ts에서 보내주는 데이터
         const { recipeId, date, groupId } = req.body;
 
@@ -228,14 +261,21 @@ const groupController = {
                 }
             });
         } catch (error) {
-            console.error('❌ 식단 추가 실패:', error);
+            console.error('식단 추가 실패:', error);
             res.status(500).json({ success: false, message: '식단 추가 실패' });
         }
     },
 
     // 6. 주간 스케줄 조회 (GET /schedule/my)
     getMySchedules: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req.user.id || req.user.user_id;
+
+        // 확인용 (필요 없으면 삭제)
+        if (!userId) {
+          console.error(" User ID not found in token:", req.user);
+        return res.status(401).json({ success: false, message: "인증 실패" });
+        }
+
         const { week_start_date } = req.query;
 
         try {
@@ -287,14 +327,21 @@ const groupController = {
 
             res.json({ success: true, data: groupedSchedules });
         } catch (error) {
-            console.error('❌ 스케줄 조회 실패:', error);
+            console.error('스케줄 조회 실패:', error);
             res.status(500).json({ success: false, message: '스케줄 로드 실패' });
         }
     },
 
     // 7. 식단 삭제 (DELETE /schedule/:scheduleId)
     deleteSchedule: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req.user.id || req.user.user_id;
+
+        // 확인용 (필요 없으면 삭제)
+        if (!userId) {
+          console.error(" User ID not found in token:", req.user);
+        return res.status(401).json({ success: false, message: "인증 실패" });
+        }
+
         const { scheduleId } = req.params;
 
         try {
@@ -310,7 +357,7 @@ const groupController = {
 
             res.json({ success: true });
         } catch (error) {
-            console.error('❌ 식단 삭제 실패:', error);
+            console.error('식단 삭제 실패:', error);
             res.status(500).json({ success: false, message: '삭제 실패' });
         }
     }
