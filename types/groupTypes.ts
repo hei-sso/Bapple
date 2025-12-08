@@ -37,6 +37,8 @@ export interface GroupContextType {
         groupId: string | 'personal'; 
     }) => Promise<void>; // 식단 메뉴 추가
     removeRecipeFromSchedule: (scheduleId: string, date: string, groupId: string) => Promise<void>; // 식단 메뉴 삭제
+
+    refreshGroups: () => void;
 }
 
 // 그룹 생성에 필요한 데이터 타입

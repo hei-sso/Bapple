@@ -118,27 +118,39 @@ export const removeRecipeFromFavorite = async (recipeId: string): Promise<void> 
 };
 
 /**
- * 5. AI 추천 레시피 목록 로드 (GET /api/recommend/week/start)
- * @param weekStart - 추천을 요청할 주의 시작 날짜 (YYYY-MM-DD 형식)
+ * 5. AI 추천 레시피 목록 로드 (POST /api/recommend/week)
+ * @param user_id - 사용자 고유 ID
  * @returns RecommendedRecipe[] - AI가 추천하는 레시피 목록
  */
-export const fetchRecommendedRecipes = async (weekStart: string): Promise<RecommendedRecipe[]> => {
+export const fetchRecommendedRecipes = async (user_id: string): Promise<RecommendedRecipe[]> => {
+    const token = await getAuthToken();
+    
+    if (!token) {
+        throw new Error("로그인이 필요합니다. AI 추천 기능을 사용할 수 없습니다.");
+    }
+    
     try {
-        // 엔드포인트: /api/recommend/week/start?weekStart={weekStart}
-        const response = await axios.get(`${RAILWAY_BASE_URL}/api/recommend/week/start`, {
-            params: {
-                weekStart: weekStart, 
-            }
-        });
+        const response = await axios.post(
+            `${RAILWAY_BASE_URL}/api/recommend/week`, 
+            { user_id: user_id },
+            { 
+                headers: { 
+                    Authorization: `Bearer ${token}`
+                } 
+            } 
+        );
         
         if (response.data.success && response.data.data) {
-            // ⭐ 서버 응답이 RecommendedRecipe[] 형태라고 가정
+            // ⭐ 서버 응답이 RecommendedRecipe[] 형태라고 가정!
             return response.data.data as RecommendedRecipe[]; 
         } else {
             throw new Error(response.data.message || "AI 추천 레시피 목록을 불러오지 못했습니다.");
         }
     } catch (error) {
         console.error("❌ AI 추천 레시피 로드 실패:", error);
-        throw new Error(axios.isAxiosError(error) ? `추천 레시피 조회 실패: ${error.message}` : "서버 오류 발생");
+        throw new Error(axios.isAxiosError(error) 
+            ? `추천 레시피 조회 실패: ${error.message} (상태 코드: ${error.response?.status})` 
+            : "서버 오류 발생"
+        );
     }
 };

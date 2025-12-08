@@ -96,6 +96,9 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
   
   // 이번 주 시작일 계산
   const currentWeekStart = format(startOfWeek(TODAY, { weekStartsOn: WEEK_STARTS_ON }), 'yyyy-MM-dd');
+  const SECONDARY_COLOR = '#404040ff';
+  const ACCENT_COLOR_STAR = '#FFD700';
+  const TEXT_COLOR_DARK = '#333';
 
   useEffect(() => {
     const loadRecipes = async () => {
@@ -119,7 +122,7 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
     return (
       <View style={styles.recommendationContainer}>
         <Text style={styles.recommendationTitle}>추천 레시피</Text>
-        <ActivityIndicator size="large" color="#404040ff" style={{marginTop: 20}} />
+        <ActivityIndicator size="large" color={SECONDARY_COLOR} />
       </View>
     );
   }
@@ -159,11 +162,11 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
                 <Text style={styles.recipeCardText}>{item.name}</Text>
                 <View style={styles.ratingTimeContainer}>
                   <View style={styles.ratingBadge}>
-                    <FontAwesome name="star" size={12} color="#FFD700" />
+                    <FontAwesome name="star" size={12} color={ACCENT_COLOR_STAR} />
                     <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
                   </View>
                   <View style={styles.timeBadge}>
-                    <Ionicons name="time-outline" size={12} color="#333" />
+                    <Ionicons name="time-outline" size={12} color={TEXT_COLOR_DARK} />
                     <Text style={styles.timeText}>{item.cookTimeMinutes}분</Text>
                   </View>
                 </View>
@@ -179,39 +182,41 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
 
 // 그룹 목록 아이템 컴포넌트 (사이드바용)
 const SideMenuGroupItem: React.FC<{ 
-    group: Group; 
-    onPress: (group: Group) => void; 
-    onPinToggle: (groupId: string) => void;
-    isDisabled: boolean; 
+  group: Group; 
+  onPress: (group: Group) => void; 
+  onPinToggle: (groupId: string) => void;
+  isDisabled: boolean; 
 }> = ({ group, onPress, onPinToggle, isDisabled }) => {
-    const groupColor = getGroupColor(group.id); 
-    const PinIcon = group.isPinned ? Pin : PinOff; // 꽉 찬 핀/빈 핀
-    const pinColor = group.isPinned ? '#000' : '#888';
+  const groupColor = getGroupColor(group.id); 
+  const PinIcon = group.isPinned ? Pin : PinOff; // 꽉 찬 핀/빈 핀
+  const PRIMARY_COLOR = '#000';
+  const TEXT_COLOR_GRAY = '#888';
+  const pinColor = group.isPinned ? PRIMARY_COLOR : TEXT_COLOR_GRAY;
 
-    const isPersonal = group.id === 'personal';
+  const isPersonal = group.id === 'personal';
 
-    return (
-        <TouchableOpacity style={styles.menuItem} onPress={() => onPress(group)} disabled={isDisabled}>
-            <View style={[styles.menuGroupDot, { backgroundColor: groupColor }]} />
-            <View style={styles.menuItemContent}>
-                <Text style={styles.menuItemText}>{group.name}</Text>
-                
-                {/* 고정핀 토글 버튼 */}
-                {!isPersonal && (
-                    <TouchableOpacity
-                        style={styles.menuPinButton}
-                        onPress={(e) => {
-                            e.stopPropagation(); // 그룹 선택 방지
-                            onPinToggle(group.id);
-                        }}
-                        disabled={isDisabled}
-                    >
-                        <PinIcon size={16} color={pinColor} />
-                    </TouchableOpacity>
-                )}
-            </View>
-        </TouchableOpacity>
-    );
+  return (
+    <TouchableOpacity style={styles.menuItem} onPress={() => onPress(group)} disabled={isDisabled}>
+      <View style={[styles.menuGroupDot, { backgroundColor: groupColor }]} />
+      <View style={styles.menuItemContent}>
+        <Text style={styles.menuItemText}>{group.name}</Text>
+          
+        {/* 고정핀 토글 버튼 */}
+        {!isPersonal && (
+          <TouchableOpacity
+            style={styles.menuPinButton}
+            onPress={(e) => {
+              e.stopPropagation(); // 그룹 선택 방지
+              onPinToggle(group.id);
+            }}
+            disabled={isDisabled}
+          >
+            <PinIcon size={16} color={pinColor} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 };
 
 // 그룹 사이드 메뉴 컴포넌트
@@ -227,6 +232,9 @@ const GroupSideMenu: React.FC<{
   const { myGroups, isLoading, togglePin } = useGroups(); 
   
   const slideAnim = React.useRef(new Animated.Value(0)).current;
+  const PRIMARY_COLOR = '#000';
+  const TEXT_COLOR_DARK = '#333';
+
   React.useEffect(() => {
     Animated.timing(slideAnim, {
       toValue: isMenuOpen ? 1 : 0,
@@ -257,6 +265,8 @@ const GroupSideMenu: React.FC<{
     },
   });
 
+  const MENU_FOOTER_HEIGHT = 30;
+
   // 그룹 목록 + '나' (개인 냉장고) 항목 생성 및 정렬
   const sortedGroups = useMemo(() => {
     const personalGroup: Group = { 
@@ -276,11 +286,18 @@ const GroupSideMenu: React.FC<{
     const groupsWithPersonal = [personalGroup, ...myGroups];
 
     return groupsWithPersonal.slice().sort((a, b) => {
+      // '나' 항목이 항상 최상단에 오도록 처리
+      if (a.id === 'personal') return -1;
+      if (b.id === 'personal') return 1;
+
+      // 핀 고정 그룹을 상단으로
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
+      
+      // 그 외 일반 그룹은 ID 기준 정렬
       return a.id.localeCompare(b.id); 
     });
-  }, [myGroups]);
+  }, [myGroups]); // myGroups가 업데이트되면 자동으로 재계산됨
 
   // 그룹 아이템 클릭 핸들러
   const handleGroupPress = useCallback((group: Group) => {
@@ -288,29 +305,29 @@ const GroupSideMenu: React.FC<{
       
     // '나'인지 확인해서 라우트 분기
     if (group.id === 'personal') {
-        // 1. '나' (personal) 항목: 홈 화면 디테일 페이지로 이동 (달력에서 클릭할 때랑 동일)
-        router.push({ 
-            pathname: '/home/detail', 
-            params: { 
-                date: format(TODAY, 'yyyy-MM-dd'), // 오늘 날짜 기본값
-                groupIds: activeGroupIds.join(',') 
-            } 
-        });
+      // 1. '나' (personal) 항목: 홈 화면 디테일 페이지로 이동 (달력에서 클릭할 때랑 동일)
+      router.push({ 
+        pathname: '/home/detail', 
+        params: { 
+          date: format(TODAY, 'yyyy-MM-dd'), // 오늘 날짜 기본값
+          groupIds: activeGroupIds.join(',') 
+        } 
+      });
     } else {
-        // 2. 일반 그룹 항목: 그룹 상세 페이지로 이동 (그룹 정보/설정)
-        router.push({ 
-            pathname: '/group/detail',
-            params: { 
-                groupId: group.id, 
-                groupName: group.name,
-            } 
-        });
+      // 2. 일반 그룹 항목: 그룹 상세 페이지로 이동 (그룹 정보/설정)
+      router.push({ 
+        pathname: '/group/detail',
+        params: { 
+          groupId: group.id, 
+          groupName: group.name,
+        } 
+      });
     }
   }, [onClose, router, activeGroupIds]);
   
   // 고정핀 토글 핸들러
   const handlePinToggle = useCallback((groupId: string) => {
-      togglePin(groupId);
+    togglePin(groupId);
   }, [togglePin]);
 
   return (
@@ -328,13 +345,13 @@ const GroupSideMenu: React.FC<{
         {/* 상단 Safe Area 처리 */}
         <View style={{ paddingTop: insets.top }} /> 
         
-        <Text style={[styles.sideMenuTitle, { marginTop: 0, marginBottom: 15, paddingHorizontal: 15 }]}>
-            내 그룹 목록
+        <Text style={[styles.sideMenuTitle, { marginTop: 20, marginBottom: 15, paddingHorizontal: 15 }]}>
+          내 그룹 목록
         </Text>
-        
-        <ScrollView contentContainerStyle={styles.sideMenuScrollContent}>
+
+        <ScrollView style={{ flex: 1 }}>
           {isLoading ? (
-            <ActivityIndicator size="small" color="#666" style={{ marginTop: 20 }} />
+            <ActivityIndicator size="small" color={TEXT_COLOR_DARK} />
           ) : (
             sortedGroups.map((group) => (
               <SideMenuGroupItem 
@@ -349,9 +366,9 @@ const GroupSideMenu: React.FC<{
         </ScrollView>
           
         {/* '새 그룹 생성' 버튼 */}
-        <View style={[styles.menuFooter, { paddingBottom: 15 + insets.bottom, left: 0 }]}>
+        <View style={[styles.menuFooter, { paddingBottom: insets.bottom, height: MENU_FOOTER_HEIGHT + insets.bottom }]}>
           <TouchableOpacity style={styles.newGroupButton} onPress={onGroupCreatePress}>
-            <Plus size={20} color="#000" />
+            <Plus size={20} color={PRIMARY_COLOR} />
             <Text style={styles.newGroupButtonText}>새 그룹 생성</Text>
           </TouchableOpacity>
         </View>
@@ -363,10 +380,10 @@ const GroupSideMenu: React.FC<{
 const HomeScreenContent = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { myGroups, groupSchedules, fetchSchedulesForWeek, scheduleRecipe } = useGroups();
+  // refreshGroups 추가
+  const { myGroups, groupSchedules, fetchSchedulesForWeek, scheduleRecipe, refreshGroups } = useGroups(); 
   
   const [currentDate, setCurrentDate] = useState(new Date(TODAY));
-  // 그룹 ID로 필터링 (초기값: 'personal'과 모든 그룹 ID)
   const [activeGroupIds, setActiveGroupIds] = useState<string[]>(['personal', ...myGroups.map(g => g.id)]); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isGroupModalVisible, setIsGroupModalVisible] = useState(false);
@@ -374,6 +391,13 @@ const HomeScreenContent = () => {
   // 레시피 스케줄 모달 상태
   const [isRecipeModalVisible, setIsRecipeModalVisible] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<{ id: string; name: string } | null>(null);
+  
+  const handleGroupCreated = useCallback(() => {
+    // 1. 모달 닫기
+    setIsGroupModalVisible(false); 
+    // 2. 컨텍스트를 통해 그룹 목록 강제 갱신 (myGroups 업데이트 -> useEffect 트리거)
+    refreshGroups(); 
+  }, [refreshGroups]);
 
   // 현재 주차의 시작일 (yyyy-MM-dd)
   const currentWeekStartString = format(startOfWeek(currentDate, { weekStartsOn: WEEK_STARTS_ON }), 'yyyy-MM-dd');
@@ -386,13 +410,17 @@ const HomeScreenContent = () => {
     fetchSchedulesForWeek(nextWeekStartString);
   }, [currentWeekStartString, nextWeekStartString, fetchSchedulesForWeek]);
   
-  // 그룹 목록이 업데이트 될 때 필터링 목록도 업데이트
   useEffect(() => {
     setActiveGroupIds(prev => {
       const newGroups = myGroups.map(g => g.id);
-      return [...new Set([...prev.filter(id => id === 'personal' || newGroups.includes(id)), ...newGroups])];
+      
+      // 1. 기존 active 목록 중 'personal'과 현재 myGroups에 남아있는 그룹 ID를 유지
+      const activeKept = prev.filter(id => id === 'personal' || newGroups.includes(id));
+      
+      // 2. 현재 myGroups의 모든 ID와 activeKept를 합쳐 중복 제거 후 최종 active 목록 생성
+      return [...new Set([...activeKept, ...newGroups, 'personal'])];
     });
-  }, [myGroups]);
+  }, [myGroups]); // myGroups가 변경될 때마다 실행됨
 
   // 2주간의 스케줄 데이터를 병합
   const combinedSchedules = useMemo(() => {
@@ -405,9 +433,12 @@ const HomeScreenContent = () => {
 
   // 그룹 필터 토글
   const toggleGroupFilter = (groupId: string) => {
-    setActiveGroupIds(prev => 
-      prev.includes(groupId) ? prev.filter(g => g !== groupId) : [...prev, groupId]
-    );
+    setActiveGroupIds(prev => {
+      // 'personal' 그룹은 토글 불가 (항상 활성화)
+      if (groupId === 'personal') return prev; 
+      
+      return prev.includes(groupId) ? prev.filter(g => g !== groupId) : [...prev, groupId];
+    });
   };
   
   // 주 이동 로직
@@ -466,7 +497,6 @@ const HomeScreenContent = () => {
   }) => {
     await scheduleRecipe(data);
   }, [scheduleRecipe]);
-
 
   const CALENDAR_PADDING_H = 20;
   const BORDER_WIDTH = 1;
@@ -527,6 +557,10 @@ const HomeScreenContent = () => {
     const groupId = group.id;
     const isActive = activeGroupIds.includes(groupId);
     const color = getGroupColor(groupId);
+    const TEXT_COLOR_LIGHT = '#ccc';
+    
+    // 개인 냉장고는 항상 활성화 상태로 유지
+    const isPersonal = groupId === 'personal'; 
 
     return (
       <TouchableOpacity
@@ -536,6 +570,7 @@ const HomeScreenContent = () => {
           { backgroundColor: isActive ? color : '#fff', borderColor: color },
         ]}
         onPress={() => toggleGroupFilter(groupId)}
+        disabled={isPersonal} // '나' 그룹은 비활성화/토글 불가
       >
         <Text style={[
           styles.groupButtonText,
@@ -566,33 +601,37 @@ const HomeScreenContent = () => {
     return [personal, ...myGroups];
   }, [myGroups]);
 
+  const PRIMARY_COLOR = '#000';
+  const TEXT_COLOR_LIGHT = '#ccc';
+  const TEXT_COLOR_GRAY = '#888';
+
   // 메인 뷰
   return (
-    <ScrollView style={Styles.indexContainer} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+    <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       
       {/* 상단 검색 및 설정 영역 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
-          <FontAwesome name="user-circle" size={32} color="#ccc" /> 
+          <FontAwesome name="user-circle" size={32} color={TEXT_COLOR_LIGHT} /> 
         </TouchableOpacity>
           {/* 검색 영역 */}
           <View style={styles.searchBar}>
             <TextInput
               style={styles.searchInput}
               placeholder="검색"
-              placeholderTextColor="#888"
+              placeholderTextColor={TEXT_COLOR_GRAY}
             />
-            <Ionicons name="search" size={20} color="#000" style={styles.searchIcon} /> 
+            <Ionicons name="search" size={20} color={PRIMARY_COLOR} style={styles.searchIcon} /> 
           </View>
         <TouchableOpacity onPress={handleSetting}>
-          <FontAwesome name="cog" size={24} color="#000" style={styles.settingsIcon} />
+          <FontAwesome name="cog" size={24} color={PRIMARY_COLOR} style={styles.settingsIcon} />
         </TouchableOpacity>
       </View>
 
       {/* 그룹 활성화/비활성화 버튼 영역 */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.groupFilterContainer}>
+      <View style={styles.groupFilterContainer}>
         {groupFilterList.map(renderGroupButton)}
-      </ScrollView>
+      </View>
 
       {/* 달력 영역 */}
       <View style={styles.calendarContainer}>
@@ -602,10 +641,10 @@ const HomeScreenContent = () => {
           <Text style={styles.monthText}>{format(currentDate, 'M월', { locale: ko })}</Text>
           <View style={styles.monthNav}>
             <TouchableOpacity onPress={() => changeWeek(-1)}>
-              <ChevronLeft size={24} color="#000" />
+              <ChevronLeft size={24} color={PRIMARY_COLOR} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => changeWeek(1)}>
-              <ChevronRight size={24} color="#000" />
+              <ChevronRight size={24} color={PRIMARY_COLOR} />
             </TouchableOpacity>
           </View>
         </View>
@@ -640,6 +679,7 @@ const HomeScreenContent = () => {
       <GroupCreationModal 
         isVisible={isGroupModalVisible}
         onClose={() => setIsGroupModalVisible(false)}
+        onGroupCreated={handleGroupCreated}
         initialMode="create" 
       />
       
@@ -653,7 +693,7 @@ const HomeScreenContent = () => {
           onSchedule={handleScheduleRecipe}
         />
       )}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -667,14 +707,14 @@ export default function HomeScreen() {
 }
 
 // 🎨 스타일 시트
-const styles = StyleSheet.create({
-  scrollContent: {
-    justifyContent: 'center', 
-    alignItems: 'center',
-    paddingHorizontal: 80,
-    paddingBottom: 50
-  },
+const PRIMARY_COLOR = '#000';
+const BG_COLOR_LIGHT = '#f5f5f5';
+const BORDER_COLOR_LIGHT = '#eee';
+const TEXT_COLOR_DARK = '#333';
+const TEXT_COLOR_GRAY = '#888';
+const TEXT_COLOR_LIGHT = '#ccc';
 
+const styles = StyleSheet.create({
   // 헤더 (검색 및 설정)
   header: {
     flexDirection: 'row',
@@ -684,13 +724,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 10
   },
-  profileButton: { 
+  profileButton: {
     marginRight: 15
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: BG_COLOR_LIGHT,
     borderRadius: 25,
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -700,16 +740,17 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000'
+    color: PRIMARY_COLOR
   },
   searchIcon: {
-    marginLeft: 10
+    marginLeft: 10,
+    color: PRIMARY_COLOR
   },
   settingsIcon: {
-    color: '#000'
+    color: PRIMARY_COLOR
   },
 
-  // 그룹 필터
+  // 그룹 필터 버튼
   groupFilterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 24,
@@ -727,7 +768,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   disabledGroupText: {
-    color: '#ccc'
+    color: TEXT_COLOR_LIGHT // 비활성 그룹 텍스트 색상
   },
 
   // 달력
@@ -742,48 +783,43 @@ const styles = StyleSheet.create({
   },
   monthText: {
     fontSize: 24,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    color: PRIMARY_COLOR
   },
   monthNav: {
     flexDirection: 'row',
     gap: 15
-  },
-  navArrow: {
-    color: '#000',
-    fontWeight: '300'
-  },
-  navArrowSize: {
-    fontSize: 21
   },
   dayOfWeekHeader: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     borderBottomWidth: 1,
     borderTopWidth: 1,
-    borderColor: '#eee',
+    borderColor: BORDER_COLOR_LIGHT,
     paddingVertical: 8
   },
   dayOfWeekText: {
     fontSize: 14,
     fontWeight: '600',
     width: (width - 40) / 7,
-    textAlign: 'center'
+    textAlign: 'center',
+    color: TEXT_COLOR_DARK
   },
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     borderBottomWidth: 1,
     borderLeftWidth: 1,
-    borderColor: '#eee'
+    borderColor: BORDER_COLOR_LIGHT
   },
   calendarCell: {
     borderRightWidth: 1,
     borderTopWidth: 1,
-    borderColor: '#eee',
+    borderColor: BORDER_COLOR_LIGHT,
     padding: 3,
     alignItems: 'flex-start'
   },
-  
+
   // 날짜 번호 및 오늘 표시
   dayNumberContainer: {
     alignSelf: 'flex-end',
@@ -797,25 +833,26 @@ const styles = StyleSheet.create({
   },
   dayNumber: {
     fontSize: 12,
-    color: '#000'
+    color: PRIMARY_COLOR
   },
   todayIndicator: {
-    backgroundColor: '#000'
+    backgroundColor: PRIMARY_COLOR
   },
   todayText: {
     color: '#fff',
     fontWeight: 'bold'
   },
   otherMonthText: {
-    color: '#ccc'
+    color: TEXT_COLOR_LIGHT
   },
 
-  // 레시피 목록
+  // 레시피 목록 (달력 셀 내부)
   recipeList: {
     marginTop: 2,
     width: '100%',
     maxHeight: 45,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    paddingLeft: 3 // RecipeDot과 정렬을 위해 추가
   },
   recipeItem: {
     flexDirection: 'row',
@@ -825,46 +862,51 @@ const styles = StyleSheet.create({
   recipeDot: {
     width: 5,
     height: 5,
-    borderRadius: 2,
+    borderRadius: 2.5,
     marginRight: 4,
-    marginTop: 4
+    marginTop: 3 // 텍스트와 세로 정렬 맞추기
   },
   recipeText: {
     fontSize: 10,
-    color: '#333',
-    lineHeight: 10,
+    color: TEXT_COLOR_DARK,
+    lineHeight: 12,
     flexShrink: 1
   },
   viewMoreText: {
     fontSize: 8,
-    color: '#007AFF',
+    color: '#007AFF', // 시스템 기본 파란색 유지
     marginTop: 2,
     textAlign: 'right',
-    width: '100%'
+    width: '100%',
+    paddingRight: 2
   },
 
   // 레시피 추천 영역
   recommendationContainer: {
     alignItems: 'center',
-    marginTop: 20
+    marginTop: 30,
+    marginBottom: 50
   },
   recommendationTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#333'
+    color: TEXT_COLOR_DARK,
+    marginBottom: 15
   },
+  // 레시피 카드
   recipeCard: {
     backgroundColor: '#fff',
     padding: 18,
-    borderRadius: 10,
+    marginHorizontal: 10, // 캐러셀 아이템 간 여백
+    borderRadius: 12, // 모서리 둥글게
     borderWidth: 1,
-    borderColor: '#eee',
-    elevation: 2,
+    borderColor: BORDER_COLOR_LIGHT,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    height: 220, 
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    height: 220,
     justifyContent: 'space-between'
   },
   recipeCardContentArea: {
@@ -875,18 +917,24 @@ const styles = StyleSheet.create({
   recipeCardText: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10, 
-    color: '#000'
+    marginBottom: 10,
+    color: PRIMARY_COLOR
   },
   recipeCardImagePlaceholder: {
     width: '100%',
-    height: 100, 
-    backgroundColor: '#ccc',
+    height: 100,
+    backgroundColor: BG_COLOR_LIGHT, // 플레이스 홀더 색상 통일
     borderRadius: 8,
-    marginTop: 'auto',
+    marginTop: 'auto'
+  },
+  noDataText: {
+    fontSize: 16,
+    color: TEXT_COLOR_GRAY,
+    textAlign: 'center',
+    marginTop: 20
   },
 
-  // 난이도 별점 및 시간
+  // 난이도 별점 및 시간 배지
   ratingTimeContainer: {
     flexDirection: 'row',
     marginBottom: 5
@@ -894,42 +942,35 @@ const styles = StyleSheet.create({
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fffbe6',
+    backgroundColor: '#fffbe6', // 노란색 계열
     borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     marginRight: 8
   },
   ratingText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#333',
+    color: TEXT_COLOR_DARK,
     marginLeft: 4
   },
   timeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e6f7ff',
+    backgroundColor: '#e6f7ff', // 파란색 계열
     borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2
+    paddingHorizontal: 8,
+    paddingVertical: 4
   },
   timeText: {
     fontSize: 12,
-    color: '#333',
+    color: TEXT_COLOR_DARK,
     marginLeft: 4
   },
-  noDataText: {
-    fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 20
-  },
-  
-  // 사이드 메뉴 스타일
+
+  // 사이드 메뉴
   menuOverlay: {
     ...StyleSheet.absoluteFillObject,
-    // ⭐️ 수정: 배경색과 투명도 설정
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     zIndex: 100
   },
@@ -941,76 +982,63 @@ const styles = StyleSheet.create({
     width: SIDE_MENU_WIDTH,
     backgroundColor: '#fff',
     zIndex: 101,
-    // paddingHorizontal: 15 제거 -> 자식 요소에서 처리
     borderRightWidth: 1,
-    borderColor: '#eee'
+    borderColor: BORDER_COLOR_LIGHT
   },
   sideMenuTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginTop: 0, 
-    marginBottom: 15,
-    paddingHorizontal: 15, // 좌우 패딩
-  },
-  sideMenuScrollContent: {
-    paddingHorizontal: 15, // 좌우 패딩
-    paddingBottom: 85 // 푸터 공간 확보
+    color: PRIMARY_COLOR
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: BORDER_COLOR_LIGHT
   },
   menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     marginLeft: 10,
-    justifyContent: 'space-between', // ⭐️ 핀 버튼을 오른쪽 끝으로 밀기
+    justifyContent: 'space-between'
   },
   menuItemText: {
     fontSize: 16,
-    color: '#333',
+    color: TEXT_COLOR_DARK,
     fontWeight: '500'
   },
   menuGroupDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
-    marginRight: 10
+    borderRadius: 5
   },
-  // ⭐️ 신규: 핀 버튼 컨테이너 스타일 ⭐️
   menuPinButton: {
-      padding: 5,
+    padding: 5
   },
+
   // 새 그룹 생성 버튼
   menuFooter: {
-    position: 'absolute', 
+    position: 'absolute',
     bottom: 0,
-    left: 0, // ⭐️ 수정: left 0으로 설정하여 컨테이너 너비에 맞춤
-    right: 0, // ⭐️ 수정: right 0으로 설정하여 컨테이너 너비에 맞춤
-    backgroundColor: '#fff', 
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    width: SIDE_MENU_WIDTH, // ⭐️ 수정: 너비를 명시적으로 사이드 메뉴 너비로 설정
-    zIndex: 102, 
+    left: 0,
+    right: 0,
+    paddingHorizontal: 15
   },
   newGroupButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 10,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: BG_COLOR_LIGHT,
     borderRadius: 8
   },
   newGroupButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000',
+    color: PRIMARY_COLOR,
     marginLeft: 10
   }
 });

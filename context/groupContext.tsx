@@ -31,11 +31,15 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [groupSchedules, setGroupSchedules] = useState<Record<string, RecipeSchedule[]>>({}); 
   const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false); 
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
 
-  // 그룹 목록 로드 함수 (API 오류 무시하고 빈 목록 반환 시키도록 처리)
+  // 그룹 목록 로드 함수 (인증 상태를 기반으로 실행)
   const loadMyGroups = useCallback(async () => {
+    if (!isAuthenticated) {
+      setMyGroups([]); // 로그아웃 상태일 때는 그룹 목록을 비워둠
+      return;
+    }
+      
     setIsLoading(true);
     try {
       const groups = await fetchMyGroups();
@@ -46,6 +50,11 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setIsLoading(false);
     }
+  }, [isAuthenticated]);
+
+  // 외부에서 그룹 목록 갱신을 강제하기 위한 함수
+  const refreshGroups = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
   }, []);
 
   // 주간 스케줄 로드 함수 
@@ -106,7 +115,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [isAuthenticated]);
 
-
   // 식단 메뉴 삭제 함수
   const removeRecipeFromSchedule = useCallback(async (scheduleId: string, date: string, dummyGroupId: string) => {
     if (!isAuthenticated) { Alert.alert("경고", "로그인이 필요합니다."); return; }
@@ -148,7 +156,8 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // 초기 로드 및 트리거 실행
   useEffect(() => {
-    loadMyGroups();
+    // loadMyGroups 자체가 isAuthenticated를 의존하므로, 로그인/로그아웃 시 호출됨
+    loadMyGroups(); 
   }, [loadMyGroups, refreshTrigger]);
 
   // 그룹 생성 함수
@@ -156,15 +165,15 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!isAuthenticated) { Alert.alert("경고", "로그인이 필요합니다."); throw new Error("로그인이 필요합니다."); }
 
     try {
-      const newGroup = await apiCreateGroup(data);
-      setMyGroups(prev => [...prev, newGroup]);
-      Alert.alert("성공", `${newGroup.name} 그룹이 생성되었습니다.`);
+      await apiCreateGroup(data);
+      refreshGroups(); // 그룹 목록 갱신 트리거
+      Alert.alert("성공", `${data.name} 그룹이 생성되었습니다.`);
       
     } catch (error) {
       Alert.alert("오류", `그룹 생성에 실패했습니다`);
       throw error;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, refreshGroups]);
 
   // 그룹 가입 함수
   const joinGroup = useCallback(async (inviteCode: string) => {
@@ -172,14 +181,14 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       const joinedGroup = await apiJoinGroup(inviteCode);
-      setMyGroups(prev => [...prev, joinedGroup]);
+      refreshGroups(); // 그룹 목록 갱신 트리거
       Alert.alert("성공", `${joinedGroup.name} 그룹에 가입되었습니다.`);
       
     } catch (error) {
       Alert.alert("오류", `그룹 가입에 실패했습니다`);
       throw error;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, refreshGroups]);
 
   // 그룹 고정 토글 함수
   const togglePin = useCallback(async (groupId: string) => {
@@ -204,7 +213,7 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     myGroups,
     groupSchedules, 
     isLoading,
-    isError: false, // UI 표시 보장을 위해 항상 false
+    isError: false, 
     createGroup,
     joinGroup,
     togglePin,
@@ -212,6 +221,7 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     fetchSchedulesForWeek,
     scheduleRecipe,
     removeRecipeFromSchedule,
+    refreshGroups, // 외부에서 호출 가능하도록 포함
   }), [
     myGroups,
     groupSchedules, 
@@ -223,6 +233,7 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     fetchSchedulesForWeek,
     scheduleRecipe,
     removeRecipeFromSchedule,
+    refreshGroups,
   ]);
 
   return (

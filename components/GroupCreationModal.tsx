@@ -24,6 +24,7 @@ interface GroupCreationModalProps {
     isVisible: boolean;
     onClose: () => void;
     initialMode: 'create' | 'join'; // 초기 모드 설정
+    onGroupCreated: () => void; // 그룹 생성/가입 성공 시 호출될 콜백 함수
 }
 
 const MAX_NAME_LENGTH = 15;
@@ -33,6 +34,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
     isVisible,
     onClose,
     initialMode,
+    onGroupCreated,
 }) => {
     const { createGroup, joinGroup, isLoading: contextLoading } = useGroups();
     const [mode, setMode] = useState(initialMode);
@@ -68,7 +70,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                 isFridgeShared,
             };
             await createGroup(data);
-            onClose(); // 성공 시 모달 닫기
+            onGroupCreated();
         } catch (error) {
             // Context에서 Alert 처리됨
         } finally {
@@ -86,7 +88,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         setIsSubmitting(true);
         try {
             await joinGroup(inviteCode.trim());
-            onClose(); // 성공 시 모달 닫기
+            onGroupCreated();
         } catch (error) {
             // Context에서 Alert 처리됨
         } finally {
@@ -173,7 +175,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
 
                             <View style={styles.infoBox}>
                                 <AlertCircle size={16} color="#333" />
-                                <Text style={styles.infoText}>그룹 인원은 최소 2명, 최대 10명입니다.</Text>
+                                <Text style={styles.infoText}>그룹 인원은 최소 1명, 최대 10명입니다.</Text>
                             </View>
 
                             <TouchableOpacity 
