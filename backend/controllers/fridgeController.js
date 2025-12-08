@@ -2,10 +2,10 @@ import db from '../db.js';
 import { syncUserToBatch } from '../services/recommendationService.js';
 
 // [Helper] 유저의 기본 냉장고 ID 찾기
-const findDefaultFridge = async (userId) => {
+const findDefaultFridge = async (user_id) => {
   const [rows] = await db.query(
     'SELECT id FROM fridge WHERE owner_user_id = ? AND is_default = 1 LIMIT 1',
-    [userId]
+    [user_id]
   );
   if (rows.length === 0) return null;
   return rows[0].id;
@@ -13,11 +13,11 @@ const findDefaultFridge = async (userId) => {
 
 // 1. 내 냉장고 재료 조회 (GET /fridge/my)
 export const getMyIngredients = async (req, res) => {
-  const userId = req.user.user_id;
-  console.log(`[DEBUG] [GET] 내 냉장고 조회 요청 (User: ${userId})`);
+  const user_id = req.user.user_id;
+  console.log(`[DEBUG] [GET] 내 냉장고 조회 요청 (User: ${user_id})`);
 
   try {
-    const fridgeId = await findDefaultFridge(userId);
+    const fridgeId = await findDefaultFridge(user_id);
     if (!fridgeId) {
       return res.status(404).json({ message: '기본 냉장고를 찾을 수 없습니다.' });
     }
@@ -53,7 +53,7 @@ export const getMyIngredients = async (req, res) => {
 
 // 2. 냉장고에 재료 추가 (POST /fridge/my)
 export const addIngredientToMyFridge = async (req, res) => {
-  const userId = req.user.user_id;
+  const user_id = req.user.user_id;
   const ingredient_id = req.body.id || req.body.ingredient_id;
   let { quantity, unit, expire_date } = req.body;
 
@@ -95,7 +95,7 @@ export const addIngredientToMyFridge = async (req, res) => {
 
 // 3. 냉장고 재료 삭제 (DELETE /fridge/my/:ingredientId)
 export const removeIngredientFromMyFridge = async (req, res) => {
-  const userId = req.user.user_id;
+  const user_id = req.user.user_id;
   const { ingredientId } = req.params; 
 
   try {
