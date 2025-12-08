@@ -23,7 +23,6 @@ import Carousel from 'react-native-reanimated-carousel';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // API
-// @ts-ignore
 import { fetchRecommendedRecipes } from '@/api/recipeAPI';
 
 // Style
@@ -38,6 +37,7 @@ import { GroupProvider, useGroups } from '@/context/groupContext';
 
 // Type
 import type { Group, GroupRecipeItem, RecipeSchedule } from '@/types/groupTypes';
+import type { RecommendedRecipe } from '@/types/recipeTypes'
 
 // 상수
 const { width } = Dimensions.get('window');
@@ -56,14 +56,6 @@ const getGroupColor = (groupId: string | null | undefined): string => {
     const colors = ['#F07575', '#FDE2A1', '#B8E998', '#7ccef0ff', '#F5A9B8'];
     return colors[hash % colors.length];
 };
-
-// AI 추천 레시피 타입
-interface RecommendedRecipe {
-    id: string;
-    name: string;
-    rating: number; // 별점 (1~5)
-    cookTimeMinutes: number; // 조리 시간 (분)
-}
 
 // 달력 유틸리티 (2주 범위)
 const getCalendarDays = (date: Date, schedules: RecipeSchedule[], activeGroupIds: string[]) => {
@@ -102,27 +94,26 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
   const [recipes, setRecipes] = useState<RecommendedRecipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // 이번 주 시작일 계산
+  const currentWeekStart = format(startOfWeek(TODAY, { weekStartsOn: WEEK_STARTS_ON }), 'yyyy-MM-dd');
+
   useEffect(() => {
     const loadRecipes = async () => {
       setIsLoading(true);
       try {
-        // @ts-ignore
-        const recommended = await fetchRecommendedRecipes('personal'); 
+        // 현재 주의 시작 날짜를 전달
+        const recommended = await fetchRecommendedRecipes(currentWeekStart); 
         setRecipes(recommended);
       } catch (e) {
         console.error("AI 추천 레시피 로드 실패:", e);
-        // ⚠️ DB 연결 전 임시 Mock Data (최종 제출 시 삭제 예정)
-        setRecipes([
-          { id: 'ai-mock-1', name: '닭가슴살 샐러드', rating: 1.0, cookTimeMinutes: 15 },
-          { id: 'ai-mock-2', name: '새우 볶음밥', rating: 4.0, cookTimeMinutes: 20 },
-          { id: 'ai-mock-3', name: '계란 토스트', rating: 2.5, cookTimeMinutes: 5 },
-        ]);
+        setRecipes([]); // 실패 시 빈 배열로 설정
       } finally {
         setIsLoading(false);
       }
     };
+    // 이번 주의 시작일이 변경되지 않으므로, 의존성 배열에서 제외하거나 고정
     loadRecipes();
-  }, []);
+  }, []); // 의존성 배열에 currentWeekStart는 (TODAY가 바뀌지 않는 한) 고정값이므로 생략
 
   if (isLoading) {
     return (
@@ -186,11 +177,11 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
   );
 };
 
-// ⭐️ 그룹 목록 아이템 컴포넌트 (사이드바용) ⭐️
+// 그룹 목록 아이템 컴포넌트 (사이드바용)
 const SideMenuGroupItem: React.FC<{ 
     group: Group; 
     onPress: (group: Group) => void; 
-    onPinToggle: (groupId: string) => void; // ⭐️ 추가
+    onPinToggle: (groupId: string) => void;
     isDisabled: boolean; 
 }> = ({ group, onPress, onPinToggle, isDisabled }) => {
     const groupColor = getGroupColor(group.id); 
@@ -205,7 +196,7 @@ const SideMenuGroupItem: React.FC<{
             <View style={styles.menuItemContent}>
                 <Text style={styles.menuItemText}>{group.name}</Text>
                 
-                {/* ⭐️ 고정핀 토글 버튼 ⭐️ */}
+                {/* 고정핀 토글 버튼 */}
                 {!isPersonal && (
                     <TouchableOpacity
                         style={styles.menuPinButton}
@@ -233,7 +224,6 @@ const GroupSideMenu: React.FC<{
   activeGroupIds: string[];
 }> = ({ isMenuOpen, onClose, insets, onGroupCreatePress, onGroupSelect, activeGroupIds }) => {
   const router = useRouter();
-  // ⭐️ useGroups에서 togglePin을 가져옵니다. ⭐️
   const { myGroups, isLoading, togglePin } = useGroups(); 
   
   const slideAnim = React.useRef(new Animated.Value(0)).current;

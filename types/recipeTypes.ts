@@ -16,6 +16,14 @@ export interface Category {
     recipes: Recipe[];
 }
 
+// AI 추천 레시피 타입
+export interface RecommendedRecipe {
+    id: string;
+    name: string;
+    rating: number; // 별점 (1~5)
+    cookTimeMinutes: number; // 조리 시간 (분)
+}
+
 // 레시피 Context 타입 정의
 export interface RecipeContextType {
     allCategories: Category[]; 
