@@ -4,69 +4,38 @@ import { useNavigation } from '@react-navigation/native';
 import { AlertTriangle, Pin, PinOff, Plus } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style
-import { Styles } from '@/constants/styles'; // 공통
+import { Styles } from '@/constants/styles';
 
-interface Group {
-  id: string;
-  name: string;
-  description: string;
-  memberCount: number;
-  maxMembers: number;
-  isPinned: boolean;
-  imageUri: string | 'NULL'; // 이미지 URI 또는 'NULL'
-}
+// Components
+import GroupCreationModal from '@/components/GroupCreationModal';
 
-// Mock Data
-const INITIAL_GROUPS: Group[] = [
-  {
-    id: '1',
-    name: '그룹 1',
-    description: '그룹 1 입니다.',
-    memberCount: 5,
-    maxMembers: 6,
-    isPinned: true,
-    imageUri: 'NULL',
-  },
-  {
-    id: '2',
-    name: '그룹 2',
-    description: '그룹 2 입니다.',
-    memberCount: 7,
-    maxMembers: 10,
-    isPinned: false,
-    imageUri: 'NULL',
-  },
-  {
-    id: '3',
-    name: '그룹 3',
-    description: '그룹 3 입니다.',
-    memberCount: 4,
-    maxMembers: 6,
-    isPinned: false,
-    imageUri: 'NULL',
-  },
-];
+// Context & Type
+import { GroupProvider, useGroups } from '@/context/groupContext';
+
+// Type
+import type { Group } from '@/types/groupTypes';
 
 // 그룹 목록 아이템 컴포넌트
 const GroupListItem: React.FC<{
   item: Group;
   onPress: (group: Group) => void;
   onPinToggle: (groupId: string) => void;
-}> = ({ item, onPress, onPinToggle }) => {
+  isLoading: boolean;
+}> = ({ item, onPress, onPinToggle, isLoading }) => {
   const PinIcon = item.isPinned ? Pin : PinOff;
   const pinColor = item.isPinned ? '#000' : '#888';
 
-  // 이미지 렌더링 또는 Placeholder 처리
   const GroupImage = () => {
     if (item.imageUri && item.imageUri !== 'NULL') {
       return (
@@ -77,37 +46,38 @@ const GroupListItem: React.FC<{
         />
       );
     }
-    // NULL 또는 로드 실패 시 Placeholder
     return (
       <View style={[styles.groupImage, styles.imagePlaceholder]}>
-        <Text style={styles.placeholderText}>B</Text>
+        <Text style={styles.placeholderText}>{item.name ? item.name[0] : 'B'}</Text> 
       </View>
     );
   };
 
   return (
-    <TouchableOpacity style={styles.listItem} onPress={() => onPress(item)}>
+    <TouchableOpacity 
+      style={[styles.listItem, isLoading && { opacity: 0.6 }]} 
+      onPress={() => onPress(item)}
+      disabled={isLoading}
+    >
       <View style={styles.groupImageContainer}>
         <GroupImage />
       </View>
       <View style={styles.groupInfo}>
         <Text style={styles.groupName}>{item.name}</Text>
-        {/* 한 줄 소개 (방장만 수정 가능) */}
         <Text style={styles.groupDescription} numberOfLines={1}>
           {item.description}
         </Text>
       </View>
       <View>
-        {/* 고정핀 토글 버튼 */}
         <TouchableOpacity
           style={styles.pinButton}
           onPress={(e) => {
-            e.stopPropagation(); // 그룹 항목 클릭 이벤트 전파 방지
+            e.stopPropagation(); 
             onPinToggle(item.id);
           }}
+          disabled={isLoading}
         >
           <PinIcon size={20} color={pinColor} />
-          {/* 멤버 수 */}
           <Text style={styles.memberCount}>
             {item.memberCount}/{item.maxMembers}
           </Text>
@@ -119,14 +89,12 @@ const GroupListItem: React.FC<{
 
 // 광고 배너 컴포넌트
 const AdBanner: React.FC = () => {
-  // NULL 이미지 URI 처리 및 테두리 포함
   const AdContent = () => (
     <View style={styles.adContent}>
       <AlertTriangle size={32} color="#D35400" />
       <Text style={styles.adText}>광고 배너 영역</Text>
     </View>
   );
-
   return (
     <View style={styles.adBanner}>
       <AdContent />
@@ -134,39 +102,55 @@ const AdBanner: React.FC = () => {
   );
 };
 
-// 메인 컴포넌트
-export default function GroupScreen() {
+// 메인 컨텐츠 컴포넌트
+const GroupScreenContent = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   
-  // Pin 토글 기능을 위해 상태 관리
-  const [groups, setGroups] = useState(INITIAL_GROUPS);
+  const { 
+    myGroups, 
+    isLoading, 
+    togglePin, 
+  } = useGroups();
 
   // 그룹 상세 화면 이동
   const handleGroupPress = (group: Group) => {
-    // ⭐ 'group/detail'로 그룹 정보와 함께 이동
-    // @ts-ignore - 'group/detail' 라우트의 타입을 명시적으로 정의하지 않으므로 임시로 사용
+    // @ts-ignore: groupId, groupName을 필수적으로 전달
     navigation.navigate('group/detail', { groupId: group.id, groupName: group.name });
   };
 
   // 고정핀 토글 로직
   const handlePinToggle = (groupId: string) => {
-    setGroups((prevGroups) => {
-      // 해당 그룹의 isPinned 상태를 토글
-      const updatedGroups = prevGroups.map((group) =>
-        group.id === groupId ? { ...group, isPinned: !group.isPinned } : group
-      );
-
-      return updatedGroups;
-    });
+    togglePin(groupId);
   };
+  
+  // 그룹 추가 FAB 핸들러
+  const handleFabPress = () => {
+      setModalMode('create');
+      setIsModalVisible(true);
+  }
 
-  // 고정 상태에 따라 목록 정렬 (고정된 그룹이 위로, 나머지는 ID 순으로)
-  const sortedGroups = groups.slice().sort((a, b) => {
+  // 모달 상태
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'join'>('create');
+
+
+  // 고정 상태에 따라 목록 정렬
+  const sortedGroups = myGroups.slice().sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
-    return a.id.localeCompare(b.id); // 고정 상태가 같으면 ID 순으로 정렬
+    return a.id.localeCompare(b.id); 
   });
+  
+  // 로딩 UI (빈 목록일 때만 표시)
+  if (isLoading && myGroups.length === 0) {
+    return (
+      <View style={[Styles.indexContainer, styles.centerContent, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color="#404040ff" />
+        <Text style={styles.statusText}>그룹 목록을 불러오는 중...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[Styles.indexContainer, { paddingTop: insets.top }]}>
@@ -181,28 +165,71 @@ export default function GroupScreen() {
             item={item}
             onPress={handleGroupPress}
             onPinToggle={handlePinToggle}
+            isLoading={isLoading}
           />
         )}
         style={styles.list}
+        // 그룹이 없을 때
+        ListEmptyComponent={!isLoading ? (
+          <Text style={styles.emptyText}>현재 참여 중인 그룹이 없습니다.</Text>
+        ) : null}
       />
 
-      {/* 그룹 추가 버튼 */}
-      <TouchableOpacity style={styles.fab} onPress={() => console.log('Add Group')}>
-        <Plus size={28} color="#fff" />
+      {/* 그룹 추가 버튼 (생성/가입 모달 트리거) */}
+      <TouchableOpacity style={styles.fab} onPress={handleFabPress} disabled={isLoading}>
+        <Plus size={28} color="#fff" /> 
       </TouchableOpacity>
+      
+      {/* 그룹 생성/가입 모달 */}
+      <GroupCreationModal 
+        isVisible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        initialMode={modalMode}
+      />
     </View>
+  );
+}
+
+// 메인 컴포넌트: Provider로 감싸기
+export default function GroupScreen() {
+  return (
+    <GroupProvider>
+      <GroupScreenContent />
+    </GroupProvider>
   );
 }
 
 // 🎨 스타일 시트
 const styles = StyleSheet.create({
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  statusText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666'
+  },
+  retryText: {
+    marginTop: 5,
+    color: '#404040ff',
+    fontWeight: 'bold'
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 16,
+    color: '#888'
+  },
+
   // 광고 배너
   adBanner: {
     margin: 16,
-    borderRadius: 12, // 둥근 모서리
-    backgroundColor: '#FFEBEE', // 광고 배경색
-    borderWidth: 2, // 테두리 추가
-    borderColor: '#808080ff' // 테두리 색
+    borderRadius: 12, 
+    backgroundColor: '#FFEBEE',
+    borderWidth: 2, 
+    borderColor: '#808080ff'
   },
   adContent: {
     height: 80,
@@ -214,10 +241,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333'
-  },
-  adSubText: {
-    fontSize: 12,
-    color: '#555'
   },
 
   // 그룹 리스트
@@ -239,7 +262,7 @@ const styles = StyleSheet.create({
   groupImage: {
     width: 55,
     height: 55,
-    borderRadius: 30, // 원 모양
+    borderRadius: 30,
     borderWidth: 1,
     borderColor: '#ddd'
   },
@@ -276,7 +299,7 @@ const styles = StyleSheet.create({
   },
   pinButton: {
     marginRight: 8,
-    padding: 5 // 터치 영역 확장
+    padding: 5
   },
   
   // 그룹 추가 버튼
@@ -295,6 +318,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
-    zIndex: 10 // 다른 요소 위에 표시
+    zIndex: 10
   }
 });

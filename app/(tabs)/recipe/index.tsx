@@ -111,7 +111,7 @@ const FavoriteRecipeGroup: React.FC<{ recipes: Recipe[], allCategories: Category
   if (recipes.length === 0) {
     return (
       <Text style={styles.noRecipeText}>
-        찜 목록에 등록된 레시피가 없습니다.
+        찜 목록에 등록된 레시피가{"\n"}없습니다.
       </Text>
     );
   }

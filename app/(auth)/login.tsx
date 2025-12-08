@@ -51,8 +51,9 @@ export default function LoginScreen() {
     }
     
     Alert.alert("성공", "이메일 로그인 성공 (임시)");
-    const mockToken = "mock_email_login_token"; 
-    await signIn(mockToken); 
+    const newToken = "email_login_token";
+    const refreshToken = "email_login_refresh_token";
+    await signIn(newToken, refreshToken); 
     router.replace('/(tabs)/home');
   };
   

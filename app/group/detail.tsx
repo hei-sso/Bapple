@@ -4,8 +4,9 @@ import { useRoute } from '@react-navigation/native';
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+    Alert,
     Dimensions,
     KeyboardAvoidingView,
     Platform,
@@ -14,81 +15,64 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Style
-import { Header } from '@/components/header'; // 헤더
-import { Calendar } from '@/components/week-calendar'; // 달력
-import { Styles } from '@/constants/styles'; // 공통
+import { Header } from '@/components/header';
+import { Calendar } from '@/components/week-calendar';
+import { Styles } from '@/constants/styles';
+
+// Context
+import { useGroups } from '@/context/groupContext';
+
+// Type
+import type { GroupRecipeItem, RecipeSchedule } from '@/types/groupTypes';
 
 const { width } = Dimensions.get('window');
-// 일요일(0)부터 시작
 const WEEK_STARTS_ON = 0 as const; 
 const dateToDateString = (date: Date): string => format(date, 'yyyy-MM-dd');
 const TODAY_STRING = dateToDateString(new Date());
-
-interface RecipeItem {
-    id: number;
-    group: string;
-    recipe: string;
-}
-
-// Mock Data
-const MOCK_RECIPES: Record<string, RecipeItem[]> = { 
-    '2025-11-24': [ 
-        { id: 1, group: '그룹 1', recipe: '김치찌개' },
-        { id: 2, group: '그룹 2', recipe: '비빔밥' },
-        { id: 5, group: '그룹 4', recipe: '잡채' }, 
-    ],
-    '2025-11-26': [
-        { id: 3, group: '나', recipe: '떡볶이' },
-        { id: 4, group: '그룹 2', recipe: '갈비찜' },
-        { id: 6, group: '그룹 3', recipe: '짜장면' },
-        { id: 7, group: '그룹 4', recipe: '부대찌개' },
-    ],
-    '2025-11-27': [
-        { id: 7, group: '나', recipe: '불고기' },
-        { id: 8, group: '그룹 2', recipe: '김밥' },
-    ],
-    '2025-11-29': [
-        { id: 7, group: '그룹 1', recipe: '볶음밥' },
-        { id: 8, group: '그룹 2', recipe: '연어 스테이크' },
-    ],
-};
 
 interface DayData {
     date: number;
     dateString: string;
     isToday: boolean;
     isSelected: boolean;
-    recipes: RecipeItem[];
+    recipes: GroupRecipeItem[]; 
     dayOfWeek: number;
 }
 
 // 일주일 날짜 데이터 생성
-const getWeekDays = (weekStartString: string, currentSelectedDateString: string): DayData[] => {
+const getWeekDays = (
+    weekStartString: string, 
+    currentSelectedDateString: string, 
+    schedules: RecipeSchedule[]
+): DayData[] => {
     const startDay = new Date(weekStartString);
     const days: DayData[] = [];
+
+    const schedulesMap = new Map(schedules.map(s => [s.date, s]));
     
     for (let i = 0; i < 7; i++) {
         const day = addDays(startDay, i);
         const dateString = dateToDateString(day);
         
+        const recipeSchedule = schedulesMap.get(dateString);
+
         days.push({
             date: day.getDate(),
             dateString: dateString,
             isToday: dateString === TODAY_STRING,
             isSelected: dateString === currentSelectedDateString,
-            recipes: MOCK_RECIPES[dateString] || [],
+            recipes: recipeSchedule ? recipeSchedule.recipes : [],
             dayOfWeek: day.getDay()
         });
     }
     return days;
 };
 
-// 초기 메모장 내용 (빈 칸)
 const initialMemo = '';
 
 // 메인 컴포넌트
@@ -96,9 +80,20 @@ export default function GroupDetailScreen() {
     const router = useRouter(); 
     const route = useRoute();
     const insets = useSafeAreaInsets();
+    const { fetchSchedulesForWeek, groupSchedules } = useGroups();
 
-    // @ts-ignore: groupName 타입은 동적으로 넘어오므로 임시로 사용
-    const { groupName = '그룹 상세' } = route.params || {};
+    // groupName과 groupId를 필수 값으로 간주하며, 없을 경우 오류 처리 (그룹 목록에서만 진입하도록 보장)
+    const params = route.params as { groupName?: string; groupId?: string } || {};
+    const groupId = params.groupId;
+    const groupName = params.groupName || '그룹 상세';
+
+    // 필수 값 체크 (groupId가 없으면 뒤로 돌아가거나 경고)
+    useEffect(() => {
+        if (!groupId) {
+            Alert.alert("오류", "그룹 정보 없이 상세 화면에 접근했습니다.", [{ text: "확인", onPress: () => router.back() }]);
+        }
+    }, [groupId, router]);
+
 
     // 달력 상태 관리
     const initialDateString = TODAY_STRING;
@@ -106,12 +101,29 @@ export default function GroupDetailScreen() {
 
     const [currentDateString, setCurrentDateString] = useState(initialDateString);
     const [currentWeekStartDate, setCurrentWeekStartDate] = useState(initialWeekStart);
-
+    
+    const currentWeekStartString = useMemo(() => dateToDateString(currentWeekStartDate), [currentWeekStartDate]);
+    
     // 메모장 상태 관리
     const [memoText, setMemoText] = useState(initialMemo);
     const MAX_MEMO_LENGTH = 100;
+    
+    // 주간 스케줄 데이터 로드 (Context 연동)
+    useEffect(() => {
+        // 유효한 groupId가 있을 때만 스케줄을 로드
+        if (groupId) {
+            fetchSchedulesForWeek(currentWeekStartString);
+        }
+    }, [currentWeekStartString, fetchSchedulesForWeek, groupId]);
 
-    const weekDays = useMemo(() => getWeekDays(dateToDateString(currentWeekStartDate), currentDateString), [currentWeekStartDate, currentDateString]);
+    // Context에서 현재 주차의 스케줄 데이터 가져오기
+    const schedulesForCurrentWeek = groupSchedules[currentWeekStartString] || [];
+
+    // 주간 달력 데이터 생성 (스케줄 데이터 기반)
+    const weekDays = useMemo(() => 
+        getWeekDays(currentWeekStartString, currentDateString, schedulesForCurrentWeek), 
+        [currentWeekStartString, currentDateString, schedulesForCurrentWeek]
+    );
     
     const handleGoBack = () => {
         router.back();
@@ -122,32 +134,43 @@ export default function GroupDetailScreen() {
         setCurrentWeekStartDate(prev => {
             const newWeekStart = delta > 0 ? addWeeks(prev, 1) : subWeeks(prev, 1);
             
-            // 선택된 날짜가 새 주로 이동하도록 조정 (같은 요일 유지)
-            const newSelectedDate = addDays(newWeekStart, new Date(currentDateString).getDay());
+            const dayOfWeek = new Date(currentDateString).getDay();
+            const newSelectedDate = addDays(newWeekStart, dayOfWeek);
             setCurrentDateString(dateToDateString(newSelectedDate));
 
             return newWeekStart;
         });
     }, [currentDateString]);
 
-    // 현재 선택된 날짜의 레시피 목록 (선택된 그룹에 해당하는 레시피만 필터링)
+    // 현재 선택된 날짜의 레시피 목록 (groupId로 필터링)
     const currentRecipes = useMemo(() => {
-        const recipesForDate = MOCK_RECIPES[currentDateString] || [];
-        return recipesForDate.filter(recipe => recipe.group === groupName);
-    }, [currentDateString, groupName]); 
+        if (!groupId) return []; // groupId가 없으면 빈 배열
+        
+        const selectedDay = schedulesForCurrentWeek.find(s => s.date === currentDateString);
+        if (!selectedDay) return [];
+        
+        // 그룹 ID로 필터링
+        return selectedDay.recipes.filter(recipe => recipe.groupId === groupId); 
+        
+    }, [currentDateString, schedulesForCurrentWeek, groupId]); 
     
-    const RECIPE_CARD_WIDTH = width * 0.87; // 레시피 상세 카드 가로 길이 조정
+    const RECIPE_CARD_WIDTH = width * 0.87;
 
     // 추천 레시피의 아이디와 이름을 recipe/detail.tsx로 전달
-    const handleRecipeDetail = (recipe: { id: number; recipe: string }) => {
+    const handleRecipeDetail = (recipe: GroupRecipeItem) => {
         router.push({
             pathname: '/recipe/detail',
             params: {
                 id: recipe.id.toString(),
-                name: recipe.recipe, // MOCK_RECIPES 구조상 name이 아니라 recipe임
+                name: recipe.recipeName, 
             },
         });
     };
+    
+    // groupId가 없으면 아무것도 렌더링하지 않고 useEffect에서 Alert 처리
+    if (!groupId) {
+        return <View style={Styles.container} />;
+    }
 
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -188,7 +211,10 @@ export default function GroupDetailScreen() {
                         <View style={Calendar.weekCalendarGrid}>
                             {weekDays.map(dayData => {
                                 // 찌부 방지
-                                const cellWidth = (width - (24 * 2) - 1) / 7; // 달력 칸 넓이 조정
+                                const cellWidth = (width - (24 * 2) - 1) / 7;
+
+                                // 현재 그룹에 해당하는 레시피만 카운트
+                                const recipeCount = dayData.recipes.filter(r => r.groupId === groupId).length; 
 
                                 return (
                                 <TouchableOpacity 
@@ -203,20 +229,18 @@ export default function GroupDetailScreen() {
                                 >
                                     <View style={[ 
                                     Calendar.dayNumberContainer,
-                                    // 선택됐을 때 검은 동그라미
                                     dayData.isSelected && Calendar.todayIndicator, 
                                     ]}>
                                     <Text style={[
                                         Calendar.weekDayNumber,
-                                        // 선택된 날짜는 흰색 글씨
                                         dayData.isSelected && Calendar.todayText, 
                                     ]}>{dayData.date}</Text>
                                     </View>
                                     
                                     {/* 레시피 카운트 */}
-                                    {dayData.recipes.filter(r => r.group === groupName).length > 0 && (
+                                    {recipeCount > 0 && (
                                     <View style={Calendar.weekRecipeCountContainer}>
-                                        <Text style={Calendar.weekRecipeCountText}>{dayData.recipes.filter(r => r.group === groupName).length}</Text>
+                                        <Text style={Calendar.weekRecipeCountText}>{recipeCount}</Text>
                                     </View>
                                     )}
                                 </TouchableOpacity>
@@ -228,7 +252,6 @@ export default function GroupDetailScreen() {
                     {/* 레시피 상세 카드 (가로 스크롤) */}
                     <View>
                         <Text style={styles.recipeListTitle}>
-                            {/* 제목 변경 및 필터링된 개수 표시 */}
                             {currentDateString} (총 {currentRecipes.length}개)
                         </Text>
                         
@@ -246,7 +269,7 @@ export default function GroupDetailScreen() {
                                         >
                                             {/* 레시피 카드 */}
                                             <View style={styles.recipeCardContent}>
-                                                <Text style={styles.recipeName}>{recipeItem.recipe}</Text>
+                                                <Text style={styles.recipeName}>{recipeItem.recipeName}</Text> 
                                                 <View style={styles.recipeImagePlaceholder} />
                                             </View>
                                         </View>

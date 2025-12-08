@@ -113,7 +113,7 @@ const MyFridgeGroup: React.FC<{ ingredients: Ingredient[], allCategories: Catego
   if (ingredients.length === 0) {
     return (
       <Text style={styles.noIngredientText}>
-        냉장고에 등록된 재료가 없습니다.
+        냉장고에 등록된 재료가{"\n"}없습니다.
       </Text>
     );
   }
