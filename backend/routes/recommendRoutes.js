@@ -3,35 +3,40 @@ import axios from "axios";
 import db from '../db.js';
 import defaults from "../config/recommendDefaults.js";
 import { refillRecommendationsForBatch } from "../services/recommendRefillService.js";
-// [추가됨] 배치 데이터 동기화 서비스 임포트
 import { syncUserToBatch } from '../services/recommendationService.js';
 
 const router = express.Router();
 const AI_BASE_URL = process.env.AI_SERVICE_BASE_URL; 
 
 // 1) 단일 추천 리스트 (오늘 먹을 레시피 추천)
-// POST /api/recommend
 router.post("/", async (req, res) => {
   try {
     const body = req.body;
-
-    // FastAPI로 그대로 전달
     const response = await axios.post(`${AI_BASE_URL}/recommend`, body, {
       headers: { "Content-Type": "application/json" }
     });
-
-    return res.json({
-      success: true,
-      data: response.data,
-    });
-
-    } catch (err) {
+    return res.json({ success: true, data: response.data });
+  } catch (err) {
     console.error("FastAPI /recommend 호출 실패:", err.response?.data || err.message);
+    return res.status(500).json({ success: false, message: "AI 추천 서버 호출 실패", error: err.message });
+  }
+});
 
-    return res.status(500).json({
-      success: false,
-      message: "AI 추천 서버 호출 실패",
-      error: e성
+// 2) 주간 식단 추천 (7일 × N끼니)
+router.post("/week", async (req, res) => {
+  try {
+    const body = req.body;
+    const response = await axios.post(`${AI_BASE_URL}/recommend/week`, body, {
+      headers: { "Content-Type": "application/json" }
+    });
+    return res.json({ success: true, data: response.data });
+  } catch (err) {
+    console.error("FastAPI /recommend/week 호출 실패:", err.response?.data || err.message);
+    return res.status(500).json({ success: false, message: "AI 주간추천 서버 호출 실패", error: err.message });
+  }
+});
+
+// /week/start 라우터
 router.post("/week/start", async (req, res) => {
   console.log(">>> [POST] /api/recommend/week/start 요청 받음"); 
   const { user_id, cuisine, diet, days, meals_per_day, top_k } = req.body;
@@ -43,12 +48,10 @@ router.post("/week/start", async (req, res) => {
   const conn = await db.getConnection();
 
   try {
-    // 기존 배치 삭제 & 최신 데이터(냉장고/건강)로 재생성
-    // 이 함수가 실행되면 user_recommendation_batch 테이블에 
-    // 현재 유저의 최신 재료(이름), 알러지(이름) 등이 저장됨.
+    // 1. 최신 데이터 동기화
     await syncUserToBatch(user_id); 
 
-    // 2. 방금 새로 만든 따끈따끈한 배치 데이터 조회
+    // 2. 배치 데이터 조회
     const [batchRows] = await conn.query(
       `SELECT id, diseases_json, allergies_json, fridge_ings_json 
        FROM user_recommendation_batch 
@@ -64,7 +67,7 @@ router.post("/week/start", async (req, res) => {
     const batchData = batchRows[0];
     const batchId = batchData.id;
 
-    // 데이터 파싱 (DB에는 JSON 문자열로 저장됨 -> 객체로 변환)
+    // 데이터 파싱
     const diseases = batchData.diseases_json ? JSON.parse(batchData.diseases_json) : [];
     const allergies = batchData.allergies_json ? JSON.parse(batchData.allergies_json) : [];
     const fridge_ings = batchData.fridge_ings_json ? JSON.parse(batchData.fridge_ings_json) : [];
@@ -72,14 +75,14 @@ router.post("/week/start", async (req, res) => {
     console.log(`[DEBUG] New Batch ID: ${batchId}`);
     console.log(`[DEBUG] AI로 보낼 최신 재료 목록:`, fridge_ings);
 
-    // 3. AI 요청 Payload 구성 (DB에서 가져온 최신 데이터 사용)
+    // 3. AI 요청 Payload
     const aiPayload = {
       cuisine: cuisine ?? defaults.cuisine,
       diet: diet ?? defaults.diet,
-      diseases: diseases,       // DB 최신값
+      diseases: diseases,
       tags: defaults.tags,
-      allergies: allergies,     // DB 최신값
-      fridge_ings: fridge_ings, // DB 최신값 (재료 이름 리스트)
+      allergies: allergies,
+      fridge_ings: fridge_ings,
       days: days ?? defaults.days,
       meals_per_day: meals_per_day ?? defaults.meals_per_day,
       top_k: top_k ?? defaults.top_k,
@@ -108,7 +111,7 @@ router.post("/week/start", async (req, res) => {
       uniqueItems.push(item);
     }
 
-    // DB에 있는 레시피인지 검증 및 저장
+    // DB 검증 및 저장
     if(uniqueItems.length > 0){
       const recipeIds = uniqueItems.map((i)=> i.recipe_id);
       const [existingRecipes] = await conn.query(
@@ -122,7 +125,7 @@ router.post("/week/start", async (req, res) => {
         const values = filteredItems.map((item, idx) => [
           batchId,
           item.recipe_id,
-          idx + 1, // rank_no
+          idx + 1,
         ]);
 
         await conn.query(
@@ -130,14 +133,10 @@ router.post("/week/start", async (req, res) => {
           [values]
         );
         console.log(`[DEBUG] 추천 아이템 ${values.length}개 저장 완료`);
-      } else {
-        console.warn("AI 추천 결과 중 로컬 DB에 있는 레시피가 없습니다.");
       }
-    } else {
-        console.warn("AI 응답에 유효한 아이템이 없습니다.");
     }
 
-    // 5. 결과 조회 (상위 10개)
+    // 결과 조회
     const [first10] = await conn.query(
       `
         SELECT
@@ -159,7 +158,7 @@ router.post("/week/start", async (req, res) => {
       [batchId]
     );
 
-    // 6. 보여줌 처리 (is_shown = 1)
+    // 보여줌 처리
     const showIds = first10.map((row) => row.recommendation_item_id);
     if(showIds.length > 0){
       await conn.query(
@@ -170,7 +169,6 @@ router.post("/week/start", async (req, res) => {
     
     await conn.commit();
 
-    // 7. 최종 응답
     return res.status(201).json({
       success: true,
       batch_id: batchId,
@@ -180,13 +178,13 @@ router.post("/week/start", async (req, res) => {
   } catch (err) {
     console.error("/week/start error:", err);
     if (conn) await conn.rollback();
-    return res.status(500).json({ message: "추천 생성 중 오류가 발생했습니다.", error: err.message });
+    return res.status(500).json({ message: "추천 생성 실패", error: err.message });
   } finally {
     if (conn) conn.release();
   }
 });
 
-// week/next (기존 로직 유지)
+// week/next
 router.post("/week/next", async (req, res) => {
   const { batch_id, selected_recipe_ids = [] } = req.body;
 
@@ -199,7 +197,6 @@ router.post("/week/next", async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    // 1) 선택 처리
     if (selected_recipe_ids.length > 0) {
       await conn.query(
         `UPDATE user_recommendation_item SET is_selected = 1, selected_at = NOW() WHERE batch_id = ? AND recipe_id IN (?)`,
@@ -207,7 +204,6 @@ router.post("/week/next", async (req, res) => {
       );
     }
 
-    // 2) 거절 처리 (보여줬는데 선택 안 한 것들)
     await conn.query(
       `UPDATE user_recommendation_item SET is_rejected = 1, rejected_at = NOW() WHERE batch_id = ? AND is_shown = 1 AND is_selected = 0 AND is_rejected = 0`,
       [batch_id]
@@ -215,7 +211,6 @@ router.post("/week/next", async (req, res) => {
 
     const NEED_COUNT = 10;
 
-    // 3) 다음 후보 조회
     let [next10] = await conn.query(
       `
         SELECT
@@ -237,7 +232,6 @@ router.post("/week/next", async (req, res) => {
       [batch_id, NEED_COUNT]
     );
 
-    // 4) 부족하면 리필 (Refill)
     if (next10.length < NEED_COUNT) {
       console.log(`>>> batch ${batch_id}: 리필 시도...`);
       await refillRecommendationsForBatch(conn, batch_id);
@@ -268,7 +262,6 @@ router.post("/week/next", async (req, res) => {
       }
     }
 
-    // 5) 보여준 상태로 변경
     const showIds = next10.map((row) => row.recommendation_item_id);
     if (showIds.length > 0) {
       await conn.query(
@@ -287,7 +280,7 @@ router.post("/week/next", async (req, res) => {
   } catch (err) {
     console.error("/week/next error:", err);
     if (conn) await conn.rollback();
-    return res.status(500).json({ message: "다음 추천 생성 중 오류가 발생했습니다." });
+    return res.status(500).json({ message: "다음 추천 오류" });
   } finally {
     if (conn) conn.release();
   }
