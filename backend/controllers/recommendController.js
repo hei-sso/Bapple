@@ -6,33 +6,64 @@ import { syncUserToBatch } from '../services/recommendationService.js';
 
 const AI_BASE_URL = process.env.AI_SERVICE_BASE_URL;
 
+// [헬퍼] JSON 파싱 안전 함수
+const safeJSONParse = (str, fallback = []) => {
+  try {
+    return str ? JSON.parse(str) : fallback;
+  } catch (e) {
+    console.error("JSON Parse Warning:", e.message, "Input:", str);
+    return fallback;
+  }
+};
+
 // 1) 단일 추천 리스트 (POST /api/recommend)
 export const getSingleRecommendation = async (req, res) => {
   try {
+    if (!AI_BASE_URL) throw new Error("AI_SERVICE_BASE_URL 환경변수가 설정되지 않았습니다.");
+
     const body = req.body;
+    console.log(">>> [POST] /recommend (Single) 요청");
+
     const response = await axios.post(`${AI_BASE_URL}/recommend`, body, {
       headers: { "Content-Type": "application/json" }
     });
     return res.json({ success: true, data: response.data });
   } catch (err) {
-    console.error("FastAPI /recommend 호출 실패:", err.response?.data || err.message);
+    console.error("FastAPI /recommend 호출 실패:");
+    if (err.response) {
+      console.error("   Status:", err.response.status);
+      console.error("   Data:", err.response.data);
+    } else {
+      console.error("   Error:", err.message);
+    }
     return res.status(500).json({ success: false, message: "AI 추천 서버 호출 실패", error: err.message });
   }
 };
 
 // 2) 주간 식단 추천 통합 (동기화 + 생성 + 저장 + 조회)
-// 설명: /week 요청 하나로 모든 추천 프로세스를 처리합니다.
 export const getWeeklyRecommendation = async (req, res) => {
-  // POST body에서 데이터 추출 (Query 아님)
+  // POST body에서 데이터 추출
   const { cuisine, diet, days, meals_per_day, top_k } = req.body;
-  const user_id = req.user.userId; // 토큰에서 추출한 ID 사용
+  
+  // [수정] req.user가 undefined일 경우 방지
+  const user_id = req.user?.userId; 
 
-  console.log(`>>> [POST] /api/recommend/week 요청 (User: ${user_id})`);
+  console.log(`>>> [POST] /api/recommend/week 요청 시작 (User: ${user_id})`);
+
+  // [수정] 중요 설정 체크
+  if (!AI_BASE_URL) {
+    console.error("오류: .env 파일에 AI_SERVICE_BASE_URL이 없습니다.");
+    return res.status(500).json({ message: "서버 설정 오류: AI URL 미설정" });
+  }
+  if (!user_id) {
+    return res.status(401).json({ message: "유효하지 않은 사용자 토큰입니다." });
+  }
 
   const conn = await db.getConnection();
 
   try {
-    // 1. 최신 데이터 동기화 (기존 배치 삭제 및 재생성)
+    // 1. 최신 데이터 동기화
+    console.log("--- 1. 데이터 동기화 (syncUserToBatch) ---");
     await syncUserToBatch(user_id);
 
     // 2. 배치 데이터 조회
@@ -45,18 +76,19 @@ export const getWeeklyRecommendation = async (req, res) => {
     );
 
     if (batchRows.length === 0) {
-      throw new Error("배치 데이터 생성 실패 (동기화 오류)");
+      throw new Error("배치 데이터 생성 실패 (동기화 로직 확인 필요)");
     }
 
     const batchData = batchRows[0];
     const batchId = batchData.id;
 
-    const diseases = batchData.diseases_json ? JSON.parse(batchData.diseases_json) : [];
-    const allergies = batchData.allergies_json ? JSON.parse(batchData.allergies_json) : [];
-    const fridge_ings = batchData.fridge_ings_json ? JSON.parse(batchData.fridge_ings_json) : [];
+    // [수정] JSON 파싱 안전 처리 (여기서 에러나면 서버 500 뜸)
+    const diseases = safeJSONParse(batchData.diseases_json);
+    const allergies = safeJSONParse(batchData.allergies_json);
+    const fridge_ings = safeJSONParse(batchData.fridge_ings_json);
 
-    console.log(`[DEBUG] New Batch ID: ${batchId}`);
-    console.log(`[DEBUG] AI로 보낼 재료:`, fridge_ings);
+    console.log(`[DEBUG] Batch ID: ${batchId}`);
+    console.log(`[DEBUG] AI 전송 재료(${fridge_ings.length}개):`, fridge_ings);
 
     // 3. AI 요청 Payload
     const aiPayload = {
@@ -72,13 +104,26 @@ export const getWeeklyRecommendation = async (req, res) => {
     };
 
     // 4. AI 서버 호출
-    const aiRes = await axios.post(
-      `${AI_BASE_URL}/recommend/week`, aiPayload,
-      { timeout: 20000 }
-    );
+    console.log(`--- 2. AI 서버 호출 (${AI_BASE_URL}/recommend/week) ---`);
+    
+    let aiRes;
+    try {
+        aiRes = await axios.post(
+            `${AI_BASE_URL}/recommend/week`, aiPayload,
+            { timeout: 20000 } // 20초 타임아웃
+        );
+    } catch (axiosErr) {
+        console.error("AI 서버 통신 에러 발생!");
+        console.error("   Message:", axiosErr.message);
+        if (axiosErr.response) {
+            console.error("   Status:", axiosErr.response.status);
+            console.error("   Response Data:", axiosErr.response.data);
+        }
+        throw new Error(`AI 서버 오류: ${axiosErr.message}`);
+    }
 
     const items = aiRes.data.items || [];
-    console.log("AI return items length:", items.length);
+    console.log("AI 응답 완료. 수신된 레시피 수:", items.length);
 
     await conn.beginTransaction();
 
@@ -95,6 +140,8 @@ export const getWeeklyRecommendation = async (req, res) => {
     // DB 검증 및 저장
     if (uniqueItems.length > 0) {
       const recipeIds = uniqueItems.map((i) => i.recipe_id);
+      
+      // 실제 존재하는 레시피인지 확인
       const [existingRecipes] = await conn.query(
         `SELECT recipe_id FROM recipe WHERE recipe_id IN (?)`,
         [recipeIds]
@@ -113,8 +160,9 @@ export const getWeeklyRecommendation = async (req, res) => {
           `INSERT INTO user_recommendation_item (batch_id, recipe_id, rank_no) VALUES ?`,
           [values]
         );
+        console.log(`   -> DB 저장 완료: ${filteredItems.length}건`);
       } else {
-        console.warn("No valid recipe_ids found in recipe table for this batch.");
+        console.warn("경고: AI가 추천한 레시피 ID가 DB에 하나도 없습니다.");
       }
     }
 
@@ -151,6 +199,7 @@ export const getWeeklyRecommendation = async (req, res) => {
 
     await conn.commit();
 
+    console.log("추천 로직 정상 종료. 클라이언트로 응답 전송.");
     return res.status(201).json({
       success: true,
       batch_id: batchId,
@@ -158,9 +207,12 @@ export const getWeeklyRecommendation = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("/week error:", err);
+    console.error("[Critical] /week 처리 중 예외 발생:", err);
     if (conn) await conn.rollback();
-    return res.status(500).json({ message: "추천 생성 중 오류가 발생했습니다.", error: err.message });
+    return res.status(500).json({ 
+        message: "추천 생성 중 서버 오류가 발생했습니다.", 
+        error: err.message 
+    });
   } finally {
     if (conn) conn.release();
   }
@@ -215,7 +267,7 @@ export const getNextWeeklyRecommendation = async (req, res) => {
     );
 
     if (next10.length < NEED_COUNT) {
-      console.log(`>>> batch ${batch_id}: refill 시도...`);
+      console.log(`>>> batch ${batch_id}: 리필(Refill) 시도...`);
       await refillRecommendationsForBatch(conn, batch_id);
 
       const remain = NEED_COUNT - next10.length;
@@ -260,7 +312,7 @@ export const getNextWeeklyRecommendation = async (req, res) => {
       items: next10,
     });
   } catch (err) {
-    console.error("/week/next error:", err);
+    console.error("/week/next 처리 중 오류:", err);
     if (conn) await conn.rollback();
     return res.status(500).json({ message: "다음 추천 생성 중 오류가 발생했습니다." });
   } finally {
