@@ -1,5 +1,3 @@
-// backend/controllers/groupController.js
-
 import pool from '../db.js';
 import crypto from 'crypto';
 
@@ -11,13 +9,13 @@ const generateInviteCode = () => {
 const groupController = {
     // 1. 내 그룹 목록 조회 (GET /groups/my)
     getMyGroups: async (req, res) => {
-      const userId = req.user.id || req.user.user_id;
+        // [수정] 유저 ID 추출 안전하게 변경 (id 또는 user_id)
+        const userId = req.user.id || req.user.user_id;
 
-      // 확인용 (필요 없으면 삭제)
-      if (!userId) {
-        console.error(" User ID not found in token:", req.user);
-      return res.status(401).json({ success: false, message: "인증 실패" });
-      }
+        if (!userId) {
+            console.error("❌ User ID not found in token:", req.user);
+            return res.status(401).json({ success: false, message: "인증 실패" });
+        }
 
         try {
             // user_group과 group_member 조인
@@ -61,7 +59,7 @@ const groupController = {
 
             res.json({ success: true, data: formattedGroups });
         } catch (error) {
-            console.error(' 그룹 조회 실패:', error);
+            console.error('그룹 조회 실패:', error);
             res.status(500).json({ success: false, message: '서버 오류 발생' });
         }
     },
@@ -70,24 +68,19 @@ const groupController = {
     createGroup: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
 
-        // 확인용 (필요 없으면 삭제)
         if (!userId) {
-          console.error(" User ID not found in token:", req.user);
-        return res.status(401).json({ success: false, message: "인증 실패" });
+            console.error("createGroup: User ID not found in token:", req.user);
+            return res.status(401).json({ success: false, message: "인증 실패" });
         }
-        // GroupCreationModal.tsx에서 보내주는 데이터
+
         const { name, description, isFridgeShared } = req.body;
-        
-        // 초대 코드 생성
         const inviteCode = generateInviteCode();
 
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
 
-            // A. 그룹 생성 (user_group)
-            // visibility는 텍스트 파일 기준 ENUM('PRIVATE', 'INVITE_ONLY'...)
-            // 여기서는 기본값 'PRIVATE'으로 설정하거나 'INVITE_ONLY'로 설정
+            // A. 그룹 생성
             const [groupResult] = await connection.query(
                 `INSERT INTO user_group 
                 (name, description, owner_user_id, invite_code, is_fridge_shared, visibility, created_at) 
@@ -96,8 +89,7 @@ const groupController = {
             );
             const newGroupId = groupResult.insertId;
 
-            // B. 멤버(방장) Insert (group_member)
-            // role은 ENUM('OWNER', 'MEMBER'...)
+            // B. 멤버(방장) 추가
             await connection.query(
                 `INSERT INTO group_member (group_id, user_id, role, joined_at, is_pinned) 
                  VALUES (?, ?, 'OWNER', NOW(), 0)`,
@@ -106,7 +98,6 @@ const groupController = {
 
             await connection.commit();
 
-            // C. 응답 데이터 구성
             const newGroupData = {
                 id: newGroupId.toString(),
                 name,
@@ -124,8 +115,8 @@ const groupController = {
             res.json({ success: true, data: newGroupData });
         } catch (error) {
             await connection.rollback();
-            console.error(' 그룹 생성 실패:', error);
-            res.status(500).json({ success: false, message: '그룹 생성 실패' });
+            console.error('그룹 생성 실패:', error);
+            res.status(500).json({ success: false, message: '그룹 생성 실패', error: error.message });
         } finally {
             connection.release();
         }
@@ -135,10 +126,9 @@ const groupController = {
     joinGroup: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
 
-        // 확인용 (필요 없으면 삭제)
         if (!userId) {
-          console.error(" User ID not found in token:", req.user);
-        return res.status(401).json({ success: false, message: "인증 실패" });
+            console.error("joinGroup: User ID not found in token:", req.user);
+            return res.status(401).json({ success: false, message: "인증 실패" });
         }
 
         const { invite_code } = req.body;
@@ -190,10 +180,9 @@ const groupController = {
     togglePin: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
 
-        // 확인용 (필요 없으면 삭제)
         if (!userId) {
-          console.error(" User ID not found in token:", req.user);
-        return res.status(401).json({ success: false, message: "인증 실패" });
+            console.error("togglePin: User ID not found in token:", req.user);
+            return res.status(401).json({ success: false, message: "인증 실패" });
         }
 
         const { groupId } = req.params;
@@ -215,31 +204,24 @@ const groupController = {
     addSchedule: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
 
-        // 확인용 (필요 없으면 삭제)
         if (!userId) {
-          console.error(" User ID not found in token:", req.user);
-        return res.status(401).json({ success: false, message: "인증 실패" });
+            console.error("addSchedule: User ID not found in token:", req.user);
+            return res.status(401).json({ success: false, message: "인증 실패" });
         }
 
         // recipeAPI.ts에서 보내주는 데이터
         const { recipeId, date, groupId } = req.body;
-
-        // 'personal'이면 NULL, 아니면 groupId
         const finalGroupId = (groupId === 'personal' || !groupId) ? null : groupId;
 
         try {
             let recipeName = '나의 레시피';
             try {
-                // recipe 테이블 (recipe_id가 PK라고 가정)
                 const [recipes] = await pool.query('SELECT name FROM recipe WHERE recipe_id = ?', [recipeId]);
                 if (recipes.length > 0) recipeName = recipes[0].name;
             } catch (e) {
-                console.warn('⚠️ Recipe 테이블 조회 실패:', e.message);
+                console.warn('Recipe 테이블 조회 실패:', e.message);
             }
 
-            // [중요] meal_plan 테이블의 meal_type은 NOT NULL입니다.
-            // 현재 프론트엔드 UI에는 끼니 선택(아침/점심/저녁)이 없으므로, 기본값 'DINNER'를 설정합니다.
-            // 추후 프론트엔드 업데이트 시 req.body.mealType 등으로 받아야 합니다.
             const [result] = await pool.query(
                 `INSERT INTO meal_plan 
                 (user_id, recipe_id, plan_date, group_id, title, meal_type, created_at)
@@ -247,8 +229,6 @@ const groupController = {
                 [userId, recipeId, date, finalGroupId, recipeName]
             );
 
-            // 프론트엔드 응답 (GroupRecipeItem 형태)
-            // id 값은 meal_plan_id (Auto Increment)
             res.json({
                 success: true,
                 data: {
@@ -270,16 +250,16 @@ const groupController = {
     getMySchedules: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
 
-        // 확인용 (필요 없으면 삭제)
         if (!userId) {
-          console.error(" User ID not found in token:", req.user);
-        return res.status(401).json({ success: false, message: "인증 실패" });
+            console.error("getMySchedules: User ID not found in token:", req.user);
+            return res.status(401).json({ success: false, message: "인증 실패" });
         }
 
         const { week_start_date } = req.query;
 
         try {
-            // meal_plan 테이블 기준 조회 (PK: meal_plan_id)
+            // [수정] r.rating 제거 (DB에 없으므로)
+            // r.time도 혹시 에러가 난다면 삭제해야 하지만 일단 유지
             const query = `
                 SELECT 
                     mp.meal_plan_id, 
@@ -289,8 +269,7 @@ const groupController = {
                     mp.title,
                     mp.meal_type,
                     r.name as recipe_name,
-                    r.rating,
-                    r.time as cook_time
+                    r.time as cook_time 
                 FROM meal_plan mp
                 LEFT JOIN recipe r ON mp.recipe_id = r.recipe_id
                 LEFT JOIN group_member gm ON mp.group_id = gm.group_id AND gm.user_id = ?
@@ -303,7 +282,6 @@ const groupController = {
 
             const [rows] = await pool.query(query, [userId, userId]);
 
-            // DB 결과(Flat) -> 프론트엔드 구조(Nested Date Key)로 변환
             const groupedSchedules = rows.reduce((acc, row) => {
                 const dateKey = row.plan_date_str;
                 
@@ -314,11 +292,11 @@ const groupController = {
                 }
 
                 dayGroup.recipes.push({
-                    id: row.meal_plan_id.toString(), // PK 매핑
+                    id: row.meal_plan_id.toString(),
                     recipeName: row.recipe_name || row.title || '알 수 없는 레시피',
                     groupId: row.group_id ? row.group_id.toString() : null,
                     memberId: row.user_id.toString(),
-                    rating: row.rating || 0,
+                    rating: 0, // [수정] DB에 없으므로 0점 고정
                     cookTimeMinutes: row.cook_time || 0
                 });
 
@@ -328,7 +306,7 @@ const groupController = {
             res.json({ success: true, data: groupedSchedules });
         } catch (error) {
             console.error('스케줄 조회 실패:', error);
-            res.status(500).json({ success: false, message: '스케줄 로드 실패' });
+            res.status(500).json({ success: false, message: '스케줄 로드 실패', error: error.message });
         }
     },
 
@@ -336,16 +314,14 @@ const groupController = {
     deleteSchedule: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
 
-        // 확인용 (필요 없으면 삭제)
         if (!userId) {
-          console.error(" User ID not found in token:", req.user);
-        return res.status(401).json({ success: false, message: "인증 실패" });
+            console.error("deleteSchedule: User ID not found in token:", req.user);
+            return res.status(401).json({ success: false, message: "인증 실패" });
         }
 
         const { scheduleId } = req.params;
 
         try {
-            // meal_plan 테이블의 PK는 meal_plan_id 입니다.
             const [result] = await pool.query(
                 'DELETE FROM meal_plan WHERE meal_plan_id = ? AND user_id = ?',
                 [scheduleId, userId]
