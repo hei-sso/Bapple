@@ -1,7 +1,7 @@
 import db from '../db.js';
 
 // 유저의 최신 상태(알러지, 질병, 냉장고 재료)를 모아 user_recommendation_batch 테이블에 저장하는 함수
-export const syncUserToBatch = async (user_id) => {
+export const syncUserToBatch = async (conn, user_id) => {
   try {
     // 1. [핵심] 기존 데이터 삭제 (중복 방지)
     // 이전에 저장된 유저의 상태를 지워야 DB 용량이 낭비되지 않습니다.
