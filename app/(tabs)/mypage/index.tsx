@@ -11,7 +11,7 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -55,10 +55,10 @@ export default function MyPageScreen() {
         router.push('/mypage/profile' as RedirectProps['href']);
     }, [router]);
 
-    // 친구 추가 버튼
+    // 친구 추가 버튼: friends.tsx 화면으로 라우팅 연결
     const handleAddFriend = useCallback(() => {
-        console.log("친구 추가하기 버튼 클릭");
-    }, []);
+        router.push('/mypage/friends' as RedirectProps['href']);
+    }, [router]);
 
     // 건강 정보/냉장고 공개 범위 설정
     const handleNavigation = useCallback((path: string) => {
