@@ -1,4 +1,3 @@
-// controllers/recommendController.js
 import axios from "axios";
 import db from '../db.js';
 import defaults from "../config/recommendDefaults.js";
@@ -21,28 +20,14 @@ export const getSingleRecommendation = async (req, res) => {
   }
 };
 
-// 2) 주간 식단 추천 (POST /api/recommend/week)
+// 2) 주간 식단 추천 통합 (동기화 + 생성 + 저장 + 조회)
+// 설명: /week 요청 하나로 모든 추천 프로세스를 처리합니다.
 export const getWeeklyRecommendation = async (req, res) => {
-  try {
-    const body = req.body;
-    const response = await axios.post(`${AI_BASE_URL}/recommend/week`, body, {
-      headers: { "Content-Type": "application/json" }
-    });
-    return res.json({ success: true, data: response.data });
-  } catch (err) {
-    console.error("FastAPI /recommend/week 호출 실패:", err.response?.data || err.message);
-    return res.status(500).json({ success: false, message: "AI 주간추천 서버 호출 실패", error: err.message });
-  }
-};
+  // POST body에서 데이터 추출 (Query 아님)
+  const { cuisine, diet, days, meals_per_day, top_k } = req.body;
+  const user_id = req.user.userId; // 토큰에서 추출한 ID 사용
 
-// 3) 주간 추천 시작 (배치 생성 -> AI 호출 -> 저장) (POST /api/recommend/week/start)
-export const startWeeklyRecommendation = async (req, res) => {
-  console.log(">>> [POST] /api/recommend/week/start hit");
-  const { user_id, cuisine, diet, days, meals_per_day, top_k } = req.body;
-
-  if (!user_id) {
-    return res.status(400).json({ message: "user_id는 필수입니다." });
-  }
+  console.log(`>>> [POST] /api/recommend/week 요청 (User: ${user_id})`);
 
   const conn = await db.getConnection();
 
@@ -133,7 +118,7 @@ export const startWeeklyRecommendation = async (req, res) => {
       }
     }
 
-    // 결과 조회
+    // 결과 조회 (상위 10개)
     const [first10] = await conn.query(
       `
         SELECT
@@ -173,7 +158,7 @@ export const startWeeklyRecommendation = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("/week/start error:", err);
+    console.error("/week error:", err);
     if (conn) await conn.rollback();
     return res.status(500).json({ message: "추천 생성 중 오류가 발생했습니다.", error: err.message });
   } finally {
