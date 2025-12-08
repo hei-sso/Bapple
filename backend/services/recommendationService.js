@@ -5,7 +5,8 @@ export const syncUserToBatch = async (conn, user_id) => {
   try {
     // 1. [핵심] 기존 데이터 삭제 (중복 방지)
     // 이전에 저장된 유저의 상태를 지워야 DB 용량이 낭비되지 않습니다.
-    await conn.query('DELETE FROM user_recommendation_batch WHERE user_id = ?', [user_id]);
+    const deleteQuery = 'DELETE FROM user_recommendation_batch WHERE user_id = ?';
+    await conn.query(deleteQuery, [user_id]);
 
     // 2. 최신 데이터 수집 및 저장 (한방 쿼리)
     const query = `
