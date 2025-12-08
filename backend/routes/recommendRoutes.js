@@ -22,34 +22,28 @@ router.post("/", async (req, res) => {
   }
 });
 
-// 2) 주간 식단 추천 (7일 × N끼니)
+// 2) 주간 식단 추천 (통합됨: 배치 생성 + AI 호출 + 결과 저장)
+// [핵심] POST 요청이지만, 데이터는 req.query(URI 파라미터)에서 꺼냅니다.
 router.post("/week", async (req, res) => {
-  try {
-    const body = req.body;
-    const response = await axios.post(`${AI_BASE_URL}/recommend/week`, body, {
-      headers: { "Content-Type": "application/json" }
-    });
-    return res.json({ success: true, data: response.data });
-  } catch (err) {
-    console.error("FastAPI /recommend/week 호출 실패:", err.response?.data || err.message);
-    return res.status(500).json({ success: false, message: "AI 주간추천 서버 호출 실패", error: err.message });
-  }
-});
+  console.log(">>> [POST] /api/recommend/week 요청 받음 (Query Params 사용)"); 
+  
+  // req.body가 아니라 req.query에서 데이터를 꺼냄 (프론트가 URI에 담아 보내므로)
+  const { user_id } = req.query;
 
-// /week/start 라우터
-router.post("/week/start", async (req, res) => {
-  console.log(">>> [POST] /api/recommend/week/start 요청 받음"); 
-  const { user_id, cuisine, diet, days, meals_per_day, top_k } = req.body;
-
+  // req.query로 받은 값은 문자열일 수 있으므로 체크
   if(!user_id){
+    console.log(">>> [ERROR] user_id 누락됨");
     return res.status(400).json({message: "user_id는 필수입니다."});
   }
+
+  // 숫자형 변환 (URI 파라미터는 문자열로 옴)
+  const userIdNum = parseInt(user_id);
 
   const conn = await db.getConnection();
 
   try {
-    // 1. 최신 데이터 동기화
-    await syncUserToBatch(user_id); 
+    // 1. 최신 데이터 동기화 (냉장고, 건강정보 등)
+    await syncUserToBatch(userIdNum); 
 
     // 2. 배치 데이터 조회
     const [batchRows] = await conn.query(
@@ -57,7 +51,7 @@ router.post("/week/start", async (req, res) => {
        FROM user_recommendation_batch 
        WHERE user_id = ? 
        ORDER BY created_at DESC LIMIT 1`, 
-      [user_id]
+      [userIdNum]
     );
 
     if (batchRows.length === 0) {
@@ -73,9 +67,9 @@ router.post("/week/start", async (req, res) => {
     const fridge_ings = batchData.fridge_ings_json ? JSON.parse(batchData.fridge_ings_json) : [];
 
     console.log(`[DEBUG] New Batch ID: ${batchId}`);
-    console.log(`[DEBUG] AI로 보낼 최신 재료 목록:`, fridge_ings);
 
-    // 3. AI 요청 Payload
+    // 3. AI 요청 Payload 구성
+    // 쿼리 스트링으로 받은 값들은 문자열이므로 숫자로 변환 필요
     const aiPayload = {
       cuisine: cuisine ?? defaults.cuisine,
       diet: diet ?? defaults.diet,
@@ -83,12 +77,12 @@ router.post("/week/start", async (req, res) => {
       tags: defaults.tags,
       allergies: allergies,
       fridge_ings: fridge_ings,
-      days: days ?? defaults.days,
-      meals_per_day: meals_per_day ?? defaults.meals_per_day,
-      top_k: top_k ?? defaults.top_k,
+      days: days ? parseInt(days) : defaults.days,
+      meals_per_day: meals_per_day ? parseInt(meals_per_day) : defaults.meals_per_day,
+      top_k: top_k ? parseInt(top_k) : defaults.top_k,
     };
 
-    console.log("AI 호출 Payload:", JSON.stringify(aiPayload, null, 2));
+    console.log("AI 호출 Payload 일부:", { ...aiPayload, fridge_ings: `[재료 ${fridge_ings.length}개]` });
 
     // 4. AI 서버 호출
     const aiRes = await axios.post(
@@ -114,6 +108,8 @@ router.post("/week/start", async (req, res) => {
     // DB 검증 및 저장
     if(uniqueItems.length > 0){
       const recipeIds = uniqueItems.map((i)=> i.recipe_id);
+      
+      // 실제 존재하는 레시피인지 확인
       const [existingRecipes] = await conn.query(
         `SELECT recipe_id FROM recipe WHERE recipe_id IN (?)`,
         [recipeIds]
@@ -136,7 +132,7 @@ router.post("/week/start", async (req, res) => {
       }
     }
 
-    // 결과 조회
+    // 결과 조회 (cooking_time 컬럼명 수정 완료)
     const [first10] = await conn.query(
       `
         SELECT
@@ -144,7 +140,7 @@ router.post("/week/start", async (req, res) => {
           r.recipe_id,
           r.name,
           r.difficulty,
-          r.cooking_time,
+          r.cooking_time, 
           r.img_url
         FROM user_recommendation_item uri
         JOIN recipe r ON uri.recipe_id = r.recipe_id
@@ -158,7 +154,7 @@ router.post("/week/start", async (req, res) => {
       [batchId]
     );
 
-    // 보여줌 처리
+    // 보여줌(is_shown) 처리
     const showIds = first10.map((row) => row.recommendation_item_id);
     if(showIds.length > 0){
       await conn.query(
@@ -176,7 +172,7 @@ router.post("/week/start", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("/week/start error:", err);
+    console.error("/week error:", err);
     if (conn) await conn.rollback();
     return res.status(500).json({ message: "추천 생성 실패", error: err.message });
   } finally {
@@ -184,7 +180,7 @@ router.post("/week/start", async (req, res) => {
   }
 });
 
-// week/next
+// 3) 다음 추천 불러오기 (Refill)
 router.post("/week/next", async (req, res) => {
   const { batch_id, selected_recipe_ids = [] } = req.body;
 
@@ -197,6 +193,7 @@ router.post("/week/next", async (req, res) => {
   try {
     await conn.beginTransaction();
 
+    // 선택 처리
     if (selected_recipe_ids.length > 0) {
       await conn.query(
         `UPDATE user_recommendation_item SET is_selected = 1, selected_at = NOW() WHERE batch_id = ? AND recipe_id IN (?)`,
@@ -204,6 +201,7 @@ router.post("/week/next", async (req, res) => {
       );
     }
 
+    // 거절 처리 (이전에 보여줬는데 선택 안 된 것들)
     await conn.query(
       `UPDATE user_recommendation_item SET is_rejected = 1, rejected_at = NOW() WHERE batch_id = ? AND is_shown = 1 AND is_selected = 0 AND is_rejected = 0`,
       [batch_id]
@@ -232,6 +230,7 @@ router.post("/week/next", async (req, res) => {
       [batch_id, NEED_COUNT]
     );
 
+    // 부족하면 리필
     if (next10.length < NEED_COUNT) {
       console.log(`>>> batch ${batch_id}: 리필 시도...`);
       await refillRecommendationsForBatch(conn, batch_id);
@@ -262,6 +261,7 @@ router.post("/week/next", async (req, res) => {
       }
     }
 
+    // 새로 보여지는 것들 is_shown 처리
     const showIds = next10.map((row) => row.recommendation_item_id);
     if (showIds.length > 0) {
       await conn.query(

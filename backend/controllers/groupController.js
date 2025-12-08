@@ -13,7 +13,7 @@ const groupController = {
         const userId = req.user.id || req.user.user_id;
 
         if (!userId) {
-            console.error("❌ User ID not found in token:", req.user);
+            console.error("User ID not found in token:", req.user);
             return res.status(401).json({ success: false, message: "인증 실패" });
         }
 
@@ -269,7 +269,7 @@ const groupController = {
                     mp.title,
                     mp.meal_type,
                     r.name as recipe_name,
-                    r.time as cook_time 
+                    r.cooking_time as cook_time 
                 FROM meal_plan mp
                 LEFT JOIN recipe r ON mp.recipe_id = r.recipe_id
                 LEFT JOIN group_member gm ON mp.group_id = gm.group_id AND gm.user_id = ?

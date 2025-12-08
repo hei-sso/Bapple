@@ -51,11 +51,12 @@ app.get('/', (req, res) => {
 // 라우트 연결
 app.use("/api/auth", authRoutes);
 app.use("/user", userRoutes);
-app.use('/', groupRoutes);
 app.use('/fridge', fridgeRoutes);
 app.use("/api/recommend", recommendRoutes);
 app.use("/health", healthRoutes);
 app.use('/recipe', recipeRoutes);
+
+app.use('/', groupRoutes);
 
 // 서버 시작
 app.listen(PORT, '0.0.0.0', () => {
