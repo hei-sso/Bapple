@@ -71,7 +71,7 @@ export const getWeeklyRecommendation = async (req, res) => {
   try {
     // 2. 최신 데이터 동기화
     console.log("--- 1. 데이터 동기화 (syncUserToBatch) ---");
-    await syncUserToBatch(user_id);
+    await syncUserToBatch(conn, user_id);
 
     // 3. 배치 데이터 조회
     const [batchRows] = await conn.query(
