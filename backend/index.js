@@ -51,7 +51,7 @@ app.get('/', (req, res) => {
 // 라우트 연결
 app.use("/api/auth", authRoutes);
 app.use("/user", userRoutes);
-app.use('/api/group', groupRoutes);
+app.use('/', groupRoutes);
 app.use('/fridge', fridgeRoutes);
 app.use("/api/recommend", recommendRoutes);
 app.use("/health", healthRoutes);
