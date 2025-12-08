@@ -41,12 +41,12 @@ export const syncUserToBatch = async (user_id) => {
     `;
 
     // userId가 쿼리 내 ? 자리에 총 4번 들어갑니다.
-    await db.query(query, [userId, userId, userId, userId]);
+    await db.query(query, [user_id, user_id, user_id, user_id]);
     
-    console.log(`[Batch Sync] User ${userId} 데이터 동기화 완료 (재료 이름으로 갱신됨)`);
+    console.log(`[Batch Sync] User ${user_id} 데이터 동기화 완료 (재료 이름으로 갱신됨)`);
 
   } catch (error) {
     // 추천 데이터 저장이 실패하더라도 메인 기능(재료 추가 등)은 멈추면 안 되므로 로그만 남깁니다.
-    console.error(`[Batch Sync Error] User ${userId} 동기화 실패:`, error);
+    console.error(`[Batch Sync Error] User ${user_id} 동기화 실패:`, error);
   }
 };
