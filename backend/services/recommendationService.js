@@ -5,7 +5,7 @@ export const syncUserToBatch = async (user_id) => {
   try {
     // 1. [핵심] 기존 데이터 삭제 (중복 방지)
     // 이전에 저장된 유저의 상태를 지워야 DB 용량이 낭비되지 않습니다.
-    await db.query('DELETE FROM user_recommendation_batch WHERE user_id = ?', [user_id]);
+    await conn.query('DELETE FROM user_recommendation_batch WHERE user_id = ?', [user_id]);
 
     // 2. 최신 데이터 수집 및 저장 (한방 쿼리)
     const query = `
@@ -41,7 +41,7 @@ export const syncUserToBatch = async (user_id) => {
     `;
 
     // userId가 쿼리 내 ? 자리에 총 4번 들어갑니다.
-    await db.query(query, [user_id, user_id, user_id, user_id]);
+    await conn.query(query, [user_id, user_id, user_id, user_id]);
     
     console.log(`[Batch Sync] User ${user_id} 데이터 동기화 완료 (재료 이름으로 갱신됨)`);
 
