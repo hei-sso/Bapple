@@ -2,7 +2,7 @@
 import db from '../db.js';
 import { syncUserToBatch } from '../services/recommendationService.js';
 
-// [Helper] 유저의 기본 냉장고 ID 찾기
+// 유저의 기본 냉장고 ID 찾기
 const findDefaultFridge = async (userId) => {
   const [rows] = await db.query(
     'SELECT id FROM fridge WHERE owner_user_id = ? AND is_default = 1 LIMIT 1',
@@ -23,14 +23,12 @@ export const getMyIngredients = async (req, res) => {
       return res.status(404).json({ message: '기본 냉장고를 찾을 수 없습니다.' });
     }
 
-    // [수정] i.icon_image 컬럼 제거 (DB에 없어서 에러 발생함)
     const query = `
       SELECT 
         i.id AS id,                  
         i.name AS name,              
         i.category_id AS category,   
-        -- i.icon_image AS image,    <-- 이 부분이 에러 원인이라 주석 처리했습니다.
-        NULL AS image,               -- 프론트엔드 에러 방지를 위해 일단 NULL로 보냄
+        i.icon_image AS image,       
         fi.quantity,
         fi.unit,
         fi.expire_date,
@@ -121,18 +119,62 @@ export const removeIngredientFromMyFridge = async (req, res) => {
   }
 };
 
-// 4. 전체 재료 목록 조회 (GET /fridge/ingredients)
+// 4. [수정됨] 전체 재료 목록 조회 (GET /fridge/ingredients)
+// 설명: ingredient와 ingredient_category 테이블을 조인하여 카테고리별로 그룹화합니다.
 export const getAllIngredients = async (req, res) => {
+    console.log('[DEBUG] [GET] 전체 재료 목록 조회 요청');
     try {
-        // [수정] 여기도 i.icon_image 제거
+        // [핵심] 테이블 2개를 JOIN 합니다. (이미지 참고)
+        // c: ingredient_category, i: ingredient
         const query = `
-            SELECT i.id, i.name, i.category_id as category, NULL as image
-            FROM ingredient i
+            SELECT 
+                c.category_id, 
+                c.category_name, 
+                i.id AS ingredient_id, 
+                i.name AS ingredient_name,
+                i.icon_image AS image
+            FROM ingredient_category c
+            JOIN ingredient i ON c.category_id = i.category_id
+            ORDER BY c.category_id ASC, i.id ASC
         `;
+        
         const [rows] = await db.query(query);
-        res.status(200).json({ success: true, data: rows });
+        console.log(`[DEBUG] 전체 재료 ${rows.length}개 로드 성공`);
+        
+        // 2. 데이터 가공: Flat List -> Grouped List (Category[])
+        const groupedData = rows.reduce((acc, row) => {
+            // 이미 생성된 카테고리인지 확인
+            let category = acc.find(cat => cat.id === row.category_id);
+            
+            // 없으면 새 카테고리 객체 생성
+            if (!category) {
+                category = {
+                    id: row.category_id,     // 예: ING001
+                    name: row.category_name, // 예: 곡물
+                    ingredients: []          // 재료 담을 배열 초기화
+                };
+                acc.push(category);
+            }
+            
+            // 해당 카테고리에 재료 추가
+            if (row.ingredient_id) {
+                category.ingredients.push({
+                    id: row.ingredient_id,
+                    name: row.ingredient_name,
+                    category: row.category_id, // 프론트엔드 호환용
+                    image: row.image
+                });
+            }
+            return acc;
+        }, []);
+
+        console.log(`[DEBUG] 카테고리 ${groupedData.length}개 그룹화 완료`);
+        
+        // 프론트엔드는 { data: [...] } 형태를 기대함
+        res.status(200).json({ success: true, data: groupedData });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error' });
+        console.error('[ERROR] 전체 재료 조회 실패:', error);
+        res.status(500).json({ message: '서버 오류', error: error.message });
     }
 };
