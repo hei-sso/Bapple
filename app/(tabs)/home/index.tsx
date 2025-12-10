@@ -37,7 +37,7 @@ import { GroupProvider, useGroups } from '@/context/groupContext';
 
 // Type
 import type { Group, GroupRecipeItem, RecipeSchedule } from '@/types/groupTypes';
-import type { RecommendedRecipe } from '@/types/recipeTypes'
+import type { RecommendedRecipe } from '@/types/recipeTypes';
 
 // 상수
 const { width } = Dimensions.get('window');
@@ -50,8 +50,6 @@ const WEEK_STARTS_ON = 0 as const; // 일요일
 const getGroupColor = (groupId: string | null | undefined): string => {
     const id = groupId || 'personal';
     if (id === 'personal') return '#C0C0C0';
-    
-    // 단순 해시 함수를 사용하여 색상 매핑
     const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const colors = ['#F07575', '#FDE2A1', '#B8E998', '#7ccef0ff', '#F5A9B8'];
     return colors[hash % colors.length];
@@ -60,7 +58,6 @@ const getGroupColor = (groupId: string | null | undefined): string => {
 // 달력 유틸리티 (2주 범위)
 const getCalendarDays = (date: Date, schedules: RecipeSchedule[], activeGroupIds: string[]) => {
   const startDay = startOfWeek(date, { weekStartsOn: WEEK_STARTS_ON }); 
-  
   const days = [];
   const totalDays = 14; 
   const schedulesMap = new Map<string, GroupRecipeItem[]>();
@@ -73,7 +70,6 @@ const getCalendarDays = (date: Date, schedules: RecipeSchedule[], activeGroupIds
     const day = addDays(startDay, i);
     const dateString = format(day, 'yyyy-MM-dd');
     const isCurrentMonth = day.getMonth() === date.getMonth(); 
-    
     const recipes = schedulesMap.get(dateString) || [];
     
     days.push({
@@ -81,7 +77,6 @@ const getCalendarDays = (date: Date, schedules: RecipeSchedule[], activeGroupIds
       dateString: dateString,
       isToday: dateString === TODAY_STRING,
       isCurrentMonth: isCurrentMonth,
-      // 활성화된 그룹의 레시피만 필터링
       recipes: recipes.filter(r => activeGroupIds.includes(r.groupId || 'personal')),
       dayOfWeek: day.getDay() 
     });
@@ -94,7 +89,6 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
   const [recipes, setRecipes] = useState<RecommendedRecipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // 이번 주 시작일 계산
   const currentWeekStart = format(startOfWeek(TODAY, { weekStartsOn: WEEK_STARTS_ON }), 'yyyy-MM-dd');
   const SECONDARY_COLOR = '#404040ff';
   const ACCENT_COLOR_STAR = '#FFD700';
@@ -104,19 +98,17 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
     const loadRecipes = async () => {
       setIsLoading(true);
       try {
-        // 현재 주의 시작 날짜를 전달
         const recommended = await fetchRecommendedRecipes(currentWeekStart); 
         setRecipes(recommended);
       } catch (e) {
         console.error("AI 추천 레시피 로드 실패:", e);
-        setRecipes([]); // 실패 시 빈 배열로 설정
+        setRecipes([]); 
       } finally {
         setIsLoading(false);
       }
     };
-    // 이번 주의 시작일이 변경되지 않으므로, 의존성 배열에서 제외하거나 고정
     loadRecipes();
-  }, []); // 의존성 배열에 currentWeekStart는 (TODAY가 바뀌지 않는 한) 고정값이므로 생략
+  }, []); 
 
   if (isLoading) {
     return (
@@ -160,15 +152,35 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
             <View style={styles.recipeCard}>
               <View style={styles.recipeCardContentArea}>
                 <Text style={styles.recipeCardText}>{item.name}</Text>
+                
                 <View style={styles.ratingTimeContainer}>
+                  
+                  {/* 난이도 별점 (rating 사용) */}
                   <View style={styles.ratingBadge}>
-                    <FontAwesome name="star" size={12} color={ACCENT_COLOR_STAR} />
-                    <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+                    {[...Array(item.rating || 1)].map((_, index) => (
+                      <FontAwesome 
+                        key={index} 
+                        name="star" 
+                        size={12} 
+                        color={ACCENT_COLOR_STAR} 
+                        style={{ marginRight: 2 }}
+                      />
+                    ))}
+                    
+                    {/* difficultyText 없이 rating 숫자로만 텍스트 결정 */}
+                    <Text style={[styles.ratingText, { marginLeft: 4 }]}>
+                       {item.rating === 1 ? '초급' : item.rating === 3 ? '고급' : '중급'}
+                    </Text>
                   </View>
+
+                  {/* 조리시간 */}
                   <View style={styles.timeBadge}>
                     <Ionicons name="time-outline" size={12} color={TEXT_COLOR_DARK} />
-                    <Text style={styles.timeText}>{item.cookTimeMinutes}분</Text>
+                    <Text style={styles.timeText}>
+                        {item.cookTimeMinutes ? `${item.cookTimeMinutes}분` : "정보없음"}
+                    </Text>
                   </View>
+
                 </View>
               </View>
               <View style={styles.recipeCardImagePlaceholder} />
@@ -180,7 +192,7 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
   );
 };
 
-// 그룹 목록 아이템 컴포넌트 (사이드바용)
+// 그룹 목록 아이템
 const SideMenuGroupItem: React.FC<{ 
   group: Group; 
   onPress: (group: Group) => void; 
@@ -188,11 +200,10 @@ const SideMenuGroupItem: React.FC<{
   isDisabled: boolean; 
 }> = ({ group, onPress, onPinToggle, isDisabled }) => {
   const groupColor = getGroupColor(group.id); 
-  const PinIcon = group.isPinned ? Pin : PinOff; // 꽉 찬 핀/빈 핀
+  const PinIcon = group.isPinned ? Pin : PinOff;
   const PRIMARY_COLOR = '#000';
   const TEXT_COLOR_GRAY = '#888';
   const pinColor = group.isPinned ? PRIMARY_COLOR : TEXT_COLOR_GRAY;
-
   const isPersonal = group.id === 'personal';
 
   return (
@@ -200,13 +211,11 @@ const SideMenuGroupItem: React.FC<{
       <View style={[styles.menuGroupDot, { backgroundColor: groupColor }]} />
       <View style={styles.menuItemContent}>
         <Text style={styles.menuItemText}>{group.name}</Text>
-          
-        {/* 고정핀 토글 버튼 */}
         {!isPersonal && (
           <TouchableOpacity
             style={styles.menuPinButton}
             onPress={(e) => {
-              e.stopPropagation(); // 그룹 선택 방지
+              e.stopPropagation();
               onPinToggle(group.id);
             }}
             disabled={isDisabled}
@@ -219,7 +228,7 @@ const SideMenuGroupItem: React.FC<{
   );
 };
 
-// 그룹 사이드 메뉴 컴포넌트
+// 사이드 메뉴
 const GroupSideMenu: React.FC<{ 
   isMenuOpen: boolean; 
   onClose: () => void; 
@@ -267,11 +276,10 @@ const GroupSideMenu: React.FC<{
 
   const MENU_FOOTER_HEIGHT = 30;
 
-  // 그룹 목록 + '나' (개인 냉장고) 항목 생성 및 정렬
   const sortedGroups = useMemo(() => {
     const personalGroup: Group = { 
       id: 'personal', 
-      name: '나', // 이름 수정 유지
+      name: '나',
       description: '개인 식단', 
       ownerId: '', 
       inviteCode: '', 
@@ -286,35 +294,25 @@ const GroupSideMenu: React.FC<{
     const groupsWithPersonal = [personalGroup, ...myGroups];
 
     return groupsWithPersonal.slice().sort((a, b) => {
-      // '나' 항목이 항상 최상단에 오도록 처리
       if (a.id === 'personal') return -1;
       if (b.id === 'personal') return 1;
-
-      // 핀 고정 그룹을 상단으로
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      
-      // 그 외 일반 그룹은 ID 기준 정렬
       return a.id.localeCompare(b.id); 
     });
-  }, [myGroups]); // myGroups가 업데이트되면 자동으로 재계산됨
+  }, [myGroups]);
 
-  // 그룹 아이템 클릭 핸들러
   const handleGroupPress = useCallback((group: Group) => {
     onClose(); 
-      
-    // '나'인지 확인해서 라우트 분기
     if (group.id === 'personal') {
-      // 1. '나' (personal) 항목: 홈 화면 디테일 페이지로 이동 (달력에서 클릭할 때랑 동일)
       router.push({ 
         pathname: '/home/detail', 
         params: { 
-          date: format(TODAY, 'yyyy-MM-dd'), // 오늘 날짜 기본값
+          date: format(TODAY, 'yyyy-MM-dd'),
           groupIds: activeGroupIds.join(',') 
         } 
       });
     } else {
-      // 2. 일반 그룹 항목: 그룹 상세 페이지로 이동 (그룹 정보/설정)
       router.push({ 
         pathname: '/group/detail',
         params: { 
@@ -325,7 +323,6 @@ const GroupSideMenu: React.FC<{
     }
   }, [onClose, router, activeGroupIds]);
   
-  // 고정핀 토글 핸들러
   const handlePinToggle = useCallback((groupId: string) => {
     togglePin(groupId);
   }, [togglePin]);
@@ -342,13 +339,10 @@ const GroupSideMenu: React.FC<{
         ]}
         {...panResponder.panHandlers}
       >
-        {/* 상단 Safe Area 처리 */}
         <View style={{ paddingTop: insets.top }} /> 
-        
         <Text style={[styles.sideMenuTitle, { marginTop: 20, marginBottom: 15, paddingHorizontal: 15 }]}>
           내 그룹 목록
         </Text>
-
         <ScrollView style={{ flex: 1 }}>
           {isLoading ? (
             <ActivityIndicator size="small" color={TEXT_COLOR_DARK} />
@@ -364,8 +358,6 @@ const GroupSideMenu: React.FC<{
             ))
           )}
         </ScrollView>
-          
-        {/* '새 그룹 생성' 버튼 */}
         <View style={[styles.menuFooter, { paddingBottom: insets.bottom, height: MENU_FOOTER_HEIGHT + insets.bottom }]}>
           <TouchableOpacity style={styles.newGroupButton} onPress={onGroupCreatePress}>
             <Plus size={20} color={PRIMARY_COLOR} />
@@ -380,7 +372,6 @@ const GroupSideMenu: React.FC<{
 const HomeScreenContent = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  // refreshGroups 추가
   const { myGroups, groupSchedules, fetchSchedulesForWeek, scheduleRecipe, refreshGroups } = useGroups(); 
   
   const [currentDate, setCurrentDate] = useState(new Date(TODAY));
@@ -388,23 +379,17 @@ const HomeScreenContent = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isGroupModalVisible, setIsGroupModalVisible] = useState(false);
   
-  // 레시피 스케줄 모달 상태
   const [isRecipeModalVisible, setIsRecipeModalVisible] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<{ id: string; name: string } | null>(null);
   
   const handleGroupCreated = useCallback(() => {
-    // 1. 모달 닫기
     setIsGroupModalVisible(false); 
-    // 2. 컨텍스트를 통해 그룹 목록 강제 갱신 (myGroups 업데이트 -> useEffect 트리거)
     refreshGroups(); 
   }, [refreshGroups]);
 
-  // 현재 주차의 시작일 (yyyy-MM-dd)
   const currentWeekStartString = format(startOfWeek(currentDate, { weekStartsOn: WEEK_STARTS_ON }), 'yyyy-MM-dd');
-  // 다음 주차 시작일
   const nextWeekStartString = format(addWeeks(currentDate, 1), 'yyyy-MM-dd');
 
-  // API에서 현재 2주간의 스케줄 로드
   useEffect(() => {
     fetchSchedulesForWeek(currentWeekStartString);
     fetchSchedulesForWeek(nextWeekStartString);
@@ -413,16 +398,11 @@ const HomeScreenContent = () => {
   useEffect(() => {
     setActiveGroupIds(prev => {
       const newGroups = myGroups.map(g => g.id);
-      
-      // 1. 기존 active 목록 중 'personal'과 현재 myGroups에 남아있는 그룹 ID를 유지
       const activeKept = prev.filter(id => id === 'personal' || newGroups.includes(id));
-      
-      // 2. 현재 myGroups의 모든 ID와 activeKept를 합쳐 중복 제거 후 최종 active 목록 생성
       return [...new Set([...activeKept, ...newGroups, 'personal'])];
     });
-  }, [myGroups]); // myGroups가 변경될 때마다 실행됨
+  }, [myGroups]);
 
-  // 2주간의 스케줄 데이터를 병합
   const combinedSchedules = useMemo(() => {
     const currentWeek = groupSchedules[currentWeekStartString] || [];
     const nextWeek = groupSchedules[format(addWeeks(currentDate, 1), 'yyyy-MM-dd')] || [];
@@ -431,17 +411,13 @@ const HomeScreenContent = () => {
   
   const calendarDays = useMemo(() => getCalendarDays(currentDate, combinedSchedules, activeGroupIds), [currentDate, combinedSchedules, activeGroupIds]);
 
-  // 그룹 필터 토글
   const toggleGroupFilter = (groupId: string) => {
     setActiveGroupIds(prev => {
-      // 'personal' 그룹은 토글 불가 (항상 활성화)
       if (groupId === 'personal') return prev; 
-      
       return prev.includes(groupId) ? prev.filter(g => g !== groupId) : [...prev, groupId];
     });
   };
   
-  // 주 이동 로직
   const changeWeek = (delta: number) => { 
     setCurrentDate(prev => {
       return delta < 0 ? subWeeks(prev, 1) : addWeeks(prev, 1);
@@ -454,13 +430,12 @@ const HomeScreenContent = () => {
     weekStartDate.setDate(weekStartDate.getDate() - dayOfWeek);
     const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
     
-    // home/detail.tsx로 이동
     router.push({
       pathname: '/home/detail',
       params: {
         date: dayData.dateString,
         weekStart: weekStartDateString,
-        groupIds: activeGroupIds.join(',') // 현재 활성화된 그룹 ID 목록 전달 (필터링 유지 목적)
+        groupIds: activeGroupIds.join(',') 
       }
     } as RedirectProps['href']);
   };
@@ -477,19 +452,16 @@ const HomeScreenContent = () => {
     router.push('/mypage/setting' as RedirectProps['href']);
   }, [router]);
   
-  // 새 그룹 생성 버튼 핸들러 (사이드 메뉴에서 호출)
   const handleGroupCreatePress = useCallback(() => {
     handleCloseMenu();
     setIsGroupModalVisible(true); 
   }, [handleCloseMenu]);
 
-  // AI 추천 레시피 선택 핸들러
   const handleRecipeSelect = useCallback((recipe: RecommendedRecipe) => {
     setSelectedRecipe(recipe);
     setIsRecipeModalVisible(true);
   }, []);
 
-  // 레시피 스케줄 등록 핸들러 (RecipeScheduleModal에서 호출)
   const handleScheduleRecipe = useCallback(async (data: { 
     recipeId: string; 
     date: string; 
@@ -514,7 +486,6 @@ const HomeScreenContent = () => {
         ]}
         onPress={() => handleDatePress(dayData)}
       >
-        {/* 날짜 번호 */}
         <View style={[
           styles.dayNumberContainer,
           dayData.isToday && styles.todayIndicator, 
@@ -528,9 +499,7 @@ const HomeScreenContent = () => {
           </Text>
         </View>
 
-        {/* 레시피 아이템 목록 (색상 점) */}
         <View style={styles.recipeList}>
-          {/* 3개까지만 보여주기 */}
           {filteredRecipes.slice(0, 3).map((recipe, index) => (
             <View key={index} style={styles.recipeItem}>
               <View 
@@ -544,7 +513,6 @@ const HomeScreenContent = () => {
               </Text>
             </View>
           ))}
-          {/* 3개 초과 시에는 'view more' 렌더링 */}
           {filteredRecipes.length > 3 && ( 
             <Text style={styles.viewMoreText}>view more</Text>
           )}
@@ -557,9 +525,7 @@ const HomeScreenContent = () => {
     const groupId = group.id;
     const isActive = activeGroupIds.includes(groupId);
     const color = getGroupColor(groupId);
-    const TEXT_COLOR_LIGHT = '#ccc';
     
-    // 개인 냉장고는 항상 활성화 상태로 유지
     const isPersonal = groupId === 'personal'; 
 
     return (
@@ -570,7 +536,7 @@ const HomeScreenContent = () => {
           { backgroundColor: isActive ? color : '#fff', borderColor: color },
         ]}
         onPress={() => toggleGroupFilter(groupId)}
-        disabled={isPersonal} // '나' 그룹은 비활성화/토글 불가
+        disabled={isPersonal} 
       >
         <Text style={[
           styles.groupButtonText,
@@ -583,7 +549,6 @@ const HomeScreenContent = () => {
     );
   };
   
-  // 그룹 필터링 버튼 목록 (개인 + 내 그룹)
   const groupFilterList = useMemo(() => {
     const personal: Group = { 
       id: 'personal',
@@ -605,16 +570,12 @@ const HomeScreenContent = () => {
   const TEXT_COLOR_LIGHT = '#ccc';
   const TEXT_COLOR_GRAY = '#888';
 
-  // 메인 뷰
   return (
     <View style={[Styles.indexContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      
-      {/* 상단 검색 및 설정 영역 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
           <FontAwesome name="user-circle" size={32} color={TEXT_COLOR_LIGHT} /> 
         </TouchableOpacity>
-          {/* 검색 영역 */}
           <View style={styles.searchBar}>
             <TextInput
               style={styles.searchInput}
@@ -628,15 +589,11 @@ const HomeScreenContent = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 그룹 활성화/비활성화 버튼 영역 */}
       <View style={styles.groupFilterContainer}>
         {groupFilterList.map(renderGroupButton)}
       </View>
 
-      {/* 달력 영역 */}
       <View style={styles.calendarContainer}>
-        
-        {/* 월 표시 및 네비게이션 */}
         <View style={styles.monthHeader}>
           <Text style={styles.monthText}>{format(currentDate, 'M월', { locale: ko })}</Text>
           <View style={styles.monthNav}>
@@ -649,23 +606,19 @@ const HomeScreenContent = () => {
           </View>
         </View>
 
-        {/* 요일 헤더 */}
         <View style={styles.dayOfWeekHeader}>
           {['일', '월', '화', '수', '목', '금', '토'].map(day => (
             <Text key={day} style={styles.dayOfWeekText}>{day}</Text>
           ))}
         </View>
 
-        {/* 달력 날짜 그리드 (2주) */}
         <View style={styles.calendarGrid}>
           {calendarDays.map(renderCalendarCell)}
         </View>
       </View>
       
-      {/* 추천 레시피 컴포넌트 */}
       <AIRecommendedRecipes onRecipeSelect={handleRecipeSelect} />
       
-      {/* 사이드 메뉴 컴포넌트 */}
       <GroupSideMenu 
         isMenuOpen={isMenuOpen} 
         onClose={handleCloseMenu} 
@@ -675,7 +628,6 @@ const HomeScreenContent = () => {
         activeGroupIds={activeGroupIds}
       />
       
-      {/* 그룹 생성/가입 모달 팝업 */}
       <GroupCreationModal 
         isVisible={isGroupModalVisible}
         onClose={() => setIsGroupModalVisible(false)}
@@ -683,7 +635,6 @@ const HomeScreenContent = () => {
         initialMode="create" 
       />
       
-      {/* 식단 메뉴 추가 모달 팝업 */}
       {selectedRecipe && (
         <RecipeScheduleModal
           isVisible={isRecipeModalVisible}
@@ -697,7 +648,6 @@ const HomeScreenContent = () => {
   );
 }
 
-// 메인 Export 함수: Provider로 감싸기
 export default function HomeScreen() {
   return (
     <GroupProvider>
@@ -706,7 +656,6 @@ export default function HomeScreen() {
   );
 }
 
-// 🎨 스타일 시트
 const PRIMARY_COLOR = '#000';
 const BG_COLOR_LIGHT = '#f5f5f5';
 const BORDER_COLOR_LIGHT = '#eee';
@@ -715,7 +664,6 @@ const TEXT_COLOR_GRAY = '#888';
 const TEXT_COLOR_LIGHT = '#ccc';
 
 const styles = StyleSheet.create({
-  // 헤더 (검색 및 설정)
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -749,8 +697,6 @@ const styles = StyleSheet.create({
   settingsIcon: {
     color: PRIMARY_COLOR
   },
-
-  // 그룹 필터 버튼
   groupFilterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 24,
@@ -768,10 +714,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   disabledGroupText: {
-    color: TEXT_COLOR_LIGHT // 비활성 그룹 텍스트 색상
+    color: TEXT_COLOR_LIGHT 
   },
-
-  // 달력
   calendarContainer: {
     paddingHorizontal: 20
   },
@@ -819,8 +763,6 @@ const styles = StyleSheet.create({
     padding: 3,
     alignItems: 'flex-start'
   },
-
-  // 날짜 번호 및 오늘 표시
   dayNumberContainer: {
     alignSelf: 'flex-end',
     marginBottom: 5,
@@ -845,14 +787,12 @@ const styles = StyleSheet.create({
   otherMonthText: {
     color: TEXT_COLOR_LIGHT
   },
-
-  // 레시피 목록 (달력 셀 내부)
   recipeList: {
     marginTop: 2,
     width: '100%',
     maxHeight: 45,
     overflow: 'hidden',
-    paddingLeft: 3 // RecipeDot과 정렬을 위해 추가
+    paddingLeft: 3 
   },
   recipeItem: {
     flexDirection: 'row',
@@ -864,7 +804,7 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 2.5,
     marginRight: 4,
-    marginTop: 3 // 텍스트와 세로 정렬 맞추기
+    marginTop: 3 
   },
   recipeText: {
     fontSize: 10,
@@ -874,14 +814,12 @@ const styles = StyleSheet.create({
   },
   viewMoreText: {
     fontSize: 8,
-    color: '#007AFF', // 시스템 기본 파란색 유지
+    color: '#007AFF', 
     marginTop: 2,
     textAlign: 'right',
     width: '100%',
     paddingRight: 2
   },
-
-  // 레시피 추천 영역
   recommendationContainer: {
     alignItems: 'center',
     marginTop: 30,
@@ -893,12 +831,11 @@ const styles = StyleSheet.create({
     color: TEXT_COLOR_DARK,
     marginBottom: 15
   },
-  // 레시피 카드
   recipeCard: {
     backgroundColor: '#fff',
     padding: 18,
-    marginHorizontal: 10, // 캐러셀 아이템 간 여백
-    borderRadius: 12, // 모서리 둥글게
+    marginHorizontal: 10, 
+    borderRadius: 12, 
     borderWidth: 1,
     borderColor: BORDER_COLOR_LIGHT,
     elevation: 3,
@@ -923,7 +860,7 @@ const styles = StyleSheet.create({
   recipeCardImagePlaceholder: {
     width: '100%',
     height: 100,
-    backgroundColor: BG_COLOR_LIGHT, // 플레이스 홀더 색상 통일
+    backgroundColor: BG_COLOR_LIGHT, 
     borderRadius: 8,
     marginTop: 'auto'
   },
@@ -933,8 +870,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20
   },
-
-  // 난이도 별점 및 시간 배지
   ratingTimeContainer: {
     flexDirection: 'row',
     marginBottom: 5
@@ -942,7 +877,7 @@ const styles = StyleSheet.create({
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fffbe6', // 노란색 계열
+    backgroundColor: '#fffbe6', 
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -957,7 +892,7 @@ const styles = StyleSheet.create({
   timeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e6f7ff', // 파란색 계열
+    backgroundColor: '#e6f7ff', 
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 4
@@ -967,8 +902,6 @@ const styles = StyleSheet.create({
     color: TEXT_COLOR_DARK,
     marginLeft: 4
   },
-
-  // 사이드 메뉴
   menuOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -1018,8 +951,6 @@ const styles = StyleSheet.create({
   menuPinButton: {
     padding: 5
   },
-
-  // 새 그룹 생성 버튼
   menuFooter: {
     position: 'absolute',
     bottom: 0,

@@ -117,11 +117,7 @@ export const removeRecipeFromFavorite = async (recipeId: string): Promise<void> 
     }
 };
 
-/**
- * 5. AI 추천 레시피 목록 로드 (POST /api/recommend/week)
- * @param user_id - 사용자 고유 ID
- * @returns RecommendedRecipe[] - AI가 추천하는 레시피 목록
- */
+// 5. AI 추천 레시피 목록 로드 (POST /api/recommend/week)
 export const fetchRecommendedRecipes = async (user_id: string): Promise<RecommendedRecipe[]> => {
     const token = await getAuthToken();
     
@@ -140,10 +136,12 @@ export const fetchRecommendedRecipes = async (user_id: string): Promise<Recommen
             } 
         );
         
-        if (response.data.success && response.data.data) {
-            // ⭐ 서버 응답이 RecommendedRecipe[] 형태라고 가정!
-            return response.data.data as RecommendedRecipe[]; 
+        // response.data.data -> response.data.items 로 변경
+        // 백엔드: { success: true, items: [...] }
+        if (response.data.success && response.data.items) {
+            return response.data.items as RecommendedRecipe[]; 
         } else {
+            // items가 없을 때 에러 메시지 띄우기
             throw new Error(response.data.message || "AI 추천 레시피 목록을 불러오지 못했습니다.");
         }
     } catch (error) {
