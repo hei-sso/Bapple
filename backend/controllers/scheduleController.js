@@ -1,4 +1,4 @@
-import db from '../config/db.js'; // DB 연결 설정
+import db from '../db.js'; // DB 연결 설정
 
 // 1. 내 전체 식단(개인 + 내가 속한 그룹) 조회 (GET /schedule/my)
 export const getMySchedules = async (req, res) => {
