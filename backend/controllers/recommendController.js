@@ -17,9 +17,7 @@ const safeJSONParse = (str, fallback = []) => {
   }
 };
 
-// ==========================================
 // 1. 단일 추천 리스트 (POST /api/recommend)
-// ==========================================
 export const getSingleRecommendation = async (req, res) => {
   try {
     if (!AI_BASE_URL) throw new Error("AI_SERVICE_BASE_URL 환경변수가 설정되지 않았습니다.");
@@ -32,24 +30,18 @@ export const getSingleRecommendation = async (req, res) => {
     });
     return res.json({ success: true, data: response.data });
   } catch (err) {
-    console.error("AI /recommend 호출 실패:");
-    if (err.response) {
-      console.error("   Status:", err.response.status);
-      console.error("   Data:", err.response.data);
-    } else {
-      console.error("   Error:", err.message);
-    }
+    console.error("AI /recommend 호출 실패:", err.message);
     return res.status(500).json({ success: false, message: "AI 추천 서버 호출 실패", error: err.message });
   }
 };
 
-// ==========================================
 // 2. 주간 식단 추천 통합 (POST /api/recommend/week)
-// ==========================================
 export const getWeeklyRecommendation = async (req, res) => {
   
-  // 1. 유저 식별
-  const user_id = req.user?.userId || req.user?.id || req.user;
+  // 1. 유저 식별 (객체/ID/숫자 모두 대응)
+  const userObj = req.user;
+  const user_id = userObj?.userId || userObj?.id || (typeof userObj === 'object' ? null : userObj);
+
   console.log(`>>> [POST] /api/recommend/week 요청 시작 (User ID: ${user_id})`);
 
   if (!AI_BASE_URL) {
@@ -58,10 +50,11 @@ export const getWeeklyRecommendation = async (req, res) => {
   }
   
   if (!user_id) {
+    console.error("오류: 유저 ID를 찾을 수 없습니다. Token Payload:", userObj);
     return res.status(401).json({ message: "유효하지 않은 사용자 토큰입니다." });
   }
 
-  // [스코프 해결] req.body에서 값 추출
+  // [중요] 변수 스코프 문제 해결: req.body에서 값 추출
   const { 
     cuisine, diet, days, meals_per_day, top_k 
   } = req.body;
@@ -71,6 +64,7 @@ export const getWeeklyRecommendation = async (req, res) => {
   try {
     // 2. 최신 데이터 동기화
     console.log("--- 1. 데이터 동기화 (syncUserToBatch) ---");
+    // [수정] 서비스 함수가 conn을 필요로 하므로 넘겨줍니다.
     await syncUserToBatch(conn, user_id);
 
     // 3. 배치 데이터 조회
@@ -83,7 +77,7 @@ export const getWeeklyRecommendation = async (req, res) => {
     );
 
     if (batchRows.length === 0) {
-      throw new Error("배치 데이터 생성 실패 (동기화 로직 확인 필요)");
+      throw new Error("배치 데이터 생성 실패 (동기화 후에도 데이터가 없습니다)");
     }
 
     const batchData = batchRows[0];
@@ -119,11 +113,11 @@ export const getWeeklyRecommendation = async (req, res) => {
             { timeout: 20000 }
         );
     } catch (axiosErr) {
-        console.error("AI 서버 통신 에러:", axiosErr.message);
+        console.error(">>> AI 서버 통신 에러:", axiosErr.message);
         if (axiosErr.code === 'ECONNABORTED') {
-             throw new Error("AI 서버 응답 시간 초과");
+             throw new Error("AI 서버 응답 시간 초과 (20초)");
         }
-        throw new Error("AI 서버 오류: 응답 없음");
+        throw new Error(`AI 서버 오류: ${axiosErr.message}`);
     }
 
     const items = aiRes.data.items || [];
@@ -209,8 +203,13 @@ export const getWeeklyRecommendation = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("[Critical] /week 처리 중 예외 발생:", err);
+    console.error("######################################");
+    console.error("[Critical] /week 처리 중 예외 발생!");
+    console.error(err.stack); // 줄번호 확인을 위해 스택 출력
+    console.error("######################################");
+    
     if (conn) await conn.rollback();
+    
     return res.status(500).json({ 
         message: "추천 생성 중 서버 오류가 발생했습니다.", 
         error: err.message 
@@ -272,6 +271,7 @@ export const getNextWeeklyRecommendation = async (req, res) => {
 
     if (next10.length < NEED_COUNT) {
       console.log(`>>> batch ${batch_id}: 리필(Refill) 시도...`);
+      // 여기서는 conn을 넘겨야 합니다 (Transaction 유지)
       await refillRecommendationsForBatch(conn, batch_id);
 
       const remain = NEED_COUNT - next10.length;
