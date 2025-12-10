@@ -66,7 +66,7 @@ export const addIngredientToMyFridge = async (req, res) => {
   }
 
   try {
-    const fridgeId = await findDefaultFridge(userId);
+    const fridgeId = await findDefaultFridge(user_id);
     if (!fridgeId) return res.status(404).json({ message: '기본 냉장고 없음' });
 
     const [exists] = await db.query(
@@ -84,7 +84,7 @@ export const addIngredientToMyFridge = async (req, res) => {
       VALUES (?, ?, ?, ?, ?, 'fresh', NOW())
     `, [fridgeId, ingredient_id, quantity, unit, expire_date]);
 
-    try { syncUserToBatch(userId); } catch (e) { console.warn('동기화 실패:', e.message); }
+    try { syncUserToBatch(user_id); } catch (e) { console.warn('동기화 실패:', e.message); }
 
     res.status(201).json({ success: true, message: '추가되었습니다.' });
   } catch (error) {
@@ -99,7 +99,7 @@ export const removeIngredientFromMyFridge = async (req, res) => {
   const { ingredientId } = req.params; 
 
   try {
-    const fridgeId = await findDefaultFridge(userId);
+    const fridgeId = await findDefaultFridge(user_id);
     if (!fridgeId) return res.status(404).json({ message: '기본 냉장고 없음' });
 
     const [result] = await db.query(`
@@ -111,7 +111,7 @@ export const removeIngredientFromMyFridge = async (req, res) => {
       return res.status(404).json({ message: '냉장고에 없는 재료입니다.' });
     }
 
-    try { syncUserToBatch(userId); } catch (e) { console.warn('동기화 실패:', e.message); }
+    try { syncUserToBatch(user_id); } catch (e) { console.warn('동기화 실패:', e.message); }
 
     res.status(200).json({ success: true, message: '삭제되었습니다.' });
   } catch (error) {
