@@ -4,7 +4,6 @@ import db from '../db.js';
 export const syncUserToBatch = async (conn, user_id) => {
   try {
     // 1. [핵심] 기존 데이터 삭제 (중복 방지)
-    // 이전에 저장된 유저의 상태를 지워야 DB 용량이 낭비되지 않습니다.
     const deleteQuery = 'DELETE FROM user_recommendation_batch WHERE user_id = ?';
     await conn.query(deleteQuery, [user_id]);
 
@@ -29,12 +28,12 @@ export const syncUserToBatch = async (conn, user_id) => {
            WHERE user_id = ?), -- (3번째 파라미터)
         '[]'),
         
-        -- (3) [수정됨] 내 냉장고 재료 정보 (ID 대신 '이름' 저장)
+        -- (3) 내 냉장고 재료 정보 (ID 대신 '이름' 저장)
         COALESCE(
-          (SELECT JSON_ARRAYAGG(i.name)   -- [핵심 변경] fi.ingredient_id -> i.name
+          (SELECT JSON_ARRAYAGG(i.name)   -- 재료 이름 가져오기
            FROM fridge_ingredient fi 
            JOIN fridge f ON fi.fridge_id = f.id 
-           JOIN ingredient i ON fi.ingredient_id = i.id -- [추가] 재료 이름을 가져오기 위해 JOIN
+           JOIN ingredient i ON fi.ingredient_id = i.id 
            WHERE f.owner_user_id = ? AND f.is_default = 1), -- (4번째 파라미터)
         '[]'),
         
@@ -47,7 +46,7 @@ export const syncUserToBatch = async (conn, user_id) => {
     console.log(`[Batch Sync] User ${user_id} 데이터 동기화 완료 (재료 이름으로 갱신됨)`);
 
   } catch (error) {
-    // 추천 데이터 저장이 실패하더라도 메인 기능(재료 추가 등)은 멈추면 안 되므로 로그만 남깁니다.
     console.error(`[Batch Sync Error] User ${user_id} 동기화 실패:`, error);
+    throw error; 
   }
 };
