@@ -17,6 +17,49 @@ const safeJSONParse = (str, fallback = []) => {
   }
 };
 
+// [핵심] 데이터 가공 헬퍼 함수 (DB 데이터를 프론트 입맛에 맞게 변환)
+
+// 1. 조리시간 변환: "1시간 20분" -> 80 (숫자)
+const parseCookTime = (timeInput) => {
+  if (!timeInput) return 0;
+  if (typeof timeInput === 'number') return timeInput; // 이미 숫자면 그대로 반환
+
+  const str = timeInput.toString();
+  let totalMinutes = 0;
+
+  // "1시간" 또는 "1h" 파싱
+  const hourMatch = str.match(/(\d+)\s*(시간|h)/);
+  if (hourMatch) totalMinutes += parseInt(hourMatch[1]) * 60;
+
+  // "20분" 또는 "20m" 파싱
+  const minMatch = str.match(/(\d+)\s*(분|m)/);
+  if (minMatch) totalMinutes += parseInt(minMatch[1]);
+
+  // "시간"이나 "분" 글자가 없고 숫자만 있는 경우 (예: "40")
+  if (!hourMatch && !minMatch) {
+    const num = parseInt(str.replace(/[^0-9]/g, ''));
+    return isNaN(num) ? 0 : num;
+  }
+
+  return totalMinutes;
+};
+
+// 2. 난이도 변환: "초급" -> 1 (별 개수)
+const parseDifficulty = (difficultyStr) => {
+  if (!difficultyStr) return 2; // 정보 없으면 기본 '중급(2)'
+
+  const level = difficultyStr.toString().toLowerCase();
+  
+  // 초급/쉬움 -> 별 1개
+  if (level.includes('초') || level.includes('easy') || level.includes('low')) return 1;
+  
+  // 고급/어려움 -> 별 3개
+  if (level.includes('고') || level.includes('hard') || level.includes('high')) return 3;
+  
+  // 그 외(중급/보통) -> 별 2개
+  return 2;
+};
+
 // 1. 단일 추천 리스트 (POST /api/recommend)
 export const getSingleRecommendation = async (req, res) => {
   try {
@@ -28,6 +71,7 @@ export const getSingleRecommendation = async (req, res) => {
     const response = await axios.post(`${AI_BASE_URL}/recommend`, body, {
       headers: { "Content-Type": "application/json" }
     });
+    // 단일 추천도 가공해서 보내고 싶다면 여기서 처리 가능
     return res.json({ success: true, data: response.data });
   } catch (err) {
     console.error("AI /recommend 호출 실패:", err.message);
@@ -40,7 +84,6 @@ export const getWeeklyRecommendation = async (req, res) => {
   
   // 1. 유저 식별
   const userObj = req.user;
-  // [수정됨] 토큰 payload의 user_id(snake_case) 대응 추가
   const user_id = userObj?.userId || userObj?.id || userObj?.user_id || (typeof userObj === 'object' ? null : userObj);
 
   console.log(`>>> [POST] /api/recommend/week 요청 시작 (User ID: ${user_id})`);
@@ -55,11 +98,7 @@ export const getWeeklyRecommendation = async (req, res) => {
     return res.status(401).json({ message: "유효하지 않은 사용자 토큰입니다." });
   }
 
-  // req.body에서 값 추출
-  const { 
-    cuisine, diet, days, meals_per_day, top_k 
-  } = req.body;
-
+  const { cuisine, diet, days, meals_per_day, top_k } = req.body;
   const conn = await db.getConnection();
 
   try {
@@ -77,13 +116,12 @@ export const getWeeklyRecommendation = async (req, res) => {
     );
 
     if (batchRows.length === 0) {
-      throw new Error("배치 데이터 생성 실패 (동기화 로직 확인 필요: user_recommendation_batch 비어있음)");
+      throw new Error("배치 데이터 생성 실패 (동기화 로직 확인 필요)");
     }
 
     const batchData = batchRows[0];
     const batchId = batchData.id;
 
-    // JSON 파싱
     const diseases = safeJSONParse(batchData.diseases_json);
     const allergies = safeJSONParse(batchData.allergies_json);
     const fridge_ings = safeJSONParse(batchData.fridge_ings_json);
@@ -104,24 +142,17 @@ export const getWeeklyRecommendation = async (req, res) => {
     };
 
     // 5. AI 서버 호출
-    console.log(`--- 2. AI 서버 호출 (${AI_BASE_URL}/api/recommend/week) ---`);
+    console.log(`--- 2. AI 서버 호출 (${AI_BASE_URL}/recommend/week) ---`);
     let aiRes;
     try {
         aiRes = await axios.post(
-            `${AI_BASE_URL}/recommend/week`,
+            `${AI_BASE_URL}/recommend/week`, // [중요] /api 제거됨 확인
             aiPayload,
             { timeout: 20000 }
         );
     } catch (axiosErr) {
         console.error(">>> AI 서버 통신 에러:", axiosErr.message);
-        if (axiosErr.response) {
-            console.error(">>> AI 응답 상태:", axiosErr.response.status);
-            console.error(">>> AI 응답 데이터:", axiosErr.response.data);
-        }
-        
-        if (axiosErr.code === 'ECONNABORTED') {
-             throw new Error("AI 서버 응답 시간 초과 (20초)");
-        }
+        if (axiosErr.code === 'ECONNABORTED') throw new Error("AI 서버 응답 시간 초과 (20초)");
         throw new Error(`AI 서버 오류: ${axiosErr.message}`);
     }
 
@@ -131,7 +162,7 @@ export const getWeeklyRecommendation = async (req, res) => {
     // --- 저장 후 조회 로직 시작 ---
     await conn.beginTransaction();
 
-    // 6. 중복 제거
+    // 6. 중복 제거 및 DB 저장
     const seen = new Set();
     const uniqueItems = [];
     for (const item of items) {
@@ -143,7 +174,6 @@ export const getWeeklyRecommendation = async (req, res) => {
 
     if (uniqueItems.length > 0) {
       const recipeIds = uniqueItems.map((i) => i.recipe_id);
-      
       const [existingRecipes] = await conn.query(
         `SELECT recipe_id FROM recipe WHERE recipe_id IN (?)`,
         [recipeIds]
@@ -153,11 +183,8 @@ export const getWeeklyRecommendation = async (req, res) => {
 
       if (filteredItems.length > 0) {
         const values = filteredItems.map((item, idx) => [
-          batchId,
-          item.recipe_id,
-          idx + 1,
+          batchId, item.recipe_id, idx + 1,
         ]);
-
         await conn.query(
           `INSERT INTO user_recommendation_item (batch_id, recipe_id, rank_no) VALUES ?`,
           [values]
@@ -166,15 +193,15 @@ export const getWeeklyRecommendation = async (req, res) => {
       }
     }
 
-    // 7. 결과 조회
-    const [first10] = await conn.query(
+    // 7. 결과 조회 (Raw Data)
+    const [rawItems] = await conn.query(
       `
         SELECT
           uri.id AS recommendation_item_id,
           r.recipe_id,
           r.name,
-          r.difficulty,
-          r.cooking_time,
+          r.difficulty,    -- DB 원본 값 (예: '초급', 'Beginner')
+          r.cooking_time,  -- DB 원본 값 (예: '1시간 20분')
           r.img_url
         FROM user_recommendation_item uri
         JOIN recipe r ON uri.recipe_id = r.recipe_id
@@ -188,8 +215,20 @@ export const getWeeklyRecommendation = async (req, res) => {
       [batchId]
     );
 
-    // 8. 보여짐 처리
-    const showIds = first10.map((row) => row.recommendation_item_id);
+    // [핵심] 8. 데이터 가공 (Processing)
+    // 여기서 프론트엔드가 쓰기 편하게 값을 바꿔서 items에 넣습니다.
+    const processedItems = rawItems.map(item => ({
+        ...item,
+        // 1) "1시간 20분" -> 80 (숫자)
+        cookTimeMinutes: parseCookTime(item.cooking_time),
+        // 2) "초급" -> 1 (숫자)
+        starCount: parseDifficulty(item.difficulty),
+        // 3) 원본 텍스트도 같이 보냄 (필요 시 표시용)
+        difficultyText: item.difficulty
+    }));
+
+    // 9. 보여짐 처리
+    const showIds = processedItems.map((row) => row.recommendation_item_id);
     if (showIds.length > 0) {
       await conn.query(
         `UPDATE user_recommendation_item SET is_shown = 1, shown_at = NOW() WHERE id IN (?)`,
@@ -199,22 +238,18 @@ export const getWeeklyRecommendation = async (req, res) => {
 
     await conn.commit();
 
-    // 9. 최종 응답
-    console.log("추천 로직 정상 종료. 클라이언트로 데이터 전송.");
+    // 10. 응답 (가공된 items 전송)
+    console.log("추천 로직 정상 종료. 가공된 데이터 전송.");
     return res.status(201).json({
       success: true,
       batch_id: batchId,
-      items: first10, 
+      items: processedItems, 
     });
 
   } catch (err) {
-    console.error("######################################");
     console.error("[Critical] /week 처리 중 예외 발생!");
     console.error(err.stack);
-    console.error("######################################");
-    
     if (conn) await conn.rollback();
-    
     return res.status(500).json({ 
         message: "추천 생성 중 서버 오류가 발생했습니다.", 
         error: err.message 
@@ -224,9 +259,7 @@ export const getWeeklyRecommendation = async (req, res) => {
   }
 };
 
-// ==========================================
 // 3. 다음 추천 리필 (POST /api/recommend/week/next)
-// ==========================================
 export const getNextWeeklyRecommendation = async (req, res) => {
   const { batch_id, selected_recipe_ids = [] } = req.body;
 
@@ -253,59 +286,52 @@ export const getNextWeeklyRecommendation = async (req, res) => {
 
     const NEED_COUNT = 10;
 
-    let [next10] = await conn.query(
-      `
-        SELECT
-          uri.id AS recommendation_item_id,
-          r.recipe_id,
-          r.name,
-          r.difficulty,
-          r.cooking_time,
-          r.img_url
-        FROM user_recommendation_item uri
-        JOIN recipe r ON uri.recipe_id = r.recipe_id
-        WHERE uri.batch_id    = ?
-          AND uri.is_selected = 0
-          AND uri.is_rejected = 0
-          AND uri.is_shown    = 0
-        ORDER BY uri.rank_no
-        LIMIT ?
-      `,
-      [batch_id, NEED_COUNT]
-    );
-
-    if (next10.length < NEED_COUNT) {
-      console.log(`>>> batch ${batch_id}: 리필(Refill) 시도...`);
-      // 여기서는 conn을 넘겨야 합니다 (Transaction 유지)
-      await refillRecommendationsForBatch(conn, batch_id);
-
-      const remain = NEED_COUNT - next10.length;
-      if (remain > 0) {
-        const [refilled] = await conn.query(
-          `
+    // [헬퍼] 조회 쿼리 함수 (가공 전 Raw Data)
+    const fetchItems = async (limit) => {
+        return await conn.query(
+            `
             SELECT
-              uri.id AS recommendation_item_id,
-              r.recipe_id,
-              r.name,
-              r.difficulty,
-              r.cooking_time,
-              r.img_url
+                uri.id AS recommendation_item_id,
+                r.recipe_id,
+                r.name,
+                r.difficulty,
+                r.cooking_time,
+                r.img_url
             FROM user_recommendation_item uri
             JOIN recipe r ON uri.recipe_id = r.recipe_id
             WHERE uri.batch_id    = ?
-              AND uri.is_selected = 0
-              AND uri.is_rejected = 0
-              AND uri.is_shown    = 0
+                AND uri.is_selected = 0
+                AND uri.is_rejected = 0
+                AND uri.is_shown    = 0
             ORDER BY uri.rank_no
             LIMIT ?
-          `,
-          [batch_id, remain]
+            `,
+            [batch_id, limit]
         );
-        next10 = next10.concat(refilled);
+    };
+
+    let [rawItems] = await fetchItems(NEED_COUNT);
+
+    if (rawItems.length < NEED_COUNT) {
+      console.log(`>>> batch ${batch_id}: 리필(Refill) 시도...`);
+      await refillRecommendationsForBatch(conn, batch_id);
+
+      const remain = NEED_COUNT - rawItems.length;
+      if (remain > 0) {
+        const [refilledItems] = await fetchItems(remain);
+        rawItems = rawItems.concat(refilledItems);
       }
     }
 
-    const showIds = next10.map((row) => row.recommendation_item_id);
+    // [핵심] 리필된 데이터도 가공 처리
+    const processedItems = rawItems.map(item => ({
+        ...item,
+        cookTimeMinutes: parseCookTime(item.cooking_time),
+        starCount: parseDifficulty(item.difficulty),
+        difficultyText: item.difficulty
+    }));
+
+    const showIds = processedItems.map((row) => row.recommendation_item_id);
     if (showIds.length > 0) {
       await conn.query(
         `UPDATE user_recommendation_item SET is_shown = 1, shown_at = NOW() WHERE id IN (?)`,
@@ -318,7 +344,7 @@ export const getNextWeeklyRecommendation = async (req, res) => {
     return res.status(200).json({
       success: true,
       batch_id,
-      items: next10,
+      items: processedItems, // 가공된 데이터 전송
     });
   } catch (err) {
     console.error("/week/next 처리 중 오류:", err);
