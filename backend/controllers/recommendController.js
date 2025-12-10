@@ -38,9 +38,10 @@ export const getSingleRecommendation = async (req, res) => {
 // 2. 주간 식단 추천 통합 (POST /api/recommend/week)
 export const getWeeklyRecommendation = async (req, res) => {
   
-  // 1. 유저 식별 (객체/ID/숫자 모두 대응)
+  // 1. 유저 식별
   const userObj = req.user;
-  const user_id = userObj?.userId || userObj?.id || (typeof userObj === 'object' ? null : userObj);
+  // [수정됨] 토큰 payload의 user_id(snake_case) 대응 추가
+  const user_id = userObj?.userId || userObj?.id || userObj?.user_id || (typeof userObj === 'object' ? null : userObj);
 
   console.log(`>>> [POST] /api/recommend/week 요청 시작 (User ID: ${user_id})`);
 
@@ -54,7 +55,7 @@ export const getWeeklyRecommendation = async (req, res) => {
     return res.status(401).json({ message: "유효하지 않은 사용자 토큰입니다." });
   }
 
-  // [중요] 변수 스코프 문제 해결: req.body에서 값 추출
+  // req.body에서 값 추출
   const { 
     cuisine, diet, days, meals_per_day, top_k 
   } = req.body;
@@ -64,7 +65,6 @@ export const getWeeklyRecommendation = async (req, res) => {
   try {
     // 2. 최신 데이터 동기화
     console.log("--- 1. 데이터 동기화 (syncUserToBatch) ---");
-    // [수정] 서비스 함수가 conn을 필요로 하므로 넘겨줍니다.
     await syncUserToBatch(conn, user_id);
 
     // 3. 배치 데이터 조회
@@ -77,7 +77,7 @@ export const getWeeklyRecommendation = async (req, res) => {
     );
 
     if (batchRows.length === 0) {
-      throw new Error("배치 데이터 생성 실패 (동기화 후에도 데이터가 없습니다)");
+      throw new Error("배치 데이터 생성 실패 (동기화 로직 확인 필요: user_recommendation_batch 비어있음)");
     }
 
     const batchData = batchRows[0];
@@ -114,6 +114,11 @@ export const getWeeklyRecommendation = async (req, res) => {
         );
     } catch (axiosErr) {
         console.error(">>> AI 서버 통신 에러:", axiosErr.message);
+        if (axiosErr.response) {
+            console.error(">>> AI 응답 상태:", axiosErr.response.status);
+            console.error(">>> AI 응답 데이터:", axiosErr.response.data);
+        }
+        
         if (axiosErr.code === 'ECONNABORTED') {
              throw new Error("AI 서버 응답 시간 초과 (20초)");
         }
@@ -205,7 +210,7 @@ export const getWeeklyRecommendation = async (req, res) => {
   } catch (err) {
     console.error("######################################");
     console.error("[Critical] /week 처리 중 예외 발생!");
-    console.error(err.stack); // 줄번호 확인을 위해 스택 출력
+    console.error(err.stack);
     console.error("######################################");
     
     if (conn) await conn.rollback();
