@@ -108,7 +108,7 @@ export const getWeeklyRecommendation = async (req, res) => {
     let aiRes;
     try {
         aiRes = await axios.post(
-            `${AI_BASE_URL}/api/recommend/week`,
+            `${AI_BASE_URL}/recommend/week`,
             aiPayload,
             { timeout: 20000 }
         );
