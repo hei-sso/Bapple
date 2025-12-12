@@ -7,6 +7,7 @@ export interface Recipe {
     id: string;
     name: string;
     category: string; // 소속 카테고리 ID
+    recipeImageUrl: string | null; // 레시피 사진 URL
 }
 
 // 카테고리 인터페이스 (전체 레시피 목록 포함)
@@ -22,6 +23,7 @@ export interface RecommendedRecipe {
     name: string;
     rating: number; // 별점 (1~5)
     cookTimeMinutes: number; // 조리 시간 (분)
+    recipeImageUrl: string | null; // 레시피 사진 URL
 }
 
 // 레시피 Context 타입 정의

@@ -15,11 +15,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// API
+
+
 // Style
 import { Styles } from '@/constants/styles'; // 공통
 
 // Context
 import { useAuth } from '@/context/authContext';
+import { useFriendsData } from '@/context/friendContext';
+
+// Type
+import { Friend, FriendTab } from '@/types/friendTypes';
 
 // 하단 설정/정보 메뉴 목록
 const INFO_MENUS = [
@@ -34,6 +41,10 @@ export default function MyPageScreen() {
     
     // useAuth 훅을 사용하여 인증 및 프로필 데이터 가져오기
     const { isAuthenticated, isLoading: isAuthLoading, userProfile: user, accessToken } = useAuth();
+
+    // 친구 데이터 및 상태 가져오기
+    const { data: friendsData, refetchData } = useFriendsData();
+    const { followingList, followerList, myUniqueId, isLoading: isFriendsLoading } = friendsData;
 
     // 현재 화면의 로딩 상태 (API 실패 후 재시도를 위해 사용 가능)
     const [isDataLoading, setIsDataLoading] = useState(false);
@@ -161,12 +172,11 @@ export default function MyPageScreen() {
                         <Text style={styles.nicknameText}>{user!.nickname}</Text>
                         
                         <View style={styles.followStats}>
-                            <Text style={styles.statItem}>0 팔로워</Text>
-                            <Text style={styles.statItem}>0 팔로잉</Text>
+                            <Text style={styles.statItem}>{followerList.length ?? 0} 팔로워</Text>
+                            <Text style={styles.statItem}>{followingList.length ?? 0} 팔로잉</Text>
                         </View>
                     </View>
                 </View>
-
                 {/* 친구 추가 버튼 */}
                 <TouchableOpacity style={styles.addFriendButton} onPress={handleAddFriend}>
                     <Text style={styles.addFriendButtonText}>+  친구 추가하기</Text>

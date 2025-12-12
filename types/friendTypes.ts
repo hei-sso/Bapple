@@ -13,5 +13,5 @@ export interface FriendsData {
     followingList: Friend[];
     followerList: Friend[];
     myUniqueId: string | null; // null이면 DB 연결 오류
-    isLoading: boolean;
+    isLoading: true;
 }

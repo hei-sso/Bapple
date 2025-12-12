@@ -1,6 +1,7 @@
 // app/mypage/friends.tsx
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Search } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
@@ -94,16 +95,16 @@ export default function FriendsScreen() {
         
         Alert.alert(
             "친구 찾기",
-            `고유 ID "@${searchQuery}"를 가진 친구를 DB에서 검색하고 추가 요청을 보냅니다.`,
+            `고유 ID "${searchQuery}"를 가진 친구를 DB에서 검색하고 추가 요청을 보냅니다.`,
             [{ text: "확인" }]
         );
         setSearchQuery('');
     }, [searchQuery]);
 
     // 고유 ID 클립보드 복사 로직
-    const handleCopyId = useCallback(() => {
+    const handleCopyId = useCallback(async () => {
         if (myUniqueId) {
-            // 실제 클립보드 복사 로직 구현
+            await Clipboard.setStringAsync(myUniqueId);
             Alert.alert("복사 완료", `나의 고유 ID "${myUniqueId}"가 클립보드에 복사되었습니다.`, [{ text: "확인" }]);
         }
     }, [myUniqueId]);

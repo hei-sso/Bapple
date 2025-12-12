@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Image,
   PanResponder,
   ScrollView,
   StyleSheet,
@@ -140,7 +141,7 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
         autoPlayInterval={2000}
         data={recipes}
         width={carouselWidth}
-        height={220}
+        height={300} // 카드의 높이와 동일하게 유지
         scrollAnimationDuration={800}
         mode="parallax"
         modeConfig={{
@@ -150,40 +151,53 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => onRecipeSelect(item)} >
             <View style={styles.recipeCard}>
-              <View style={styles.recipeCardContentArea}>
-                <Text style={styles.recipeCardText}>{item.name}</Text>
+              <View style={styles.recipeCardContentArea}> 
                 
-                <View style={styles.ratingTimeContainer}>
-                  
-                  {/* 난이도 별점 (rating 사용) */}
-                  <View style={styles.ratingBadge}>
-                    {[...Array(item.rating || 1)].map((_, index) => (
-                      <FontAwesome 
-                        key={index} 
-                        name="star" 
-                        size={12} 
-                        color={ACCENT_COLOR_STAR} 
-                        style={{ marginRight: 2 }}
-                      />
-                    ))}
+                {/* 텍스트, 배지 컨테이너 (왼쪽 영역) */}
+                <View style={styles.textContentAndBadges}>
+                    <Text style={styles.recipeCardText}>{item.name}</Text>
                     
-                    {/* difficultyText 없이 rating 숫자로만 텍스트 결정 */}
-                    <Text style={[styles.ratingText, { marginLeft: 4 }]}>
-                       {item.rating === 1 ? '초급' : item.rating === 3 ? '고급' : '중급'}
-                    </Text>
-                  </View>
+                    <View style={styles.ratingTimeContainer}>
+                      
+                      {/* 난이도 별점 (rating 사용) */}
+                      <View style={styles.ratingBadge}>
+                        {[...Array(item.rating || 1)].map((_, index) => (
+                          <FontAwesome 
+                            key={index} 
+                            name="star" 
+                            size={12} 
+                            color={ACCENT_COLOR_STAR} 
+                            style={{ marginRight: 2 }}
+                          />
+                        ))}
+                        <Text style={[styles.ratingText, { marginLeft: 4 }]}>
+                           {item.rating === 1 ? '초급' : item.rating === 3 ? '고급' : '중급'}
+                        </Text>
+                      </View>
 
-                  {/* 조리시간 */}
-                  <View style={styles.timeBadge}>
-                    <Ionicons name="time-outline" size={12} color={TEXT_COLOR_DARK} />
-                    <Text style={styles.timeText}>
-                        {item.cookTimeMinutes ? `${item.cookTimeMinutes}분` : "정보없음"}
-                    </Text>
-                  </View>
-
+                      {/* 조리시간 */}
+                      <View style={styles.timeBadge}>
+                        <Ionicons name="time-outline" size={12} color={TEXT_COLOR_DARK} />
+                        <Text style={styles.timeText}>
+                            {item.cookTimeMinutes ? `${item.cookTimeMinutes}분` : "정보없음"}
+                        </Text>
+                      </View>
+                    </View>
                 </View>
+
+                {/* 이미지/플레이스홀더 영역*/}
+                {item.recipeImageUrl ? (
+                    <Image 
+                      source={{ uri: item.recipeImageUrl }} 
+                      style={styles.recipeCardImageInContent} 
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.recipeCardImagePlaceholderInContent}> 
+                      <Text style={styles.placeholderText}>이미지 없음</Text>
+                    </View>
+                  )}
               </View>
-              <View style={styles.recipeCardImagePlaceholder} />
             </View>
           </TouchableOpacity>
         )}
@@ -822,14 +836,12 @@ const styles = StyleSheet.create({
   },
   recommendationContainer: {
     alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 50
+    marginTop: 20
   },
   recommendationTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: TEXT_COLOR_DARK,
-    marginBottom: 15
+    color: TEXT_COLOR_DARK
   },
   recipeCard: {
     backgroundColor: '#fff',
@@ -843,26 +855,38 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    height: 220,
-    justifyContent: 'space-between'
+    height: 300,
+    justifyContent: 'flex-start'
   },
   recipeCardContentArea: {
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between', 
     alignItems: 'flex-start'
+  },
+  textContentAndBadges: {
+    flex: 1,
+    marginRight: 10,
+    justifyContent: 'flex-start'
   },
   recipeCardText: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
     color: PRIMARY_COLOR
   },
-  recipeCardImagePlaceholder: {
-    width: '100%',
-    height: 100,
+  recipeCardImageInContent: {
+    width: 330,
+    height: 200, // 고정 크기
+    borderRadius: 8
+  },
+  recipeCardImagePlaceholderInContent: {
+    width: 330,
+    height: 200, // 고정 크기
     backgroundColor: BG_COLOR_LIGHT, 
     borderRadius: 8,
-    marginTop: 'auto'
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: BORDER_COLOR_LIGHT
   },
   noDataText: {
     fontSize: 16,
@@ -872,7 +896,8 @@ const styles = StyleSheet.create({
   },
   ratingTimeContainer: {
     flexDirection: 'row',
-    marginBottom: 5
+    marginBottom: 5,
+    marginTop: 'auto'
   },
   ratingBadge: {
     flexDirection: 'row',
@@ -901,6 +926,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: TEXT_COLOR_DARK,
     marginLeft: 4
+  },
+  placeholderText: { 
+    fontSize: 14,
+    color: TEXT_COLOR_GRAY,
   },
   menuOverlay: {
     ...StyleSheet.absoluteFillObject,
