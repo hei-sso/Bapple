@@ -38,7 +38,7 @@ export const getMySchedules = async (req, res) => {
 
                 mp.group_id,
                 
-                -- [수정] 실제 DB 컬럼명 'name' 사용
+                -- [수정] 실제 DB 컬럼명 'name' 사용 (이전엔 group_name이라 에러남)
                 g.name AS group_name,   
                 
                 mp.title AS plan_title,       -- 식단 자체의 제목 (있을 경우)
@@ -51,7 +51,7 @@ export const getMySchedules = async (req, res) => {
                     (mp.user_id = ? AND mp.group_id IS NULL) 
                     OR 
                     mp.group_id IN (
-                        -- [수정] 실제 테이블명 'group_member' 사용
+                        -- [수정] 실제 테이블명 'group_member' 사용 (이전엔 user_group_member라 에러남)
                         SELECT group_id FROM group_member WHERE user_id = ? 
                     )
                 )
@@ -75,8 +75,6 @@ export const getMySchedules = async (req, res) => {
 // 2. 식단 추가 (POST /schedule)
 export const addSchedule = async (req, res) => {
     const userId = req.user.user_id || req.user.id;
-    // 프론트엔드 API에서 보내주는 필드: recipe_id, schedule_date, group_id
-    // DB 필수 필드인 meal_type이 프론트에서 안 오면 기본값 'LUNCH' 사용
     const { recipe_id, schedule_date, group_id, meal_type = 'LUNCH', title, memo } = req.body;
 
     if (!schedule_date) {
@@ -84,10 +82,8 @@ export const addSchedule = async (req, res) => {
     }
 
     try {
-        // group_id가 'personal'이나 null로 오면 개인 식단
         const targetGroupId = (group_id === 'personal' || !group_id) ? null : group_id;
         
-        // 개인 식단이면 user_id 필수, 그룹 식단이면 group_id 필수
         const insertQuery = `
             INSERT INTO meal_plan (user_id, group_id, recipe_id, plan_date, meal_type, title, memo)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -96,14 +92,13 @@ export const addSchedule = async (req, res) => {
         const [result] = await db.query(insertQuery, [
             userId, 
             targetGroupId, 
-            recipe_id || null, // 레시피 없이 텍스트만 있는 식단일 수도 있으므로
+            recipe_id || null, 
             schedule_date, 
             meal_type, 
             title || null, 
             memo || null
         ]);
 
-        // 프론트 응답용 데이터 구성
         const newSchedule = {
             schedule_id: result.insertId.toString(), 
             date: schedule_date,
@@ -130,7 +125,6 @@ export const deleteSchedule = async (req, res) => {
     const { scheduleId } = req.params;
 
     try {
-        // 본인이 작성한 식단만 삭제 가능하도록 조건 추가 (user_id = ?)
         const deleteQuery = `
             DELETE FROM meal_plan 
             WHERE meal_plan_id = ? AND user_id = ?
@@ -139,7 +133,6 @@ export const deleteSchedule = async (req, res) => {
         const [result] = await db.query(deleteQuery, [scheduleId, userId]);
 
         if (result.affectedRows === 0) {
-            // 삭제된 행이 없으면: ID가 없거나, 내 글이 아님
             return res.status(403).json({ 
                 success: false, 
                 message: "삭제 권한이 없거나 이미 삭제된 식단입니다." 
