@@ -2,7 +2,7 @@ import db from '../db.js'; // DB 연결 설정
 
 // 1. 내 전체 식단(개인 + 내가 속한 그룹) 조회 (GET /schedule/my)
 export const getMySchedules = async (req, res) => {
-    // authMiddleware에서 req.user.id (또는 user_id)를 세팅했다고 가정
+    // authMiddleware에서 req.user.user_id (또는 user_id)를 세팅했다고 가정
     const userId = req.user.user_id || req.user.id; 
     const { week_start_date } = req.query;
 
@@ -22,8 +22,6 @@ export const getMySchedules = async (req, res) => {
         // 쿼리 로직:
         // 1. 내 개인 식단 (mp.user_id = 나 AND mp.group_id IS NULL)
         // 2. 내가 속한 그룹의 식단 (mp.group_id IN (내가 멤버인 그룹들))
-        // recipe 테이블과 조인하여 레시피 제목(title)을 가져옵니다.
-        // user_group 테이블과 조인하여 그룹 이름(group_name)을 가져옵니다.
         
         const query = `
             SELECT 
@@ -31,9 +29,18 @@ export const getMySchedules = async (req, res) => {
                 DATE_FORMAT(mp.plan_date, '%Y-%m-%d') AS date,
                 mp.meal_type,
                 mp.recipe_id,
-                r.recipe_name AS recipe_name, -- recipe 테이블 컬럼명 확인 필요 (name vs title)
+                
+                -- [수정] 실제 DB 컬럼명 'name' 사용
+                r.name AS recipe_name, 
+                
+                -- [추가] 이미지 URL (프론트엔드 요청 변수명 recipeImageUrl 매핑)
+                r.img_url AS recipeImageUrl,
+
                 mp.group_id,
-                g.group_name AS group_name,   -- user_group 테이블 컬럼명 확인 필요
+                
+                -- [수정] 실제 DB 컬럼명 'name' 사용
+                g.name AS group_name,   
+                
                 mp.title AS plan_title,       -- 식단 자체의 제목 (있을 경우)
                 mp.memo
             FROM meal_plan mp
@@ -44,15 +51,14 @@ export const getMySchedules = async (req, res) => {
                     (mp.user_id = ? AND mp.group_id IS NULL) 
                     OR 
                     mp.group_id IN (
-                        SELECT group_id FROM user_group_member WHERE user_id = ? 
-                        -- user_group_member 테이블이 있다고 가정 (그룹 멤버십 테이블)
+                        -- [수정] 실제 테이블명 'group_member' 사용
+                        SELECT group_id FROM group_member WHERE user_id = ? 
                     )
                 )
                 AND mp.plan_date BETWEEN ? AND ?
             ORDER BY mp.plan_date ASC, mp.meal_type ASC;
         `;
 
-        // user_group_member 테이블명은 실제 DB에 맞게 수정해주세요 (예: group_members 등)
         const [rows] = await db.query(query, [userId, userId, startStr, endStr]);
 
         res.status(200).json({
@@ -61,8 +67,8 @@ export const getMySchedules = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ 스케줄 조회 에러:", error);
-        res.status(500).json({ success: false, message: "서버 에러 발생" });
+        console.error("스케줄 조회 에러:", error);
+        res.status(500).json({ success: false, message: "서버 에러 발생: " + error.message });
     }
 };
 
@@ -81,9 +87,7 @@ export const addSchedule = async (req, res) => {
         // group_id가 'personal'이나 null로 오면 개인 식단
         const targetGroupId = (group_id === 'personal' || !group_id) ? null : group_id;
         
-        // 개인 식단이면 user_id 필수, 그룹 식단이면 group_id 필수 (하지만 작성자 user_id는 남기는 게 좋음)
-        // 스키마상 user_id는 NULL 허용이지만, 작성자 추적을 위해 넣는 것을 추천
-        
+        // 개인 식단이면 user_id 필수, 그룹 식단이면 group_id 필수
         const insertQuery = `
             INSERT INTO meal_plan (user_id, group_id, recipe_id, plan_date, meal_type, title, memo)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -101,7 +105,7 @@ export const addSchedule = async (req, res) => {
 
         // 프론트 응답용 데이터 구성
         const newSchedule = {
-            schedule_id: result.insertId.toString(), // BIGINT는 JS에서 숫자로 정확치 않을 수 있어 문자열 변환 추천
+            schedule_id: result.insertId.toString(), 
             date: schedule_date,
             recipe_id,
             group_id: targetGroupId,
@@ -115,7 +119,7 @@ export const addSchedule = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ 식단 추가 에러:", error);
+        console.error("식단 추가 에러:", error);
         res.status(500).json({ success: false, message: "서버 에러 발생: " + error.message });
     }
 };
@@ -127,7 +131,6 @@ export const deleteSchedule = async (req, res) => {
 
     try {
         // 본인이 작성한 식단만 삭제 가능하도록 조건 추가 (user_id = ?)
-        // 혹은 그룹 관리자라면 삭제 가능하게 로직 확장이 필요할 수 있음
         const deleteQuery = `
             DELETE FROM meal_plan 
             WHERE meal_plan_id = ? AND user_id = ?
@@ -149,7 +152,7 @@ export const deleteSchedule = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ 식단 삭제 에러:", error);
+        console.error("식단 삭제 에러:", error);
         res.status(500).json({ success: false, message: "서버 에러 발생" });
     }
 };
