@@ -53,7 +53,7 @@ export const getSingleRecommendation = async (req, res) => {
     const query = `
         SELECT 
             recipe_id,
-            name AS recipe_name, 
+            name AS recipe_name, -- DB 컬럼명 name 사용
             cooking_time, 
             difficulty,
             img_url  -- DB에 저장된 이미지 URL 컬럼
@@ -78,7 +78,7 @@ export const getSingleRecommendation = async (req, res) => {
             name: recipe.recipe_name,
             time: parseCookTime(recipe.cooking_time),
             difficulty: parseDifficulty(recipe.difficulty), // 숫자(1,2,3)로 변환
-            recipeImageUrl: recipe.img_url  // ✅ 프론트엔드가 원하는 변수명으로 매핑
+            recipeImageUrl: recipe.img_url  // 프론트엔드가 원하는 변수명으로 매핑
         }
     });
 
@@ -175,8 +175,8 @@ export const getWeeklyRecommendation = async (req, res) => {
         SELECT
           uri.id AS recommendation_item_id,
           r.recipe_id,
-          r.name,
-          r.img_url,   -- ✅ SQL에서 이미 img_url을 가져오고 있음
+          r.name,      -- ✅ DB 컬럼명 확인 (name)
+          r.img_url,   -- ✅ DB 컬럼명 확인 (img_url)
           r.difficulty,
           r.cooking_time
         FROM user_recommendation_item uri
@@ -196,7 +196,7 @@ export const getWeeklyRecommendation = async (req, res) => {
         ...item,
         cookTimeMinutes: parseCookTime(item.cooking_time),
         rating: parseDifficulty(item.difficulty),
-        recipeImageUrl: item.img_url // ✅ 프론트엔드용 키 매핑
+        recipeImageUrl: item.img_url //  프론트엔드용 키 매핑
     }));
 
     const showIds = processedItems.map((row) => row.recommendation_item_id);
@@ -251,8 +251,8 @@ export const getNextWeeklyRecommendation = async (req, res) => {
             SELECT
                 uri.id AS recommendation_item_id,
                 r.recipe_id,
-                r.name,
-                r.img_url,   -- ✅ SQL 확인
+                r.name,      
+                r.img_url,   -- DB 컬럼명 확인
                 r.difficulty,
                 r.cooking_time
             FROM user_recommendation_item uri
@@ -284,7 +284,7 @@ export const getNextWeeklyRecommendation = async (req, res) => {
         ...item,
         cookTimeMinutes: parseCookTime(item.cooking_time),
         rating: parseDifficulty(item.difficulty),
-        recipeImageUrl: item.img_url // ✅ 프론트엔드용 키 매핑
+        recipeImageUrl: item.img_url // 프론트엔드용 키 매핑
     }));
 
     const showIds = processedItems.map((row) => row.recommendation_item_id);
