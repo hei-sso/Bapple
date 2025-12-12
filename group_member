@@ -27,4 +27,8 @@ CREATE TABLE group_member (
 CREATE INDEX idx_group_member_user ON group_member (user_id);
 
 -- FK 원상복구
-SET FOREIGN_KEY_CHECKS = @OLD_FK_CHECKS;
+SET FOREIGN_KEY_CHECKS = @OLD_FK_CHECKS
+
+-- 이후 추가 컬럼
+ALTER TABLE group_member
+ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE;
