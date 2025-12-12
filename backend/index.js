@@ -11,6 +11,7 @@ import recommendRoutes from "./routes/recommendRoutes.js";
 import healthRoutes from './routes/healthRoutes.js'; 
 import recipeRoutes from './routes/recipeRoutes.js';
 import scheduleRouter from './routes/scheduleRoutes.js';
+import friendRouter from './routes/friendRoutes.js';
 
 // 환경 변수 로드
 dotenv.config();
@@ -57,6 +58,7 @@ app.use("/api/recommend", recommendRoutes);
 app.use("/health", healthRoutes);
 app.use('/recipe', recipeRoutes);
 app.use('/schedule', scheduleRouter);
+app.use('/friends', friendRouter);
 
 app.use('/', groupRoutes);
 
