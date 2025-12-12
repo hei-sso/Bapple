@@ -1,8 +1,7 @@
-import db from '../db.js'; // DB 연결 설정
+import db from '../db.js';
 
 // 1. 내 전체 식단(개인 + 내가 속한 그룹) 조회 (GET /schedule/my)
 export const getMySchedules = async (req, res) => {
-    // authMiddleware에서 req.user.user_id (또는 user_id)를 세팅했다고 가정
     const userId = req.user.user_id || req.user.id; 
     const { week_start_date } = req.query;
 
@@ -11,7 +10,6 @@ export const getMySchedules = async (req, res) => {
     }
 
     try {
-        // 주간 범위 계산 (시작일 ~ +6일)
         const startDate = new Date(week_start_date);
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6);
@@ -19,10 +17,6 @@ export const getMySchedules = async (req, res) => {
         const startStr = startDate.toISOString().split('T')[0];
         const endStr = endDate.toISOString().split('T')[0];
 
-        // 쿼리 로직:
-        // 1. 내 개인 식단 (mp.user_id = 나 AND mp.group_id IS NULL)
-        // 2. 내가 속한 그룹의 식단 (mp.group_id IN (내가 멤버인 그룹들))
-        
         const query = `
             SELECT 
                 mp.meal_plan_id AS schedule_id,
@@ -30,18 +24,13 @@ export const getMySchedules = async (req, res) => {
                 mp.meal_type,
                 mp.recipe_id,
                 
-                -- [수정] 실제 DB 컬럼명 'name' 사용
-                r.name AS recipe_name, 
-                
-                -- [추가] 이미지 URL (프론트엔드 요청 변수명 recipeImageUrl 매핑)
-                r.img_url AS recipeImageUrl,
+                r.name AS recipe_name,  -- 레시피 이름
+                r.img_url AS recipeImageUrl, -- 레시피 이미지
 
                 mp.group_id,
+                g.name AS group_name,   -- 그룹 이름
                 
-                -- [수정] 실제 DB 컬럼명 'name' 사용 (이전엔 group_name이라 에러남)
-                g.name AS group_name,   
-                
-                mp.title AS plan_title,       -- 식단 자체의 제목 (있을 경우)
+                mp.title AS plan_title,
                 mp.memo
             FROM meal_plan mp
             LEFT JOIN recipe r ON mp.recipe_id = r.recipe_id
@@ -51,7 +40,6 @@ export const getMySchedules = async (req, res) => {
                     (mp.user_id = ? AND mp.group_id IS NULL) 
                     OR 
                     mp.group_id IN (
-                        -- [수정] 실제 테이블명 'group_member' 사용 (이전엔 user_group_member라 에러남)
                         SELECT group_id FROM group_member WHERE user_id = ? 
                     )
                 )
@@ -67,15 +55,27 @@ export const getMySchedules = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("스케줄 조회 에러:", error);
-        res.status(500).json({ success: false, message: "서버 에러 발생: " + error.message });
+        console.error(" 스케줄 조회 에러:", error);
+        res.status(500).json({ success: false, message: "서버 에러 발생" });
     }
 };
 
-// 2. 식단 추가 (POST /schedule)
+// 2. 식단 추가 (POST /schedule) - 수정됨!
 export const addSchedule = async (req, res) => {
     const userId = req.user.user_id || req.user.id;
-    const { recipe_id, schedule_date, group_id, meal_type = 'LUNCH', title, memo } = req.body;
+
+    // [디버깅 로그] 프론트에서 실제로 뭘 보내는지 서버 로그에서 확인 가능
+    console.log("📥 [POST] 식단 추가 요청 Body:", req.body);
+
+    // 1. 변수명 방어 로직: recipe_id가 안 오면 recipeId도 확인해봄
+    const recipe_id = req.body.recipe_id || req.body.recipeId;
+    const schedule_date = req.body.schedule_date || req.body.date;
+    const group_id = req.body.group_id || req.body.groupId;
+    
+    // 기본값 처리
+    const meal_type = req.body.meal_type || 'LUNCH';
+    const title = req.body.title || null;
+    const memo = req.body.memo || null;
 
     if (!schedule_date) {
         return res.status(400).json({ success: false, message: "날짜 정보가 누락되었습니다." });
@@ -92,15 +92,18 @@ export const addSchedule = async (req, res) => {
         const [result] = await db.query(insertQuery, [
             userId, 
             targetGroupId, 
-            recipe_id || null, 
+            recipe_id || null,  // 여기가 NULL이면 DB에 레시피 연결 안 됨
             schedule_date, 
             meal_type, 
-            title || null, 
-            memo || null
+            title, 
+            memo
         ]);
 
+        console.log(`식단 추가 완료! ID: ${result.insertId}, Recipe: ${recipe_id}`);
+
+        // 응답 데이터
         const newSchedule = {
-            schedule_id: result.insertId.toString(), 
+            schedule_id: result.insertId.toString(),
             date: schedule_date,
             recipe_id,
             group_id: targetGroupId,
