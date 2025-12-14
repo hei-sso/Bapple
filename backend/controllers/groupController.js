@@ -204,22 +204,43 @@ const groupController = {
     // 5. 식단 추가 (POST /schedule)
     addSchedule: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
-        if (!userId) return res.status(401).json({ success: false, message: "인증 실패" });
 
-        const { recipeId, date, groupId } = req.body;
-        // groupId가 문자열 'personal' 등이 오면 null 처리, 아니면 CHAR(8) ID 사용
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "인증 실패" });
+        }
+
+        // 1. 데이터 받기 (변수명 방어 로직)
+        const recipeId = req.body.recipe_id || req.body.recipeId;
+        const date = req.body.schedule_date || req.body.date;
+        const groupId = req.body.group_id || req.body.groupId;
+        
+        // 2. [중요] 필수값 검증 (여기서 막습니다!)
+        if (!recipeId) {
+            console.error("❌ [식단 추가 실패] 레시피 ID가 누락되었습니다.");
+            return res.status(400).json({ 
+                success: false, 
+                message: "레시피 ID는 필수입니다. 레시피를 선택해주세요." 
+            });
+        }
+
+        if (!date) {
+            return res.status(400).json({ success: false, message: "날짜 정보가 누락되었습니다." });
+        }
+
+        // 그룹 ID 처리 (문자열 'personal'이거나 없으면 NULL)
         const finalGroupId = (groupId === 'personal' || !groupId) ? null : groupId;
 
         try {
-            let recipeName = '나의 레시피';
-            // 레시피 이름 조회 (옵션)
-            try {
-                const [recipes] = await pool.query('SELECT name FROM recipe WHERE recipe_id = ?', [recipeId]);
-                if (recipes.length > 0) recipeName = recipes[0].name;
-            } catch (e) {
-                console.warn('Recipe 테이블 조회 실패 (식단은 계속 진행):', e.message);
+            // 3. 레시피 이름 조회 (DB에 존재하는지 확인 겸용)
+            const [recipes] = await pool.query('SELECT name FROM recipe WHERE recipe_id = ?', [recipeId]);
+            
+            if (recipes.length === 0) {
+                return res.status(404).json({ success: false, message: "존재하지 않는 레시피입니다." });
             }
+            
+            const recipeName = recipes[0].name;
 
+            // 4. 식단 저장 (recipeId가 무조건 들어감)
             const [result] = await pool.query(
                 `INSERT INTO meal_plan 
                 (user_id, recipe_id, plan_date, group_id, title, meal_type, created_at)
@@ -240,7 +261,7 @@ const groupController = {
             });
         } catch (error) {
             console.error('식단 추가 실패:', error);
-            res.status(500).json({ success: false, message: '식단 추가 실패' });
+            res.status(500).json({ success: false, message: '식단 추가 실패', error: error.message });
         }
     },
 
