@@ -64,10 +64,10 @@ export const getMySchedules = async (req, res) => {
 export const addSchedule = async (req, res) => {
     const userId = req.user.user_id || req.user.id;
 
-    // [디버깅 로그] 프론트에서 실제로 뭘 보내는지 서버 로그에서 확인 가능
+    // [디버깅 로그]
     console.log("📥 [POST] 식단 추가 요청 Body:", req.body);
 
-    // 1. 변수명 방어 로직: recipe_id가 안 오면 recipeId도 확인해봄
+    // 1. 변수명 방어 로직
     const recipe_id = req.body.recipe_id || req.body.recipeId;
     const schedule_date = req.body.schedule_date || req.body.date;
     const group_id = req.body.group_id || req.body.groupId;
@@ -77,13 +77,28 @@ export const addSchedule = async (req, res) => {
     const title = req.body.title || null;
     const memo = req.body.memo || null;
 
+    // 🚨 [필수 수정] 날짜 체크
     if (!schedule_date) {
         return res.status(400).json({ success: false, message: "날짜 정보가 누락되었습니다." });
+    }
+
+    // 🚨 [필수 수정] 레시피 ID 체크 (여기서 NULL을 막습니다!)
+    if (!recipe_id) {
+        console.error("❌ 레시피 ID 누락됨");
+        return res.status(400).json({ success: false, message: "레시피 ID가 필요합니다." });
     }
 
     try {
         const targetGroupId = (group_id === 'personal' || !group_id) ? null : group_id;
         
+        // 레시피 이름 가져오기 (데이터 무결성 체크 겸용)
+        // recipe 테이블이 있다면 이름을 가져와서 저장하는 것이 좋습니다.
+        let recipeName = 'Unknown Recipe';
+        try {
+             const [rows] = await db.query('SELECT name FROM recipe WHERE recipe_id = ?', [recipe_id]);
+             if (rows.length > 0) recipeName = rows[0].name;
+        } catch (e) { console.log("레시피 조회 패스"); }
+
         const insertQuery = `
             INSERT INTO meal_plan (user_id, group_id, recipe_id, plan_date, meal_type, title, memo)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -92,16 +107,15 @@ export const addSchedule = async (req, res) => {
         const [result] = await db.query(insertQuery, [
             userId, 
             targetGroupId, 
-            recipe_id || null,  // 여기가 NULL이면 DB에 레시피 연결 안 됨
+            recipe_id,  // 👈 여기에 || null 을 지웠습니다. 무조건 값이 들어갑니다.
             schedule_date, 
             meal_type, 
-            title, 
+            title || recipeName, // 제목이 없으면 레시피 이름 사용
             memo
         ]);
 
         console.log(`식단 추가 완료! ID: ${result.insertId}, Recipe: ${recipe_id}`);
 
-        // 응답 데이터
         const newSchedule = {
             schedule_id: result.insertId.toString(),
             date: schedule_date,
