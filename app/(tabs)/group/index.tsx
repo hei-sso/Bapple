@@ -87,12 +87,13 @@ const GroupListItem: React.FC<{
   );
 };
 
+const AdIconSource = require('@/assets/images/ad-banner.png');
+
 // 광고 배너 컴포넌트
 const AdBanner: React.FC = () => {
   const AdContent = () => (
     <View style={styles.adContent}>
-      <AlertTriangle size={32} color="#D35400" />
-      <Text style={styles.adText}>광고 배너 영역</Text>
+      <Image source={AdIconSource} style={styles.adImage} />
     </View>
   );
   return (
@@ -184,8 +185,9 @@ const GroupScreenContent = () => {
       <GroupCreationModal 
         isVisible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
-        initialMode={modalMode}
-      />
+        initialMode={modalMode} onGroupCreated={function (): void {
+          throw new Error('Function not implemented.');
+        } }      />
     </View>
   );
 }
@@ -226,8 +228,7 @@ const styles = StyleSheet.create({
   // 광고 배너
   adBanner: {
     margin: 16,
-    borderRadius: 12, 
-    backgroundColor: '#FFEBEE',
+    borderRadius: 12,
     borderWidth: 2, 
     borderColor: '#808080ff'
   },
@@ -237,10 +238,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10
   },
-  adText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333'
+  adImage: {
+    width: 355,
+    height: 80,
+    alignItems: 'center',
+    borderRadius: 12
   },
 
   // 그룹 리스트
