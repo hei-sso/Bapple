@@ -1,8 +1,7 @@
 import pool from '../db.js';
 import crypto from 'crypto';
 
-// 1. 초대 코드 생성 헬퍼 함수 (이제 이게 그룹 ID가 됩니다)
-// CHAR(8)에 딱 맞게 4바이트(8글자) 16진수 생성
+// 1. 초대 코드 생성 헬퍼 함수 (그룹 ID 생성)
 const generateGroupId = () => {
     return crypto.randomBytes(4).toString('hex').toUpperCase(); // 예: 8A1B2C3D
 };
@@ -17,7 +16,6 @@ const groupController = {
         }
 
         try {
-            // [수정] g.invite_code 컬럼 삭제됨 -> g.group_id가 곧 초대코드임
             const query = `
                 SELECT 
                     g.group_id,
@@ -38,11 +36,11 @@ const groupController = {
             const [rows] = await pool.query(query, [userId]);
 
             const formattedGroups = rows.map(row => ({
-                id: row.group_id,              // CHAR(8) 문자열
+                id: row.group_id,              
                 name: row.name,
                 description: row.description || '',
                 ownerId: row.owner_user_id.toString(),
-                inviteCode: row.group_id,      // [중요] ID가 곧 초대코드
+                inviteCode: row.group_id,      
                 settings: { 
                     isFridgeShared: row.is_fridge_shared || 'owner_only' 
                 },
@@ -70,14 +68,13 @@ const groupController = {
 
         const { name, description, isFridgeShared } = req.body;
         
-        // [수정] 여기서 생성한 코드가 곧 PK(group_id)가 됨
         const newGroupId = generateGroupId(); 
 
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
 
-            // A. 그룹 생성 (invite_code 컬럼 제거, group_id에 값 직접 삽입)
+            // A. 그룹 생성
             await connection.query(
                 `INSERT INTO user_group 
                 (group_id, name, description, owner_user_id, is_fridge_shared, visibility, created_at) 
@@ -95,11 +92,11 @@ const groupController = {
             await connection.commit();
 
             const newGroupData = {
-                id: newGroupId,                // 생성된 ID 반환
+                id: newGroupId,                
                 name,
                 description,
                 ownerId: userId.toString(),
-                inviteCode: newGroupId,        // 초대 코드도 동일
+                inviteCode: newGroupId,        
                 settings: { isFridgeShared: isFridgeShared || 'owner_only' },
                 memberCount: 1,
                 maxMembers: 10,
@@ -112,7 +109,6 @@ const groupController = {
         } catch (error) {
             await connection.rollback();
             
-            // 만약 정말 운 나쁘게 중복된 ID가 생성되었다면 (희박함)
             if (error.code === 'ER_DUP_ENTRY') {
                  return res.status(409).json({ success: false, message: '그룹 생성 중 충돌이 발생했습니다. 다시 시도해주세요.' });
             }
@@ -132,11 +128,9 @@ const groupController = {
             return res.status(401).json({ success: false, message: "인증 실패" });
         }
 
-        // 프론트에서 'invite_code'란 이름으로 보내주지만, 실제론 group_id임
         const { invite_code } = req.body; 
 
         try {
-            // [수정] invite_code 컬럼이 없으므로 group_id로 검색
             const [groups] = await pool.query('SELECT * FROM user_group WHERE group_id = ?', [invite_code]);
             
             if (groups.length === 0) {
@@ -165,7 +159,7 @@ const groupController = {
                 name: group.name,
                 description: group.description,
                 ownerId: group.owner_user_id.toString(),
-                inviteCode: group.group_id, // ID 리턴
+                inviteCode: group.group_id, 
                 settings: { isFridgeShared: group.is_fridge_shared || 'owner_only' },
                 memberCount: 1, 
                 maxMembers: 10,
@@ -184,7 +178,7 @@ const groupController = {
     // 4. 핀 고정 토글 (PATCH /groups/:groupId/pin)
     togglePin: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
-        const { groupId } = req.params; // 이제 문자열(CHAR 8)
+        const { groupId } = req.params;
 
         if (!userId) return res.status(401).json({ success: false, message: "인증 실패" });
 
@@ -209,38 +203,38 @@ const groupController = {
             return res.status(401).json({ success: false, message: "인증 실패" });
         }
 
-        // 1. 데이터 받기 (변수명 방어 로직)
         const recipeId = req.body.recipe_id || req.body.recipeId;
         const date = req.body.schedule_date || req.body.date;
         const groupId = req.body.group_id || req.body.groupId;
         
-        // 2. [중요] 필수값 검증 (여기서 막습니다!)
+        const meal_type = req.body.meal_type || 'LUNCH';
+        const title = req.body.title || null;
+        const memo = req.body.memo || null;
+
+        if (!date) {
+            return res.status(400).json({ success: false, message: "날짜 정보가 누락되었습니다." });
+        }
+
+        // 🚨 [필수 수정] 레시피 ID 체크 (NULL 방지)
         if (!recipeId) {
-            console.error("❌ [식단 추가 실패] 레시피 ID가 누락되었습니다.");
+            console.error("❌ [식단 추가 실패] 레시피 ID 누락");
             return res.status(400).json({ 
                 success: false, 
                 message: "레시피 ID는 필수입니다. 레시피를 선택해주세요." 
             });
         }
 
-        if (!date) {
-            return res.status(400).json({ success: false, message: "날짜 정보가 누락되었습니다." });
-        }
-
-        // 그룹 ID 처리 (문자열 'personal'이거나 없으면 NULL)
         const finalGroupId = (groupId === 'personal' || !groupId) ? null : groupId;
 
         try {
-            // 3. 레시피 이름 조회 (DB에 존재하는지 확인 겸용)
-            const [recipes] = await pool.query('SELECT name FROM recipe WHERE recipe_id = ?', [recipeId]);
-            
-            if (recipes.length === 0) {
-                return res.status(404).json({ success: false, message: "존재하지 않는 레시피입니다." });
-            }
-            
-            const recipeName = recipes[0].name;
+            // 레시피 이름 조회
+            let recipeName = 'Unknown Recipe';
+            try {
+                const [recipes] = await pool.query('SELECT name FROM recipe WHERE recipe_id = ?', [recipeId]);
+                if (recipes.length > 0) recipeName = recipes[0].name;
+            } catch (e) { /* 조회 실패해도 진행 */ }
 
-            // 4. 식단 저장 (recipeId가 무조건 들어감)
+            // 4. 식단 저장
             const [result] = await pool.query(
                 `INSERT INTO meal_plan 
                 (user_id, recipe_id, plan_date, group_id, title, meal_type, created_at)
@@ -271,6 +265,7 @@ const groupController = {
         if (!userId) return res.status(401).json({ success: false, message: "인증 실패" });
 
         try {
+            // ⭐ [핵심 수정] SELECT 절에 mp.recipe_id 추가!
             const query = `
                 SELECT 
                     mp.meal_plan_id, 
@@ -279,16 +274,16 @@ const groupController = {
                     mp.user_id,
                     mp.title,
                     mp.meal_type,
+                    mp.recipe_id,  -- 👈 이거 없으면 프론트에서 NULL로 뜸!
                     r.name as recipe_name,
                     r.cooking_time as cook_time 
                 FROM meal_plan mp
                 LEFT JOIN recipe r ON mp.recipe_id = r.recipe_id
-                -- 내가 속한 그룹인지 확인 (개인 식단이 아닌 경우)
                 LEFT JOIN group_member gm ON mp.group_id = gm.group_id AND gm.user_id = ?
                 WHERE 
-                    (mp.user_id = ? AND mp.group_id IS NULL) -- 개인 식단
+                    (mp.user_id = ? AND mp.group_id IS NULL) 
                     OR 
-                    (gm.user_id IS NOT NULL) -- 내가 속한 그룹의 식단
+                    (gm.user_id IS NOT NULL)
                 ORDER BY mp.plan_date ASC
             `;
 
@@ -306,7 +301,11 @@ const groupController = {
                 dayGroup.recipes.push({
                     id: row.meal_plan_id.toString(),
                     recipeName: row.recipe_name || row.title || '알 수 없는 레시피',
-                    groupId: row.group_id, // CHAR(8) 문자열 그대로 반환
+                    groupId: row.group_id, 
+                    
+                    // ⭐ [핵심 수정] 응답 객체에 recipeId 포함!
+                    recipeId: row.recipe_id ? row.recipe_id.toString() : null, 
+                    
                     memberId: row.user_id.toString(),
                     rating: 0,
                     cookTimeMinutes: row.cook_time || 0
@@ -325,14 +324,11 @@ const groupController = {
     // 7. 식단 삭제 (DELETE /schedule/:scheduleId)
     deleteSchedule: async (req, res) => {
         const userId = req.user.id || req.user.user_id;
-        if (!userId) return res.status(401).json({ success: false, message: "인증 실패" });
-
         const { scheduleId } = req.params;
 
+        if (!userId) return res.status(401).json({ success: false, message: "인증 실패" });
+
         try {
-            // 본인이 작성한(user_id) 식단만 삭제 가능하도록 제한
-            // (그룹 식단이어도 작성자만 지울 수 있게 할지, 그룹원이면 다 지울 수 있게 할지는 정책 나름.
-            //  여기선 일단 '내 user_id로 등록된 식단'만 지우는 로직 유지)
             const [result] = await pool.query(
                 'DELETE FROM meal_plan WHERE meal_plan_id = ? AND user_id = ?',
                 [scheduleId, userId]
