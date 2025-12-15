@@ -33,8 +33,8 @@ export interface RecipeDetail {
     recipeImageUrl: string | null;
     difficulty: string; // 난이도
     cookTimeMinutes: number; // 조리 시간
-    ingredients: string[]; // 레시피 재료
-    instructions: string[]; // 조리 방법
+    ingredients: string[] | null; // 레시피 재료
+    instructions: string[] | null; // 조리 방법
 }
 
 // 레시피 Context 타입 정의

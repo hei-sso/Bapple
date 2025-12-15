@@ -54,10 +54,12 @@ export interface GroupRecipeItem {
     recipeId: string; // 실제 레시피 ID (FK)
     recipeName: string; // 레시피 이름
     groupId: string | null; // 등록된 그룹 ID (null이면 개인 식단)
+    groupName: string | null;
     memberId: string; // 등록한 멤버 ID (스케줄 관리 용)
     // AI 추천 레시피와 통합하기 위한 필드
     rating: number; // 별점 (1~5)
     cookTimeMinutes: number; // 조리 시간 (분)
+    recipeImageUrl: string | null; // 이미지 Url
 }
 
 // 레시피 스케줄

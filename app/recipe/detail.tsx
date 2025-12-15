@@ -19,8 +19,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchRecipeDetail } from '@/api/recipeAPI';
 
 // Style
-import { Header } from '@/components/header';
-import { Styles } from '@/constants/styles';
+import { Header } from '@/components/header'; // 헤더
+import { Styles } from '@/constants/styles'; // 공통
 
 // Context
 import { GroupProvider, useGroups } from '@/context/groupContext';
@@ -118,7 +118,6 @@ function RecipeDetailContent() {
         );
     }
 
-
     // 렌더링
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -131,24 +130,20 @@ function RecipeDetailContent() {
                  
                 {/* 삭제 버튼: 기능 없이 시각적으로만 존재 */}
                 {showDeleteButton && (
-                    <TouchableOpacity 
-                        // onPress={...} 삭제
-                        style={styles.deleteButton} 
-                        // disabled={true} 로직을 제거하고 시각적으로만 존재
-                    >
-                        <Trash2 size={24} color="gray" /> {/* 비활성화 느낌을 위해 gray 사용 */}
+                    <TouchableOpacity style={styles.deleteButton} >
+                        <Trash2 size={24} color="gray" />
                     </TouchableOpacity>
                 )}
             </View>
             
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 
-                {/* 1. 레시피 이름 (스크린샷 중앙 상단) */}
+                {/* 1. 레시피 이름 */}
                 <View style={styles.nameContainer}>
                     <Text style={styles.recipeName}>{recipeDetail.name}</Text>
                 </View>
 
-                {/* 2. 레시피 사진 (스크린샷) */}
+                {/* 2. 레시피 사진 */}
                 <View style={styles.imagePlaceholder}>
                     {recipeDetail.recipeImageUrl ? (
                         <Image 
@@ -160,7 +155,7 @@ function RecipeDetailContent() {
                     )}
                 </View>
                 
-                {/* 3. 난이도 / 조리 시간 (스크린샷) */}
+                {/* 3. 난이도 / 조리 시간 */}
                 <View style={styles.infoRow}>
                     <View style={styles.infoBox}>
                         <Text style={styles.infoLabel}>난이도</Text>
@@ -168,31 +163,44 @@ function RecipeDetailContent() {
                     </View>
                     <View style={styles.infoBox}>
                         <Text style={styles.infoLabel}>조리 시간</Text>
-                        <Text style={styles.infoValue}>{recipeDetail.cookTimeMinutes}분</Text>
+                        <Text style={styles.infoValue}>{recipeDetail.cookTimeMinutes}</Text>
                     </View>
                 </View>
                 
-                {/* 4. 레시피 재료 (스크린샷) */}
+                {/* 4. 레시피 재료 */}
                 <View style={styles.sectionContainer}>
                     <Text style={styles.sectionTitle}>레시피 재료</Text>
-                    {recipeDetail.ingredients.map((item, index) => (
-                        <Text key={index} style={styles.listItemText}>- {item}</Text>
-                    ))}
+                    {/* ingredients가 존재하고 배열인지 확인 */}
+                    {recipeDetail.ingredients && recipeDetail.ingredients.length > 0 ? (
+                        recipeDetail.ingredients.map((item, index) => (
+                            <Text key={index} style={styles.listItemText}>{item}</Text>
+                        ))
+                    ) : (
+                        <Text style={styles.listItemText} selectionColor="gray">
+                            등록된 재료 정보가 없습니다.
+                        </Text>
+                    )}
                 </View>
                 
-                {/* 5. 조리 방법 (스크린샷) */}
+                {/* 5. 조리 방법 */}
                 <View style={styles.sectionContainer}>
                     <Text style={styles.sectionTitle}>조리 방법</Text>
-                    {recipeDetail.instructions.map((item, index) => (
-                        <Text key={index} style={styles.listItemText}>{index + 1}. {item}</Text>
-                    ))}
+                    {/* instructions가 존재하고 배열인지 확인 */}
+                    {recipeDetail.instructions && recipeDetail.instructions.length > 0 ? (
+                        recipeDetail.instructions.map((item, index) => (
+                            <Text key={index} style={styles.listItemText}>{item}</Text>
+                        ))
+                    ) : (
+                        <Text style={styles.listItemText} selectionColor="gray">
+                            등록된 조리 방법이 없습니다.
+                        </Text>
+                    )}
                 </View>
                 
-                {/* 식단 추가 버튼 (기존 기능) */}
+                {/* 식단 추가 버튼 */}
                 <View style={{ marginTop: 30, paddingHorizontal: 20 }}>
                     <Button title="식단에 추가하기" onPress={() => setModalVisible(true)} />
                 </View>
-
             </ScrollView>
 
             {/* 모달 */}
@@ -230,7 +238,7 @@ const styles = StyleSheet.create({
     // 삭제 버튼 스타일
     deleteButton: {
         position: 'absolute',
-        right: 20, 
+        right: 0, 
         top: 10, 
         zIndex: 10, 
         padding: 5

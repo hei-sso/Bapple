@@ -9,12 +9,14 @@ import {
     Animated,
     Button,
     Dimensions,
+    Image,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -106,7 +108,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ item, onDelete, onDetailPress }
                 style={styles.deleteButton} 
                 onPress={() => {
                     swipeableRef.current?.close();
-                    onDelete(item.id); // 삭제는 스케줄 ID로 하는 게 맞음
+                    onDelete(item.id); 
                 }}
             >
                 <Animated.View style={[{ transform: [{ scale }] }]}>
@@ -117,11 +119,10 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ item, onDelete, onDetailPress }
         );
     };
 
-    const isPersonal = !item.groupId; 
+    // 그룹 ID가 있냐 없냐가 아니라, 'personal' 그룹인지 확인
+    const isPersonal = !item.groupId || item.groupId === 'personal'; 
     
-    // 레시피 ID 추출 로직
-    // item.id는 스케줄 PK이고, item.recipeId가 진짜 레시피 FK
-    // 타입스크립트 에러 방지를 위해 any 캐스팅 후 안전하게 접근
+    // API에서 받아오는 데이터 구조에 따라 recipeId 필드명이 다를 수 있어 방어적 코딩
     const realRecipeId = (item as any).recipeId || (item as any).recipe_id;
 
     return (
@@ -140,16 +141,29 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ item, onDelete, onDetailPress }
                         Alert.alert("알림", "연결된 레시피 정보를 찾을 수 없습니다.");
                     }
                 }}
+                activeOpacity={0.7} // 터치 피드백 추가
             >
                 <View style={styles.recipeItemCard}>
+                    {/* 그룹 이름 표시 로직 변경 */}
                     <View style={[styles.groupTag, { backgroundColor: getGroupColor(item.groupId) }]}>
                         <Text style={styles.groupTagText}>
-                            {isPersonal ? '나' : `그룹 ID: ${item.groupId}`}
+                            {isPersonal ? '나' : (item.groupName || item.groupId)}
                         </Text>
                     </View>
+
                     <View style={styles.recipeCardContent}>
                         <Text style={styles.recipeName}>{item.recipeName}</Text>
-                        <View style={styles.recipeImagePlaceholder} />
+                        
+                        {/* 이미지가 있으면 Image 컴포넌트, 없으면 회색 박스 */}
+                        {item.recipeImageUrl ? (
+                            <Image 
+                                source={{ uri: item.recipeImageUrl }} 
+                                style={{ width: 120, height: 120, borderRadius: 8, marginLeft: 'auto' }}
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <View style={styles.recipeImagePlaceholder} />
+                        )}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -236,11 +250,19 @@ function DateDetailScreenContent() {
         );
     }, [currentDateString, combinedSchedules, activeGroupIds]);
     
-    // 메뉴 상세 화면 이동
+    // ----------------------------------------------------------------------
+    // [수정됨] 메뉴 상세 화면 이동
+    // ----------------------------------------------------------------------
     const handleRecipeDetail = useCallback((recipeId: string, recipeName: string) => {
+        console.log(`Navigating to detail: ID=${recipeId}, Name=${recipeName}`); // 디버깅용 로그
+        
         router.push({
             pathname: '/recipe/detail', 
-            params: { id: recipeId, name: recipeName },
+            params: { 
+                id: recipeId, 
+                // isScheduled: 'true'를 전달해야 상세 페이지에서 스케줄 관련 UI(예: 삭제 버튼 등)를 제어할 수 있습니다.
+                isScheduled: 'true' 
+            },
         });
     }, [router]);
     
@@ -263,76 +285,78 @@ function DateDetailScreenContent() {
     };
 
     return (
-        <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            {/* Header 영역 */}
-            <View style={Header.HeaderAlign}>
-                <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
-                    <ChevronLeft size={28} color="#000" />
-                </TouchableOpacity>
-                <Text style={Header.Title}>
-                    {new Date(currentDateString).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                </Text>
-            </View>
-            <ScrollView contentContainerStyle={Styles.scrollContent}>
-                {/* 주간 달력 표시 (상세 뷰) */}
-                <View style={Calendar.calendarArea}>
-                    {/* 달력 상단 (주 이동 버튼) */}
-                    <View style={Calendar.weekNavContainer}>
-                        <View style={Calendar.weekNavAlign}> 
-                            <TouchableOpacity onPress={() => changeWeek(-1)} style={Calendar.weekNavButton}><ChevronLeft size={24} color="#000" /></TouchableOpacity>
-                            <TouchableOpacity onPress={() => changeWeek(1)} style={Calendar.weekNavButton}><ChevronRight size={24} color="#000" /></TouchableOpacity>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+                {/* Header 영역 */}
+                <View style={Header.HeaderAlign}>
+                    <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
+                        <ChevronLeft size={28} color="#000" />
+                    </TouchableOpacity>
+                    <Text style={Header.Title}>
+                        {new Date(currentDateString).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                    </Text>
+                </View>
+                <ScrollView contentContainerStyle={Styles.scrollContent}>
+                    {/* 주간 달력 표시 (상세 뷰) */}
+                    <View style={Calendar.calendarArea}>
+                        {/* 달력 상단 (주 이동 버튼) */}
+                        <View style={Calendar.weekNavContainer}>
+                            <View style={Calendar.weekNavAlign}> 
+                                <TouchableOpacity onPress={() => changeWeek(-1)} style={Calendar.weekNavButton}><ChevronLeft size={24} color="#000" /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => changeWeek(1)} style={Calendar.weekNavButton}><ChevronRight size={24} color="#000" /></TouchableOpacity>
+                            </View>
+                        </View>
+                        <View style={Calendar.dayOfWeekContainer}>
+                            {['일', '월', '화', '수', '목', '금', '토'].map(day => <Text key={day} style={Calendar.dayOfWeekText}>{day}</Text>)}
+                        </View>
+                        <View style={Calendar.weekCalendarGrid}>
+                            {weekDays.map(dayData => {
+                                const cellWidth = (width - (24 * 2) - 1) / 7;
+                                // 여기서도 배열 확인
+                                let safeRecipes = dayData.recipes;
+                                if (!Array.isArray(safeRecipes)) safeRecipes = [];
+                                
+                                const recipeCount = safeRecipes.filter(r => activeGroupIds.includes(r.groupId || 'personal')).length;
+                                return (
+                                    <TouchableOpacity 
+                                        key={dayData.dateString}
+                                        style={[Calendar.weekCalendarCell, { width: cellWidth }, dayData.isSelected && Calendar.weekSelectedCell, dayData.dayOfWeek === 6 && { borderRightWidth: 0 }]}
+                                        onPress={() => setCurrentDateString(dayData.dateString)}
+                                    >
+                                        <View style={[Calendar.dayNumberContainer, dayData.isSelected && Calendar.todayIndicator]}>
+                                            <Text style={[Calendar.weekDayNumber, dayData.isSelected && Calendar.todayText]}>{dayData.date}</Text>
+                                        </View>
+                                        {/* 레시피 카운트 */}
+                                        {recipeCount > 0 && (
+                                            <View style={Calendar.weekRecipeCountContainer}>
+                                                <Text style={Calendar.weekRecipeCountText}>{recipeCount}</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </View>
-                    <View style={Calendar.dayOfWeekContainer}>
-                        {['일', '월', '화', '수', '목', '금', '토'].map(day => <Text key={day} style={Calendar.dayOfWeekText}>{day}</Text>)}
-                    </View>
-                    <View style={Calendar.weekCalendarGrid}>
-                        {weekDays.map(dayData => {
-                            const cellWidth = (width - (24 * 2) - 1) / 7;
-                            // 여기서도 배열 확인
-                            let safeRecipes = dayData.recipes;
-                            if (!Array.isArray(safeRecipes)) safeRecipes = [];
-                            
-                            const recipeCount = safeRecipes.filter(r => activeGroupIds.includes(r.groupId || 'personal')).length;
-                            return (
-                                <TouchableOpacity 
-                                    key={dayData.dateString}
-                                    style={[Calendar.weekCalendarCell, { width: cellWidth }, dayData.isSelected && Calendar.weekSelectedCell, dayData.dayOfWeek === 6 && { borderRightWidth: 0 }]}
-                                    onPress={() => setCurrentDateString(dayData.dateString)}
-                                >
-                                    <View style={[Calendar.dayNumberContainer, dayData.isSelected && Calendar.todayIndicator]}>
-                                        <Text style={[Calendar.weekDayNumber, dayData.isSelected && Calendar.todayText]}>{dayData.date}</Text>
-                                    </View>
-                                    {/* 레시피 카운트 */}
-                                    {recipeCount > 0 && (
-                                        <View style={Calendar.weekRecipeCountContainer}>
-                                            <Text style={Calendar.weekRecipeCountText}>{recipeCount}</Text>
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                </View>
 
-                {/* 레시피 상세 카드 (현재 선택된 날짜의 레시피) */}
-                {recipeItems && recipeItems.length > 0 ? (
-                    recipeItems.map((item) => (
-                        <RecipeCard key={item.id} item={item} onDelete={handleDeleteRecipe} onDetailPress={handleRecipeDetail} />
-                    ))
-                ) : (
-                    <View style={{ alignItems: 'center', marginTop: 30 }}>
-                        <Text style={styles.noRecipeText}>이 날짜에는 등록된 레시피가 없습니다.</Text>
-                        {safeRecipeId && (
-                            <View style={{ marginTop: 20 }}>
-                                <Button title="이 날짜에 식단 추가하기" onPress={() => setModalVisible(true)} />
-                            </View>
-                        )}
-                    </View>
-                )}
-            </ScrollView>
-            <RecipeScheduleModal isVisible={isModalVisible} onClose={() => setModalVisible(false)} recipeId={safeRecipeId || ''} recipeName={safeRecipeName || ''} onSchedule={handleScheduleSubmit} />
-        </View>
+                    {/* 레시피 상세 카드 (현재 선택된 날짜의 레시피) */}
+                    {recipeItems && recipeItems.length > 0 ? (
+                        recipeItems.map((item) => (
+                            <RecipeCard key={item.id} item={item} onDelete={handleDeleteRecipe} onDetailPress={handleRecipeDetail} />
+                        ))
+                    ) : (
+                        <View style={{ alignItems: 'center', marginTop: 30 }}>
+                            <Text style={styles.noRecipeText}>이 날짜에는 등록된 레시피가 없습니다.</Text>
+                            {safeRecipeId && (
+                                <View style={{ marginTop: 20 }}>
+                                    <Button title="이 날짜에 식단 추가하기" onPress={() => setModalVisible(true)} />
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </ScrollView>
+                <RecipeScheduleModal isVisible={isModalVisible} onClose={() => setModalVisible(false)} recipeId={safeRecipeId || ''} recipeName={safeRecipeName || ''} onSchedule={handleScheduleSubmit} />
+            </View>
+        </GestureHandlerRootView>
     );
 }
 
