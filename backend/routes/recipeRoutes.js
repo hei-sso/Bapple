@@ -4,8 +4,9 @@ import {
   getAllRecipes, 
   getMyFavorites, 
   addRecipeToFavorite, 
-  removeRecipeFromFavorite 
-} from '../controllers/recipeController.js'; // 컨트롤러 경로는 실제 위치에 맞게 수정
+  removeRecipeFromFavorite,
+  getRecipeDetail // [추가됨] 상세 조회 컨트롤러 임포트
+} from '../controllers/recipeController.js'; 
 import authenticateToken from '../middleware/authenticateToken.js';
 
 const router = express.Router();
@@ -21,5 +22,8 @@ router.post('/favorite', authenticateToken, addRecipeToFavorite);
 
 // 4. 찜 삭제 (DELETE /recipe/favorite/:recipeId) - 로그인 필요
 router.delete('/favorite/:recipeId', authenticateToken, removeRecipeFromFavorite);
+
+// 5. [추가됨] 레시피 상세 정보 조회 (GET /recipe/detail/:recipeId) - 로그인 필요
+router.get('/detail/:recipeId', authenticateToken, getRecipeDetail);
 
 export default router;

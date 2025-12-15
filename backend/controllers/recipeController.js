@@ -152,3 +152,42 @@ export const removeRecipeFromFavorite = async (req, res) => {
     res.status(500).json({ message: '서버 오류', error: error.message });
   }
 };
+
+// 5. [추가됨] 특정 레시피 상세 정보 로드 (GET /recipe/detail/:recipeId)
+export const getRecipeDetail = async (req, res) => {
+  const { recipeId } = req.params;
+  console.log(`[DEBUG] [GET] 레시피 상세 조회 요청 (ID: ${recipeId})`);
+
+  try {
+    // DB에서 해당 레시피 ID로 조회
+    const query = `SELECT * FROM recipe WHERE recipe_id = ?`;
+    const [rows] = await db.query(query, [recipeId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: '레시피를 찾을 수 없습니다.' });
+    }
+
+    const recipe = rows[0];
+
+    // 프론트엔드 형식(RecipeDetail)에 맞게 데이터 매핑
+    const result = {
+      id: recipe.recipe_id,           // 프론트엔드: id
+      name: recipe.name,
+      category: recipe.cuisine_type,  // 프론트엔드: category
+      img_url: recipe.img_url,
+      // DB에 칼럼이 있다면 아래와 같이 추가 매핑 (없으면 undefined로 나감)
+      description: recipe.description,
+      cooking_time: recipe.cooking_time,
+      difficulty: recipe.difficulty,
+      calories: recipe.calories,
+      // ingredients나 instructions 테이블이 별도로 있다면 여기서 추가 쿼리 후 합쳐야 함
+      // 현재는 recipe 테이블의 정보를 반환
+    };
+
+    res.status(200).json({ success: true, data: result });
+
+  } catch (error) {
+    console.error('[ERROR] 레시피 상세 조회 실패:', error);
+    res.status(500).json({ message: '서버 오류', error: error.message });
+  }
+};
