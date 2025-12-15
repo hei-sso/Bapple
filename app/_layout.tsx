@@ -5,8 +5,8 @@ import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
 import { RedirectProps, Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
-import { View, Alert } from 'react-native'; // Alert import 확인
+import { useCallback, useEffect, useState } from 'react';
+import { View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -20,8 +20,10 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
 
-// 스플래시 스크린 자동 숨김 방지
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// [수정 1] preventAutoHideAsync 호출 시 에러가 발생해도 무시하도록 catch 추가
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // 이미 숨겨졌거나 네이티브 설정 문제로 인한 에러 무시
+});
 
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
@@ -43,46 +45,43 @@ export default function RootLayout() {
     async function prepare() {
       if (fontsLoaded) {
         try {
-          // 최소 대기 시간 확보 (스플래시 유지)
+          // 최소 대기 시간
           await new Promise(resolve => setTimeout(resolve, 1500)); 
 
-          // 임시 로그인 로직 (실제 앱에서는 AuthContext나 SecureStore 체크)
+          // 임시 로그인 로직
           const isUserLoggedIn = false; 
           setIsAuthenticated(isUserLoggedIn);
 
         } catch (e) {
           setIsAuthenticated(false);
         } finally {
-          // 준비 완료 상태로 변경
           setAppReady(true);
         }
       }
     }
+
     prepare();
   }, [fontsLoaded]);
 
-  // [수정 핵심] onLayout 대신 useEffect로 변경하여 딱 한 번만 실행되도록 함
-  useEffect(() => {
+  // [수정 2] hideAsync 호출 시 try-catch로 감싸서 크래시 방지
+  const onLayoutRootView = useCallback(async () => {
     if (appReady) {
-      // 스플래시 숨기기
-      const hideSplash = async () => {
-        try {
-          await SplashScreen.hideAsync();
-        } catch (e) {
-          // 이미 숨겨졌거나 에러가 나도 무시 (앱 크래시 방지)
-          // console.warn("Splash hide error:", e);
-        }
-      };
-      hideSplash();
+      try {
+        await new Promise(resolve => setTimeout(resolve, 100)); 
+        await SplashScreen.hideAsync();
+      } catch (e) {
+        // "No native splash screen registered" 에러가 발생해도 앱이 꺼지지 않도록 무시
+        console.warn("Splash hide error (safe to ignore):", e);
+      }
     }
   }, [appReady]);
 
-  // 4. 로딩 중에는 null 반환
+  // 5. 로딩 중에는 null 반환
   if (!appReady || isAuthenticated === null) {
     return null;
   }
 
-  // 딥링크 핸들러 컴포넌트
+  // 딥링크 핸들러
   const DeepLinkHandler = () => {
     const { signIn } = useAuth();
     const router = useRouter();
@@ -91,35 +90,14 @@ export default function RootLayout() {
         const handleDeepLink = ({ url }: { url: string }) => {
             const urlObj = Linking.parse(url);
             
-            console.log("🔗 DeepLink URL:", url);
-
             if (urlObj.path === 'auth/kakao/success') {
-                // Access Token 추출
-                const rawAccess = urlObj.queryParams?.token || urlObj.queryParams?.accessToken;
-                // Refresh Token 추출
-                const rawRefresh = urlObj.queryParams?.refreshToken || urlObj.queryParams?.refresh_token;
-                
-                // 문자열 변환 헬퍼
-                const getString = (val: string | string[] | undefined): string => {
-                    if (typeof val === 'string') return val;
-                    if (Array.isArray(val) && val.length > 0) return val[0];
-                    return "";
-                };
-
-                const finalAccess = getString(rawAccess);
-                const finalRefresh = getString(rawRefresh);
-
-                if (finalAccess) { // Refresh Token은 없을 수도 있으므로 Access만 체크해도 됨 (정책에 따라 다름)
-                    console.log("✅ Tokens Received. Logging in...");
-                    // signIn 함수에 Access, Refresh 전달 (Refresh 없으면 빈 문자열)
-                    signIn(finalAccess, finalRefresh || ""); 
-                } else {
-                    console.error("❌ Token parameter missing");
+                const token = urlObj.queryParams?.token as string | undefined;
+                if (token) {
+                    console.log("✅ DeepLink: Final Access Token Received.");
+                    signIn(token, "");
                 }
-
             } else if (urlObj.path === 'auth/kakao/fail') {
-                console.error("❌ DeepLink: Kakao Login Failed");
-                Alert.alert("로그인 실패", "카카오 로그인 중 오류가 발생했습니다.");
+                console.error("❌ DeepLink: Kakao Login Failed by Backend.");
                 router.replace('/(auth)/login'); 
             }
         };
@@ -133,33 +111,32 @@ export default function RootLayout() {
         });
 
         return () => subscription.remove();
-    }, [signIn, router]);
+    }, [signIn]);
 
     return null;
   };
-
+    
+  // 6. 메인 렌더링
   return (
       <AuthProvider> 
-        <DeepLinkHandler /> 
-        <RootLayoutNav isAuthenticated={isAuthenticated} />
+          <DeepLinkHandler /> 
+        <RootLayoutNav isAuthenticated={isAuthenticated} onLayout={onLayoutRootView} />
       </AuthProvider>
   );
 }
 
-// [수정] onLayout prop 제거됨
-function RootLayoutNav({ isAuthenticated }: { isAuthenticated: boolean }) {
+// 네비게이션 컴포넌트
+function RootLayoutNav({ isAuthenticated, onLayout }: { isAuthenticated: boolean, onLayout: () => Promise<void> }) {
   const router = useRouter(); 
   
   useEffect(() => {
     const targetRoute = isAuthenticated ? '/(tabs)/home' : '/welcome';
-    // replace를 사용하여 뒤로가기 방지
     router.replace(targetRoute as RedirectProps['href']);
   }, [isAuthenticated]); 
 
   return (
     <SafeAreaProvider> 
-        {/* View에 onLayout 제거 -> useEffect에서 처리하므로 필요 없음 */}
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1 }} onLayout={onLayout}>
               <Stack>
                 <Stack.Screen name="welcome" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

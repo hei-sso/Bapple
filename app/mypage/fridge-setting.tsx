@@ -84,7 +84,7 @@ export default function FridgeSettingsScreen() {
 
     const handleSave = () => {
         const selectedLabel = OPTIONS.find(o => o.value === visibility)?.label;
-        Alert.alert("저장 완료", `냉장고 공개 범위가 '${selectedLabel}'(으)로 설정되었습니다. (DB 연동 필요)`);
+        Alert.alert("저장 완료", `냉장고 공개 범위가 '${selectedLabel}'(으)로 설정되었습니다.`);
         // 실제 구현 시: API 호출하여 DB 업데이트
     }
 
