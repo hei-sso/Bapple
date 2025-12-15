@@ -211,51 +211,49 @@ const groupController = {
         const title = req.body.title || null;
         const memo = req.body.memo || null;
 
-        if (!date) {
-            return res.status(400).json({ success: false, message: "날짜 정보가 누락되었습니다." });
-        }
-
-        // 🚨 [필수 수정] 레시피 ID 체크 (NULL 방지)
-        if (!recipeId) {
-            console.error("❌ [식단 추가 실패] 레시피 ID 누락");
-            return res.status(400).json({ 
-                success: false, 
-                message: "레시피 ID는 필수입니다. 레시피를 선택해주세요." 
-            });
-        }
+        if (!date) return res.status(400).json({ success: false, message: "날짜 정보 누락" });
+        if (!recipeId) return res.status(400).json({ success: false, message: "레시피 ID 누락" });
 
         const finalGroupId = (groupId === 'personal' || !groupId) ? null : groupId;
 
         try {
-            // 레시피 이름 조회
+            // 레시피 이름 등 부가 정보 가져오기 (화면 갱신용)
             let recipeName = 'Unknown Recipe';
+            let cookTime = 0;
             try {
-                const [recipes] = await pool.query('SELECT name FROM recipe WHERE recipe_id = ?', [recipeId]);
-                if (recipes.length > 0) recipeName = recipes[0].name;
-            } catch (e) { /* 조회 실패해도 진행 */ }
+                const [r] = await pool.query('SELECT name, cooking_time FROM recipe WHERE recipe_id = ?', [recipeId]);
+                if(r.length > 0) {
+                    recipeName = r[0].name;
+                    cookTime = r[0].cooking_time || 0;
+                }
+            } catch(e) {}
 
-            // 4. 식단 저장
             const [result] = await pool.query(
-                `INSERT INTO meal_plan 
-                (user_id, recipe_id, plan_date, group_id, title, meal_type, created_at)
-                VALUES (?, ?, ?, ?, ?, 'DINNER', NOW())`,
-                [userId, recipeId, date, finalGroupId, recipeName]
+                `INSERT INTO meal_plan (user_id, group_id, recipe_id, plan_date, meal_type, title, memo, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+                [userId, finalGroupId, recipeId, date, meal_type, title || recipeName, memo]
             );
 
-            res.json({
+            // ⭐ [핵심 수정] 프론트엔드 GroupRecipeItem 타입과 100% 일치시킴
+            const newScheduleForFrontend = {
+                id: result.insertId.toString(),      // 프론트: item.id
+                recipeName: recipeName,              // 프론트: item.recipeName
+                groupId: finalGroupId,               // 프론트: item.groupId (중요!)
+                recipeId: recipeId.toString(),       // 프론트: item.recipeId (중요!)
+                memberId: userId.toString(),         // 프론트: item.memberId
+                rating: 0,
+                cookTimeMinutes: cookTime
+            };
+
+            res.status(201).json({
                 success: true,
-                data: {
-                    id: result.insertId.toString(), 
-                    recipeName: recipeName,
-                    groupId: finalGroupId,
-                    memberId: userId.toString(),
-                    rating: 0, 
-                    cookTimeMinutes: 0
-                }
+                message: "식단이 추가되었습니다.",
+                data: newScheduleForFrontend // 이제 프론트가 바로 알아먹습니다!
             });
+
         } catch (error) {
             console.error('식단 추가 실패:', error);
-            res.status(500).json({ success: false, message: '식단 추가 실패', error: error.message });
+            res.status(500).json({ success: false, message: '식단 추가 실패' });
         }
     },
 
