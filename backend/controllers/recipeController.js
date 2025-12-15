@@ -159,8 +159,22 @@ export const getRecipeDetail = async (req, res) => {
   console.log(`[DEBUG] [GET] 레시피 상세 조회 요청 (ID: ${recipeId})`);
 
   try {
-    // DB에서 해당 레시피 ID로 조회
-    const query = `SELECT * FROM recipe WHERE recipe_id = ?`;
+    // 와이어프레임에 있는 데이터만 정확히 조회
+    // DB 이미지 확인 결과: ingredients, cooking_steps가 recipe 테이블 컬럼임
+    const query = `
+      SELECT 
+        recipe_id, 
+        name, 
+        img_url, 
+        difficulty, 
+        cooking_time, 
+        ingredients,      -- 와이어프레임 '레시피 재료'
+        ingredient_qty,   -- 재료 양 (필요 시 표시)
+        cooking_steps     -- 와이어프레임 '조리 방법'
+      FROM recipe 
+      WHERE recipe_id = ?
+    `;
+
     const [rows] = await db.query(query, [recipeId]);
 
     if (rows.length === 0) {
@@ -169,19 +183,16 @@ export const getRecipeDetail = async (req, res) => {
 
     const recipe = rows[0];
 
-    // 프론트엔드 형식(RecipeDetail)에 맞게 데이터 매핑
+    // 프론트엔드 와이어프레임 구조에 맞춘 데이터 매핑
     const result = {
-      id: recipe.recipe_id,           // 프론트엔드: id
-      name: recipe.name,
-      category: recipe.cuisine_type,  // 프론트엔드: category
-      img_url: recipe.img_url,
-      // DB에 칼럼이 있다면 아래와 같이 추가 매핑 (없으면 undefined로 나감)
-      description: recipe.description,
-      cooking_time: recipe.cooking_time,
-      difficulty: recipe.difficulty,
-      calories: recipe.calories,
-      // ingredients나 instructions 테이블이 별도로 있다면 여기서 추가 쿼리 후 합쳐야 함
-      // 현재는 recipe 테이블의 정보를 반환
+      id: recipe.recipe_id,
+      name: recipe.name,                // [와이어프레임 상단] 이름
+      img_url: recipe.img_url,          // [와이어프레임 사진]
+      difficulty: recipe.difficulty,    // [와이어프레임 중간] 난이도
+      cooking_time: recipe.cooking_time,// [와이어프레임 중간] 조리 시간
+      ingredients: recipe.ingredients,  // [와이어프레임 박스1] 재료
+      ingredient_qty: recipe.ingredient_qty, // (참고용) 재료 양
+      instructions: recipe.cooking_steps // [와이어프레임 박스2] 조리 방법
     };
 
     res.status(200).json({ success: true, data: result });
