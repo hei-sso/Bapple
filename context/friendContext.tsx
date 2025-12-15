@@ -34,7 +34,7 @@ export const useFriendsData = (): {
             followingList: result.following,
             followerList: result.follower,
             myUniqueId: result.myUniqueId, 
-            isLoading: false,
+            isLoading: true,
         });
     }, []);
 
