@@ -17,20 +17,21 @@ export const getMySchedules = async (req, res) => {
         const startStr = startDate.toISOString().split('T')[0];
         const endStr = endDate.toISOString().split('T')[0];
 
+        // 1. 쿼리에서 'AS'를 써서 변수명을 미리 카멜케이스로 바꿉니다.
         const query = `
             SELECT 
-                mp.meal_plan_id AS schedule_id,
+                mp.meal_plan_id AS id,           -- schedule_id -> id
                 DATE_FORMAT(mp.plan_date, '%Y-%m-%d') AS date,
-                mp.meal_type,
-                mp.recipe_id,
+                mp.meal_type AS mealType,
+                mp.recipe_id AS recipeId,        -- recipe_id -> recipeId
                 
-                r.name AS recipe_name,  -- 레시피 이름
-                r.img_url AS recipeImageUrl, -- 레시피 이미지
+                r.name AS recipeName,            -- recipe_name -> recipeName
+                r.img_url AS recipeImageUrl,     -- 일치함
 
-                mp.group_id,
-                g.name AS group_name,   -- 그룹 이름
+                mp.group_id AS groupId,          -- group_id -> groupId (핵심!)
+                g.name AS groupName,             
                 
-                mp.title AS plan_title,
+                mp.title AS planTitle,
                 mp.memo
             FROM meal_plan mp
             LEFT JOIN recipe r ON mp.recipe_id = r.recipe_id
@@ -49,17 +50,48 @@ export const getMySchedules = async (req, res) => {
 
         const [rows] = await db.query(query, [userId, userId, startStr, endStr]);
 
+        // 2. [중요] Flat한 DB 데이터를 프론트엔드가 원하는 "날짜별 그룹핑" 구조로 변환
+        // 프론트엔드 detail.tsx가 날짜 키(date) 하나에 recipes 배열을 기대하기 때문입니다.
+        const groupedData = rows.reduce((acc, row) => {
+            const dateKey = row.date;
+            
+            // 해당 날짜가 처음이면 초기화
+            if (!acc[dateKey]) {
+                acc[dateKey] = {
+                    date: dateKey,
+                    recipes: [] 
+                };
+            }
+
+            // 레시피 정보만 따로 빼서 배열에 push
+            acc[dateKey].recipes.push({
+                id: row.id,             // 식단 PK
+                recipeId: row.recipeId, // 레시피 ID
+                recipeName: row.recipeName,
+                recipeImageUrl: row.recipeImageUrl,
+                groupId: row.groupId,
+                groupName: row.groupName,
+                mealType: row.mealType,
+                title: row.planTitle,
+                memo: row.memo
+            });
+
+            return acc;
+        }, {});
+
+        // 객체를 다시 배열로 변환 (Object.values)
+        const responseData = Object.values(groupedData);
+
         res.status(200).json({
             success: true,
-            data: rows
+            data: responseData // 변환된 데이터를 전송
         });
 
     } catch (error) {
-        console.error(" 스케줄 조회 에러:", error);
+        console.error("스케줄 조회 에러:", error);
         res.status(500).json({ success: false, message: "서버 에러 발생" });
     }
 };
-
 // 2. 식단 추가 (POST /schedule) - 수정됨!
 export const addSchedule = async (req, res) => {
     const userId = req.user.user_id || req.user.id;
