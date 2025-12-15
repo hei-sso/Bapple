@@ -71,7 +71,10 @@ const getCalendarDays = (date: Date, schedules: RecipeSchedule[], activeGroupIds
     const day = addDays(startDay, i);
     const dateString = format(day, 'yyyy-MM-dd');
     const isCurrentMonth = day.getMonth() === date.getMonth(); 
-    const recipes = schedulesMap.get(dateString) || [];
+    
+    // recipes가 배열인지 확인
+    let recipes = schedulesMap.get(dateString);
+    if (!Array.isArray(recipes)) recipes = [];
     
     days.push({
       date: day.getDate(),
@@ -141,7 +144,7 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
         autoPlayInterval={2000}
         data={recipes}
         width={carouselWidth}
-        height={300} // 카드의 높이와 동일하게 유지
+        height={300}
         scrollAnimationDuration={800}
         mode="parallax"
         modeConfig={{
@@ -152,14 +155,13 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
           <TouchableOpacity onPress={() => onRecipeSelect(item)} >
             <View style={styles.recipeCard}>
               <View style={styles.recipeCardContentArea}> 
-                
-                {/* 텍스트, 배지 컨테이너 (왼쪽 영역) */}
+
+                {/* 텍스트, 배지 컨테이너 (왼쪽 영역) */}                
                 <View style={styles.textContentAndBadges}>
                     <Text style={styles.recipeCardText}>{item.name}</Text>
                     
+                    {/* 난이도 별점 (rating 사용) */}
                     <View style={styles.ratingTimeContainer}>
-                      
-                      {/* 난이도 별점 (rating 사용) */}
                       <View style={styles.ratingBadge}>
                         {[...Array(item.rating || 1)].map((_, index) => (
                           <FontAwesome 
@@ -174,7 +176,7 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
                            {item.rating === 1 ? '초급' : item.rating === 3 ? '고급' : '중급'}
                         </Text>
                       </View>
-
+                      
                       {/* 조리시간 */}
                       <View style={styles.timeBadge}>
                         <Ionicons name="time-outline" size={12} color={TEXT_COLOR_DARK} />
@@ -383,6 +385,7 @@ const GroupSideMenu: React.FC<{
   );
 };
 
+// 메인 컨텐츠 컴포넌트
 const HomeScreenContent = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -394,6 +397,8 @@ const HomeScreenContent = () => {
   const [isGroupModalVisible, setIsGroupModalVisible] = useState(false);
   
   const [isRecipeModalVisible, setIsRecipeModalVisible] = useState(false);
+  
+  // 모달로 전달할 선택된 레시피 정보 상태
   const [selectedRecipe, setSelectedRecipe] = useState<{ id: string; name: string } | null>(null);
   
   const handleGroupCreated = useCallback(() => {
@@ -418,8 +423,9 @@ const HomeScreenContent = () => {
   }, [myGroups]);
 
   const combinedSchedules = useMemo(() => {
-    const currentWeek = groupSchedules[currentWeekStartString] || [];
-    const nextWeek = groupSchedules[format(addWeeks(currentDate, 1), 'yyyy-MM-dd')] || [];
+    // 스케줄 배열 체크
+    const currentWeek = Array.isArray(groupSchedules[currentWeekStartString]) ? groupSchedules[currentWeekStartString] : [];
+    const nextWeek = Array.isArray(groupSchedules[format(addWeeks(currentDate, 1), 'yyyy-MM-dd')]) ? groupSchedules[format(addWeeks(currentDate, 1), 'yyyy-MM-dd')] : [];
     return [...currentWeek, ...nextWeek];
   }, [groupSchedules, currentWeekStartString, currentDate]);
   
@@ -471,17 +477,29 @@ const HomeScreenContent = () => {
     setIsGroupModalVisible(true); 
   }, [handleCloseMenu]);
 
+  // AI 추천 레시피 클릭 시 핸들러
   const handleRecipeSelect = useCallback((recipe: RecommendedRecipe) => {
-    setSelectedRecipe(recipe);
+    // 레시피 ID를 안전하게 추출 (recipeId, recipe_id, id 모두 확인)
+    const recipeId = (recipe as any).recipeId || (recipe as any).recipe_id || recipe.id;
+    
+    setSelectedRecipe({ 
+        id: recipeId.toString(), // 문자열로 변환하여 저장
+        name: recipe.name 
+    });
     setIsRecipeModalVisible(true);
   }, []);
 
+  // 식단 등록 모달 submit 핸들러
   const handleScheduleRecipe = useCallback(async (data: { 
     recipeId: string; 
     date: string; 
     groupId: string | 'personal'; 
   }) => {
-    await scheduleRecipe(data);
+    try {
+        await scheduleRecipe(data);
+    } catch (error) {
+        console.error("홈 화면 식단 등록 실패:", error);
+    }
   }, [scheduleRecipe]);
 
   const CALENDAR_PADDING_H = 20;
@@ -631,8 +649,10 @@ const HomeScreenContent = () => {
         </View>
       </View>
       
+      {/* AI 추천 레시피 캐러셀 */}
       <AIRecommendedRecipes onRecipeSelect={handleRecipeSelect} />
       
+      {/* 사이드 메뉴 */}
       <GroupSideMenu 
         isMenuOpen={isMenuOpen} 
         onClose={handleCloseMenu} 
@@ -642,6 +662,7 @@ const HomeScreenContent = () => {
         activeGroupIds={activeGroupIds}
       />
       
+      {/* 그룹 생성 모달 */}
       <GroupCreationModal 
         isVisible={isGroupModalVisible}
         onClose={() => setIsGroupModalVisible(false)}
@@ -649,15 +670,17 @@ const HomeScreenContent = () => {
         initialMode="create" 
       />
       
-      {selectedRecipe && (
-        <RecipeScheduleModal
-          isVisible={isRecipeModalVisible}
-          onClose={() => setIsRecipeModalVisible(false)}
-          recipeId={selectedRecipe.id}
-          recipeName={selectedRecipe.name}
-          onSchedule={handleScheduleRecipe}
-        />
-      )}
+      {/* 식단 추가 모달 */}
+      <RecipeScheduleModal
+        isVisible={isRecipeModalVisible}
+        onClose={() => setIsRecipeModalVisible(false)}
+        
+        // 여기에 안전하게 추출한 ID와 이름 넘기기
+        recipeId={selectedRecipe?.id || ''}
+        recipeName={selectedRecipe?.name || ''}
+        
+        onSchedule={handleScheduleRecipe}
+      />
     </View>
   );
 }
@@ -875,12 +898,12 @@ const styles = StyleSheet.create({
   },
   recipeCardImageInContent: {
     width: 330,
-    height: 200, // 고정 크기
+    height: 200, // Fixed size
     borderRadius: 8
   },
   recipeCardImagePlaceholderInContent: {
     width: 330,
-    height: 200, // 고정 크기
+    height: 200, // Fixed size
     backgroundColor: BG_COLOR_LIGHT, 
     borderRadius: 8,
     justifyContent: 'center',

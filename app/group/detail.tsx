@@ -47,7 +47,7 @@ interface DayData {
     dayOfWeek: number;
 }
 
-// 일주일 날짜 데이터 생성
+// 일주일 날짜 데이터 생성 (방어 로직 추가)
 const getWeekDays = (
     weekStartString: string, 
     currentSelectedDateString: string, 
@@ -56,7 +56,9 @@ const getWeekDays = (
     const startDay = new Date(weekStartString);
     const days: DayData[] = [];
 
-    const schedulesMap = new Map(schedules.map(s => [s.date, s]));
+    // schedules가 배열인지 확인
+    const safeSchedules = Array.isArray(schedules) ? schedules : [];
+    const schedulesMap = new Map(safeSchedules.map(s => [s.date, s]));
     
     for (let i = 0; i < 7; i++) {
         const day = addDays(startDay, i);
@@ -64,12 +66,16 @@ const getWeekDays = (
         
         const recipeSchedule = schedulesMap.get(dateString);
 
+        // recipes가 배열이 아니면 빈 배열로 처리
+        let recipes = recipeSchedule?.recipes;
+        if (!Array.isArray(recipes)) recipes = [];
+
         days.push({
             date: day.getDate(),
             dateString: dateString,
             isToday: dateString === TODAY_STRING,
             isSelected: dateString === currentSelectedDateString,
-            recipes: recipeSchedule ? recipeSchedule.recipes : [],
+            recipes: recipes,
             dayOfWeek: day.getDay()
         });
     }
@@ -89,7 +95,6 @@ function GroupDetailScreenContent() {
     const groupName = params.groupName || '그룹 상세';
     const inviteCode = params.inviteCode || null; 
 
-    // 모달 상태 관리
     const [isShareModalVisible, setIsShareModalVisible] = useState(false);
 
     useEffect(() => {
@@ -129,35 +134,50 @@ function GroupDetailScreenContent() {
     const changeWeek = useCallback((delta: number) => {
         setCurrentWeekStartDate(prev => {
             const newWeekStart = delta > 0 ? addWeeks(prev, 1) : subWeeks(prev, 1);
-            
             const dayOfWeek = new Date(currentDateString).getDay();
             const newSelectedDate = addDays(newWeekStart, dayOfWeek);
             setCurrentDateString(dateToDateString(newSelectedDate));
-
             return newWeekStart;
         });
     }, [currentDateString]);
 
+    // currentRecipes 계산 시 방어 로직 강화
     const currentRecipes = useMemo(() => {
         if (!groupId) return []; 
         
-        const selectedDay = schedulesForCurrentWeek.find(s => s.date === currentDateString);
+        const safeSchedules = Array.isArray(schedulesForCurrentWeek) ? schedulesForCurrentWeek : [];
+        const selectedDay = safeSchedules.find(s => s.date === currentDateString);
+        
         if (!selectedDay) return [];
         
-        return selectedDay.recipes.filter(recipe => recipe.groupId === groupId); 
+        // recipes가 배열인지 확실하게 체크
+        let recipes = selectedDay.recipes;
+        if (!Array.isArray(recipes)) recipes = [];
+        
+        return recipes.filter(recipe => recipe.groupId === groupId); 
         
     }, [currentDateString, schedulesForCurrentWeek, groupId]); 
     
     const RECIPE_CARD_WIDTH = width * 0.87;
 
+    // 상세 페이지 이동 시 진짜 recipeId 넘기기
     const handleRecipeDetail = (recipe: GroupRecipeItem) => {
-        router.push({
-            pathname: '/recipe/detail',
-            params: {
-                id: recipe.id.toString(),
-                name: recipe.recipeName, 
-            },
-        } as RedirectProps['href']);
+        // recipe.id는 '식단 스케줄 ID'임
+        // 백엔드에서 recipeId를 보내주면 그 값을 사용하고 없다면 임시로 any로 변환해서 확인
+        const realRecipeId = (recipe as any).recipeId || (recipe as any).recipe_id;
+
+        if (realRecipeId) {
+             router.push({
+                pathname: '/recipe/detail',
+                params: {
+                    id: realRecipeId.toString(), // 진짜 레시피 ID 전달
+                    name: recipe.recipeName, 
+                },
+            } as RedirectProps['href']);
+        } else {
+             // 레시피 ID가 없으면 경고 (NULL 에러 원인 차단)
+             Alert.alert("오류", "해당 레시피의 원본 정보를 찾을 수 없습니다.");
+        }
     };
     
     if (!groupId) {
@@ -167,14 +187,12 @@ function GroupDetailScreenContent() {
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
 
-            {/* Header 영역 (그룹 이름 표시 및 공유 버튼) */}
             <View style={[Header.HeaderAlign]}>
                 <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
                     <ChevronLeft size={28} color="#000" />
                 </TouchableOpacity>
                 <Text style={Header.Title}>{groupName}</Text>
                 
-                {/* 공유 버튼 */}
                 <TouchableOpacity onPress={() => setIsShareModalVisible(true)} style={styles.shareButton}>
                     <Share2 size={24} color="#000" />
                 </TouchableOpacity>
@@ -185,10 +203,7 @@ function GroupDetailScreenContent() {
                 style={{ flex: 1 }}
             >
                 <ScrollView>
-                    {/* 주간 달력 표시 */}
                     <View style={Calendar.calendarArea}>
-                        
-                        {/* 달력 상단 (주 이동 버튼) */}
                         <View style={Calendar.weekNavContainer}>
                             <View style={Calendar.weekNavAlign}> 
                                 <TouchableOpacity onPress={() => changeWeek(-1)} style={Calendar.weekNavButton}>
@@ -200,19 +215,19 @@ function GroupDetailScreenContent() {
                             </View>
                         </View>
 
-                        {/* 요일 헤더 */}
                         <View style={Calendar.dayOfWeekContainer}>
                             {['일', '월', '화', '수', '목', '금', '토'].map(day => (
                                 <Text key={day} style={Calendar.dayOfWeekText}>{day}</Text>
                             ))}
                         </View>
                         
-                        {/* 달력 그리드 */}
                         <View style={Calendar.weekCalendarGrid}>
                             {weekDays.map(dayData => {
                                 const cellWidth = (width - (24 * 2) - 1) / 7;
 
-                                const recipeCount = dayData.recipes.filter(r => r.groupId === groupId).length; 
+                                // 렌더링 시에도 배열 확인
+                                const safeRecipes = Array.isArray(dayData.recipes) ? dayData.recipes : [];
+                                const recipeCount = safeRecipes.filter(r => r.groupId === groupId).length; 
 
                                 return (
                                 <TouchableOpacity 
@@ -235,7 +250,6 @@ function GroupDetailScreenContent() {
                                     ]}>{dayData.date}</Text>
                                     </View>
                                     
-                                    {/* 레시피 카운트 */}
                                     {recipeCount > 0 && (
                                     <View style={Calendar.weekRecipeCountContainer}>
                                         <Text style={Calendar.weekRecipeCountText}>{recipeCount}</Text>
@@ -247,7 +261,6 @@ function GroupDetailScreenContent() {
                         </View>
                     </View>
 
-                    {/* 레시피 상세 카드 (가로 스크롤) */}
                     <View>
                         <Text style={styles.recipeListTitle}>
                             {currentDateString} (총 {currentRecipes.length}개)
@@ -265,7 +278,6 @@ function GroupDetailScreenContent() {
                                                 index < currentRecipes.length - 1 && styles.recipeCardMarginRight 
                                             ]}
                                         >
-                                            {/* 레시피 카드 */}
                                             <View style={styles.recipeCardContent}>
                                                 <Text style={styles.recipeName}>{recipeItem.recipeName}</Text> 
                                                 <View style={styles.recipeImagePlaceholder} />
@@ -279,11 +291,8 @@ function GroupDetailScreenContent() {
                         )}
                     </View>
                     
-                    {/* 메모장 섹션 */}
                     <View style={styles.memoSection}>
                         <Text style={styles.memoTitle}>Memo</Text>
-                        
-                        {/* 입력창 */}
                         <View style={styles.memoInputContainer}>
                             <TextInput
                                 style={styles.memoInput}
@@ -303,19 +312,16 @@ function GroupDetailScreenContent() {
                 </ScrollView>
             </KeyboardAvoidingView>
             
-            {/* 초대 코드 공유 모달 렌더링 */}
             <ShareCodeModal 
                 isVisible={isShareModalVisible}
                 onClose={() => setIsShareModalVisible(false)}
                 groupName={groupName}
                 inviteCode={inviteCode}
             />
-
         </View>
     );
 }
 
-// 메인 Export 함수: GroupProvider로 감싸기
 export default function GroupDetailScreen() {
     return (
         <GroupProvider>

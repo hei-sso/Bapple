@@ -1,5 +1,6 @@
 // components/RecipeScheduleModal.tsx
 
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Users, X } from 'lucide-react-native';
@@ -13,9 +14,8 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 // Context
 import { useGroups } from '@/context/groupContext';
@@ -81,6 +81,13 @@ const RecipeScheduleModal: React.FC<RecipeScheduleModalProps> = ({
     };
 
     const handleSchedule = async () => {
+        // recipeId 유효성 검사
+        if (!recipeId) {
+            Alert.alert('오류', '레시피 정보가 올바르지 않습니다. 다시 시도해주세요.');
+            console.error("RecipeScheduleModal: recipeId is missing");
+            return;
+        }
+
         const dateString = format(selectedDate, 'yyyy-MM-dd');
 
         if (!dateString || !selectedGroup) {
@@ -90,15 +97,19 @@ const RecipeScheduleModal: React.FC<RecipeScheduleModalProps> = ({
 
         setIsSubmitting(true);
         try {
+            // onSchedule 호출 시 recipeId를 명확하게 전달
+            console.log("🚀 Modal handleSchedule submitting:", { recipeId, date: dateString, groupId: selectedGroup });
+            
             await onSchedule({
-                recipeId,
+                recipeId: recipeId, // 여기서 props로 받은 recipeId를 그대로 전달
                 date: dateString,
                 groupId: selectedGroup,
             });
             onClose(); 
         } catch (error) {
-            Alert.alert("오류", `식단 등록에 실패했습니다.`);
-            console.error("식단 등록 실패:", error);
+            // 에러 처리는 부모 컴포넌트(onSchedule 내부)나 여기서 할 수 있음
+            // 이미 부모에서 Alert를 띄우므로 여기서는 로그만 남김
+            console.error("식단 등록 실패 (Modal):", error);
         } finally {
             setIsSubmitting(false);
         }

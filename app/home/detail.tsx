@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     Alert,
     Animated,
+    Button,
     Dimensions,
     ScrollView,
     StyleSheet,
@@ -25,6 +26,9 @@ import { Styles } from '@/constants/styles';
 // Context
 import { GroupProvider, useGroups } from '@/context/groupContext';
 
+// Components
+import RecipeScheduleModal from '@/components/RecipeScheduleModal';
+
 // Type
 import type { GroupRecipeItem, RecipeSchedule } from '@/types/groupTypes';
 
@@ -32,17 +36,16 @@ const { width } = Dimensions.get('window');
 const TODAY_STRING = new Date().toISOString().split('T')[0];
 const WEEK_STARTS_ON = 0 as const; // 일요일
 
-// 그룹 색상 (index.tsx와 동일하게 임시 함수 사용)
+// 그룹 색상
 const getGroupColor = (groupId: string | null | undefined): string => {
     const id = groupId || 'personal';
     if (id === 'personal') return '#C0C0C0';
-    
     const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const colors = ['#F07575', '#FDE2A1', '#B8E998', '#7ccef0ff', '#F5A9B8'];
     return colors[hash % colors.length];
 };
 
-// 유틸리티: 상세 화면용 7일치 데이터 생성
+// 유틸리티
 interface DayData {
     date: number;
     dateString: string;
@@ -57,26 +60,31 @@ const dateToDateString = (date: Date): string => format(date, 'yyyy-MM-dd');
 const getWeekDays = (weekStartString: string, currentSelectedDateString: string, schedules: RecipeSchedule[]): DayData[] => {
     const startDay = new Date(weekStartString);
     const days: DayData[] = [];
-    const schedulesMap = new Map(schedules.map(s => [s.date, s]));
+    const safeSchedules = Array.isArray(schedules) ? schedules : [];
+    const schedulesMap = new Map(safeSchedules.map(s => [s.date, s]));
     
     for (let i = 0; i < 7; i++) {
         const day = addDays(startDay, i);
         const dateString = dateToDateString(day);
         const recipeSchedule = schedulesMap.get(dateString);
         
+        // recipes가 배열인지 확인 (튕김 방지)
+        let recipes = recipeSchedule?.recipes;
+        if (!Array.isArray(recipes)) recipes = [];
+
         days.push({
             date: day.getDate(),
             dateString: dateString,
             isToday: dateString === TODAY_STRING,
             isSelected: dateString === currentSelectedDateString,
-            recipes: recipeSchedule ? recipeSchedule.recipes : [],
+            recipes: recipes, 
             dayOfWeek: day.getDay()
         });
     }
     return days;
 };
 
-// 레시피 상세 카드 컴포넌트 (Swipeable 적용)
+// 레시피 카드
 interface RecipeCardProps {
     item: GroupRecipeItem;
     onDelete: (scheduleId: string) => void;
@@ -86,7 +94,6 @@ interface RecipeCardProps {
 const RecipeCard: React.FC<RecipeCardProps> = ({ item, onDelete, onDetailPress }) => {
     const swipeableRef = useRef<Swipeable>(null);
 
-    // 삭제 버튼 렌더링
     const renderRightActions = (progress: Animated.AnimatedInterpolation<string | number>, dragX: Animated.AnimatedInterpolation<string | number>) => {
         const scale = dragX.interpolate({
             inputRange: [-100, 0],
@@ -99,7 +106,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ item, onDelete, onDetailPress }
                 style={styles.deleteButton} 
                 onPress={() => {
                     swipeableRef.current?.close();
-                    onDelete(item.id); // GroupRecipeItem의 id는 DB 스케줄 ID
+                    onDelete(item.id); // 삭제는 스케줄 ID로 하는 게 맞음
                 }}
             >
                 <Animated.View style={[{ transform: [{ scale }] }]}>
@@ -110,28 +117,36 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ item, onDelete, onDetailPress }
         );
     };
 
-    const isPersonal = !item.groupId; // 그룹 ID가 없거나 null이면 개인 식단
+    const isPersonal = !item.groupId; 
+    
+    // 레시피 ID 추출 로직
+    // item.id는 스케줄 PK이고, item.recipeId가 진짜 레시피 FK
+    // 타입스크립트 에러 방지를 위해 any 캐스팅 후 안전하게 접근
+    const realRecipeId = (item as any).recipeId || (item as any).recipe_id;
 
     return (
         <Swipeable
             ref={swipeableRef}
             renderRightActions={renderRightActions}
-            friction={2} // 스와이프 저항
+            friction={2}
             overshootRight={false}
         >
             <TouchableOpacity 
-                onPress={() => onDetailPress(item.id, item.recipeName)}
+                onPress={() => {
+                    // 레시피 ID가 있을 때만 이동
+                    if (realRecipeId) {
+                        onDetailPress(realRecipeId, item.recipeName);
+                    } else {
+                        Alert.alert("알림", "연결된 레시피 정보를 찾을 수 없습니다.");
+                    }
+                }}
             >
                 <View style={styles.recipeItemCard}>
-                    <View style={[
-                        styles.groupTag, 
-                        { backgroundColor: getGroupColor(item.groupId) }
-                    ]}>
+                    <View style={[styles.groupTag, { backgroundColor: getGroupColor(item.groupId) }]}>
                         <Text style={styles.groupTagText}>
                             {isPersonal ? '나' : `그룹 ID: ${item.groupId}`}
                         </Text>
                     </View>
-
                     <View style={styles.recipeCardContent}>
                         <Text style={styles.recipeName}>{item.recipeName}</Text>
                         <View style={styles.recipeImagePlaceholder} />
@@ -142,15 +157,22 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ item, onDelete, onDetailPress }
     );
 };
 
-
-// 상세 화면 콘텐츠 컴포넌트
+// 메인 로직
 function DateDetailScreenContent() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { date, weekStart, groupIds } = useLocalSearchParams<{ date: string, weekStart: string, groupIds: string }>(); 
-    const { groupSchedules, fetchSchedulesForWeek, removeRecipeFromSchedule } = useGroups();
+    
+    const { date, weekStart, groupIds, id, name } = useLocalSearchParams<{ 
+        date: string, weekStart: string, groupIds: string, id: string, name: string 
+    }>(); 
+    
+    const safeRecipeId = Array.isArray(id) ? id[0] : id;
+    const safeRecipeName = Array.isArray(name) ? name[0] : name;
 
-    // 활성화된 그룹 ID 목록 (필터링 유지 목적)
+    const context = useGroups();
+    const groupSchedules = context?.groupSchedules || {};
+    const { fetchSchedulesForWeek, removeRecipeFromSchedule, scheduleRecipe } = context;
+
     const activeGroupIds = useMemo(() => groupIds ? groupIds.split(',') : ['personal'], [groupIds]);
 
     // 유효성 검사 및 초기값 설정
@@ -159,14 +181,17 @@ function DateDetailScreenContent() {
 
     const [currentDateString, setCurrentDateString] = useState(initialDateString);
     const [currentWeekStartDate, setCurrentWeekStartDate] = useState(initialWeekStart);
+    const [isModalVisible, setModalVisible] = useState(false);
 
     const currentWeekStartString = dateToDateString(currentWeekStartDate);
     const nextWeekStartString = dateToDateString(addWeeks(currentWeekStartDate, 1));
     
     // API 호출 (현재 주 + 다음 주)
     useEffect(() => {
-        fetchSchedulesForWeek(currentWeekStartString);
-        fetchSchedulesForWeek(nextWeekStartString);
+        if (fetchSchedulesForWeek) {
+            fetchSchedulesForWeek(currentWeekStartString);
+            fetchSchedulesForWeek(nextWeekStartString);
+        }
     }, [currentWeekStartString, nextWeekStartString, fetchSchedulesForWeek]);
 
     // 2주간의 스케줄 데이터를 병합
@@ -182,33 +207,36 @@ function DateDetailScreenContent() {
         [currentWeekStartString, currentDateString, combinedSchedules]
     );
 
-    const handleGoBack = () => {
-        router.back();
-    };
+    const handleGoBack = () => router.back();
     
     // 주 단위 이동 핸들러
     const changeWeek = useCallback((delta: number) => {
         setCurrentWeekStartDate(prev => {
             const newWeekStart = delta > 0 ? addWeeks(prev, 1) : subWeeks(prev, 1);
-            
             const newSelectedDate = addDays(newWeekStart, new Date(currentDateString).getDay());
             setCurrentDateString(dateToDateString(newSelectedDate));
-
             return newWeekStart;
         });
     }, [currentDateString]);
     
-    // 현재 선택된 날짜의 레시피 목록 (홈 화면에서 전달된 필터 기준으로 필터링)
+    // recipeItems 계산 (튕김 방지)
     const recipeItems = useMemo(() => {
         const selectedSchedule = combinedSchedules.find(s => s.date === currentDateString);
+        
         if (!selectedSchedule) return [];
         
-        return selectedSchedule.recipes.filter(recipe => 
+        // recipes가 배열이 아니면 강제로 빈 배열 처리
+        let recipes = selectedSchedule.recipes;
+        if (!Array.isArray(recipes)) {
+            recipes = [];
+        }
+
+        return recipes.filter(recipe => 
             activeGroupIds.includes(recipe.groupId || 'personal')
         );
     }, [currentDateString, combinedSchedules, activeGroupIds]);
     
-    // 메뉴 상세 화면 이동 (임시)
+    // 메뉴 상세 화면 이동
     const handleRecipeDetail = useCallback((recipeId: string, recipeName: string) => {
         router.push({
             pathname: '/recipe/detail', 
@@ -216,26 +244,26 @@ function DateDetailScreenContent() {
         });
     }, [router]);
     
-    // 메뉴 삭제 핸들러 (Swipeable에서 호출)
+    // 메뉴 삭제 핸들러
     const handleDeleteRecipe = useCallback((scheduleId: string) => {
         Alert.alert(
-            "식단 메뉴 삭제",
-            "정말로 이 메뉴를 삭제하시겠습니까?",
-            [
-                { text: "취소", style: "cancel" },
-                { 
-                    text: "삭제", 
-                    style: "destructive", 
-                    // removeRecipeFromSchedule 호출 (groupId는 더미로 전달)
-                    onPress: () => removeRecipeFromSchedule(scheduleId, currentDateString, 'DUMMY')
-                },
-            ]
+            "식단 메뉴 삭제", "정말로 이 메뉴를 삭제하시겠습니까?",
+            [{ text: "취소", style: "cancel" }, { text: "삭제", style: "destructive", onPress: () => removeRecipeFromSchedule(scheduleId, currentDateString, 'DUMMY') }]
         );
     }, [removeRecipeFromSchedule, currentDateString]);
 
+    const handleScheduleSubmit = async (data: { recipeId: string; date: string; groupId: string | 'personal'; }) => {
+        try {
+            await scheduleRecipe({ recipeId: data.recipeId, date: data.date, groupId: data.groupId });
+            Alert.alert("성공", "식단에 추가되었습니다!");
+        } catch (error) {
+            console.error(error);
+            Alert.alert("오류", "식단 추가 실패");
+        }
+    };
+
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-
             {/* Header 영역 */}
             <View style={Header.HeaderAlign}>
                 <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
@@ -245,55 +273,36 @@ function DateDetailScreenContent() {
                     {new Date(currentDateString).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
                 </Text>
             </View>
-                
             <ScrollView contentContainerStyle={Styles.scrollContent}>
                 {/* 주간 달력 표시 (상세 뷰) */}
                 <View style={Calendar.calendarArea}>
-                    
                     {/* 달력 상단 (주 이동 버튼) */}
                     <View style={Calendar.weekNavContainer}>
                         <View style={Calendar.weekNavAlign}> 
-                            <TouchableOpacity onPress={() => changeWeek(-1)} style={Calendar.weekNavButton}>
-                                <ChevronLeft size={24} color="#000" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => changeWeek(1)} style={Calendar.weekNavButton}>
-                                <ChevronRight size={24} color="#000" />
-                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => changeWeek(-1)} style={Calendar.weekNavButton}><ChevronLeft size={24} color="#000" /></TouchableOpacity>
+                            <TouchableOpacity onPress={() => changeWeek(1)} style={Calendar.weekNavButton}><ChevronRight size={24} color="#000" /></TouchableOpacity>
                         </View>
                     </View>
-
                     <View style={Calendar.dayOfWeekContainer}>
-                        {['일', '월', '화', '수', '목', '금', '토'].map(day => (
-                            <Text key={day} style={Calendar.dayOfWeekText}>{day}</Text>
-                        ))}
+                        {['일', '월', '화', '수', '목', '금', '토'].map(day => <Text key={day} style={Calendar.dayOfWeekText}>{day}</Text>)}
                     </View>
                     <View style={Calendar.weekCalendarGrid}>
                         {weekDays.map(dayData => {
                             const cellWidth = (width - (24 * 2) - 1) / 7;
-                            // 활성화된 그룹의 레시피만 카운트
-                            const recipeCount = dayData.recipes.filter(r => activeGroupIds.includes(r.groupId || 'personal')).length;
-
+                            // 여기서도 배열 확인
+                            let safeRecipes = dayData.recipes;
+                            if (!Array.isArray(safeRecipes)) safeRecipes = [];
+                            
+                            const recipeCount = safeRecipes.filter(r => activeGroupIds.includes(r.groupId || 'personal')).length;
                             return (
                                 <TouchableOpacity 
                                     key={dayData.dateString}
-                                    style={[
-                                        Calendar.weekCalendarCell,
-                                        { width: cellWidth },
-                                        dayData.isSelected && Calendar.weekSelectedCell,
-                                        dayData.dayOfWeek === 6 && { borderRightWidth: 0 } 
-                                    ]}
+                                    style={[Calendar.weekCalendarCell, { width: cellWidth }, dayData.isSelected && Calendar.weekSelectedCell, dayData.dayOfWeek === 6 && { borderRightWidth: 0 }]}
                                     onPress={() => setCurrentDateString(dayData.dateString)}
                                 >
-                                    <View style={[ 
-                                        Calendar.dayNumberContainer,
-                                        dayData.isSelected && Calendar.todayIndicator, 
-                                    ]}>
-                                        <Text style={[
-                                            Calendar.weekDayNumber,
-                                            dayData.isSelected && Calendar.todayText, 
-                                        ]}>{dayData.date}</Text>
+                                    <View style={[Calendar.dayNumberContainer, dayData.isSelected && Calendar.todayIndicator]}>
+                                        <Text style={[Calendar.weekDayNumber, dayData.isSelected && Calendar.todayText]}>{dayData.date}</Text>
                                     </View>
-                                    
                                     {/* 레시피 카운트 */}
                                     {recipeCount > 0 && (
                                         <View style={Calendar.weekRecipeCountContainer}>
@@ -306,20 +315,23 @@ function DateDetailScreenContent() {
                     </View>
                 </View>
 
-                {/* 레시피 상세 카드 (현재 선택된 날짜의 레시피) */} 
+                {/* 레시피 상세 카드 (현재 선택된 날짜의 레시피) */}
                 {recipeItems && recipeItems.length > 0 ? (
                     recipeItems.map((item) => (
-                        <RecipeCard 
-                            key={item.id} 
-                            item={item}
-                            onDelete={handleDeleteRecipe}
-                            onDetailPress={handleRecipeDetail}
-                        />
+                        <RecipeCard key={item.id} item={item} onDelete={handleDeleteRecipe} onDetailPress={handleRecipeDetail} />
                     ))
                 ) : (
-                    <Text style={styles.noRecipeText}>이 날짜에는 등록된 레시피가 없습니다.</Text>
+                    <View style={{ alignItems: 'center', marginTop: 30 }}>
+                        <Text style={styles.noRecipeText}>이 날짜에는 등록된 레시피가 없습니다.</Text>
+                        {safeRecipeId && (
+                            <View style={{ marginTop: 20 }}>
+                                <Button title="이 날짜에 식단 추가하기" onPress={() => setModalVisible(true)} />
+                            </View>
+                        )}
+                    </View>
                 )}
             </ScrollView>
+            <RecipeScheduleModal isVisible={isModalVisible} onClose={() => setModalVisible(false)} recipeId={safeRecipeId || ''} recipeName={safeRecipeName || ''} onSchedule={handleScheduleSubmit} />
         </View>
     );
 }
@@ -333,9 +345,8 @@ export default function DateDetailScreen() {
     );
 }
 
-// 🎨 스타일 시트
-const { width: windowWidth } = Dimensions.get('window');
 
+// 🎨 스타일 시트
 const styles = StyleSheet.create({
     // 레시피 상세 카드
     recipeItemCard: {
@@ -369,7 +380,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start'
     },
     recipeName: {
-        fontSize: 22, 
+        fontSize: 22,
         fontWeight: 'bold',
         flex: 1,
         marginRight: 15,
@@ -389,13 +400,13 @@ const styles = StyleSheet.create({
         marginTop: 30
     },
 
-    // Swipeable 삭제 버튼 스타일
+    // 삭제 버튼 스타일
     deleteButton: {
         backgroundColor: '#FF3B30',
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,
-        height: '100%', 
+        height: '100%',
         borderRadius: 10,
         marginBottom: 10
     },
