@@ -345,7 +345,6 @@ export default function DateDetailScreen() {
     );
 }
 
-
 // 🎨 스타일 시트
 const styles = StyleSheet.create({
     // 레시피 상세 카드

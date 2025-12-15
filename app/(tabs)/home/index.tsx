@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Pin, PinOff, Plus } from 'lucide-react-nativ
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   Image,
@@ -76,12 +77,15 @@ const getCalendarDays = (date: Date, schedules: RecipeSchedule[], activeGroupIds
     let recipes = schedulesMap.get(dateString);
     if (!Array.isArray(recipes)) recipes = [];
     
+    // ⭐ 필터링 강화: activeGroupIds에 포함된 레시피만 반환하여 Dot 렌더링에 사용
+    const filteredRecipes = recipes.filter(r => activeGroupIds.includes(r.groupId || 'personal'));
+    
     days.push({
       date: day.getDate(),
       dateString: dateString,
       isToday: dateString === TODAY_STRING,
       isCurrentMonth: isCurrentMonth,
-      recipes: recipes.filter(r => activeGroupIds.includes(r.groupId || 'personal')),
+      recipes: filteredRecipes, // 필터링된 레시피 목록 사용
       dayOfWeek: day.getDay() 
     });
   }
@@ -102,7 +106,8 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
     const loadRecipes = async () => {
       setIsLoading(true);
       try {
-        const recommended = await fetchRecommendedRecipes(currentWeekStart); 
+        // fetchRecommendedRecipes는 user_id를 받으므로, 임시로 'DUMMY_USER_ID' 전달
+        const recommended = await fetchRecommendedRecipes('DUMMY_USER_ID'); 
         setRecipes(recommended);
       } catch (e) {
         console.error("AI 추천 레시피 로드 실패:", e);
@@ -208,7 +213,7 @@ const AIRecommendedRecipes: React.FC<{ onRecipeSelect: (recipe: RecommendedRecip
   );
 };
 
-// 그룹 목록 아이템
+// 그룹 목록 아이템 (생략)
 const SideMenuGroupItem: React.FC<{ 
   group: Group; 
   onPress: (group: Group) => void; 
@@ -244,7 +249,7 @@ const SideMenuGroupItem: React.FC<{
   );
 };
 
-// 사이드 메뉴
+// 사이드 메뉴 (생략)
 const GroupSideMenu: React.FC<{ 
   isMenuOpen: boolean; 
   onClose: () => void; 
@@ -392,7 +397,8 @@ const HomeScreenContent = () => {
   const { myGroups, groupSchedules, fetchSchedulesForWeek, scheduleRecipe, refreshGroups } = useGroups(); 
   
   const [currentDate, setCurrentDate] = useState(new Date(TODAY));
-  const [activeGroupIds, setActiveGroupIds] = useState<string[]>(['personal', ...myGroups.map(g => g.id)]); 
+  // 초기 로드 시 'personal' 그룹을 기본으로 활성화
+  const [activeGroupIds, setActiveGroupIds] = useState<string[]>(['personal']); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isGroupModalVisible, setIsGroupModalVisible] = useState(false);
   
@@ -416,14 +422,18 @@ const HomeScreenContent = () => {
   
   useEffect(() => {
     setActiveGroupIds(prev => {
-      const newGroups = myGroups.map(g => g.id);
-      const activeKept = prev.filter(id => id === 'personal' || newGroups.includes(id));
-      return [...new Set([...activeKept, ...newGroups, 'personal'])];
+      const newGroupIds = myGroups.map(g => g.id);
+      const pinnedIds = myGroups.filter(g => g.isPinned).map(g => g.id);
+      
+      const activeKept = prev.filter(id => id === 'personal' || newGroupIds.includes(id));
+      
+      const finalActiveIds = [...new Set(['personal', ...activeKept, ...pinnedIds])];
+      
+      return finalActiveIds;
     });
   }, [myGroups]);
 
   const combinedSchedules = useMemo(() => {
-    // 스케줄 배열 체크
     const currentWeek = Array.isArray(groupSchedules[currentWeekStartString]) ? groupSchedules[currentWeekStartString] : [];
     const nextWeek = Array.isArray(groupSchedules[format(addWeeks(currentDate, 1), 'yyyy-MM-dd')]) ? groupSchedules[format(addWeeks(currentDate, 1), 'yyyy-MM-dd')] : [];
     return [...currentWeek, ...nextWeek];
@@ -479,11 +489,10 @@ const HomeScreenContent = () => {
 
   // AI 추천 레시피 클릭 시 핸들러
   const handleRecipeSelect = useCallback((recipe: RecommendedRecipe) => {
-    // 레시피 ID를 안전하게 추출 (recipeId, recipe_id, id 모두 확인)
     const recipeId = (recipe as any).recipeId || (recipe as any).recipe_id || recipe.id;
     
     setSelectedRecipe({ 
-        id: recipeId.toString(), // 문자열로 변환하여 저장
+        id: recipeId.toString(), 
         name: recipe.name 
     });
     setIsRecipeModalVisible(true);
@@ -495,12 +504,34 @@ const HomeScreenContent = () => {
     date: string; 
     groupId: string | 'personal'; 
   }) => {
+    if (!scheduleRecipe || !fetchSchedulesForWeek) return;
+
     try {
+        if (!data.recipeId) {
+             Alert.alert("경고", "레시피를 선택해야 합니다.");
+             return;
+        }
+        
+        // 1. Context 함수 호출 (DB 저장 및 Context 내부 상태 업데이트)
         await scheduleRecipe(data);
+        
+        // 2. DB 업데이트 후, 데이터 동기화를 보장하기 위해 Context 갱신
+        const dateObj = new Date(data.date);
+        const weekStartForUpdate = format(startOfWeek(dateObj, { weekStartsOn: WEEK_STARTS_ON }), 'yyyy-MM-dd');
+        
+        // 해당 주 스케줄 갱신 (Dot 표시 문제 해결)
+        await fetchSchedulesForWeek(weekStartForUpdate); 
+        
+        // 다음 주 스케줄 갱신
+        await fetchSchedulesForWeek(format(addWeeks(dateObj, 1), 'yyyy-MM-dd')); 
+        
+        // 3. UI 갱신 유도를 위해 달력 시점을 등록 날짜로 이동
+        setCurrentDate(new Date(data.date)); 
+
     } catch (error) {
         console.error("홈 화면 식단 등록 실패:", error);
     }
-  }, [scheduleRecipe]);
+  }, [scheduleRecipe, fetchSchedulesForWeek]);
 
   const CALENDAR_PADDING_H = 20;
   const BORDER_WIDTH = 1;
@@ -532,11 +563,13 @@ const HomeScreenContent = () => {
         </View>
 
         <View style={styles.recipeList}>
+          {/* Dot 렌더링 로직: 필터링된 레시피 목록 사용 */}
           {filteredRecipes.slice(0, 3).map((recipe, index) => (
             <View key={index} style={styles.recipeItem}>
               <View 
                 style={[
                   styles.recipeDot, 
+                  // 그룹 ID별 색상 적용 (색상 Dot)
                   { backgroundColor: getGroupColor(recipe.groupId || 'personal') }
                 ]} 
               />
@@ -591,7 +624,7 @@ const HomeScreenContent = () => {
       settings: { isFridgeShared: 'owner_only' },
       memberCount: 1,
       maxMembers: 1,
-      isPinned: false,
+      isPinned: true,
       imageUri: 'NULL',
       createdAt: format(TODAY, 'yyyy-MM-dd')
     };
@@ -675,7 +708,6 @@ const HomeScreenContent = () => {
         isVisible={isRecipeModalVisible}
         onClose={() => setIsRecipeModalVisible(false)}
         
-        // 여기에 안전하게 추출한 ID와 이름 넘기기
         recipeId={selectedRecipe?.id || ''}
         recipeName={selectedRecipe?.name || ''}
         

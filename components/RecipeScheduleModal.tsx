@@ -28,8 +28,9 @@ const TODAY_DATE = new Date();
 interface RecipeScheduleModalProps {
     isVisible: boolean;
     onClose: () => void;
-    recipeId: string; // 추가할 레시피 ID
-    recipeName: string; // 추가할 레시피 이름
+    initialDate?: string; 
+    recipeId: string;
+    recipeName: string;
     onSchedule: (data: { 
         recipeId: string; 
         date: string; 

@@ -50,7 +50,8 @@ export interface GroupCreationData {
 
 // 그룹 상세 (달력) 관련 타입
 export interface GroupRecipeItem {
-    id: string; // 레시피 ID (스케줄 항목 ID)
+    id: string; // 스케줄 ID (PK)
+    recipeId: string; // 실제 레시피 ID (FK)
     recipeName: string; // 레시피 이름
     groupId: string | null; // 등록된 그룹 ID (null이면 개인 식단)
     memberId: string; // 등록한 멤버 ID (스케줄 관리 용)

@@ -7,7 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import { AUTH_TOKEN_KEY } from '@/constants/keys';
 
 // Type
-import type { Category, Recipe, RecommendedRecipe } from '@/types/recipeTypes';
+import type { Category, Recipe, RecipeDetail, RecommendedRecipe } from '@/types/recipeTypes';
 
 // RAILWAY BASE URL
 const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
@@ -117,7 +117,36 @@ export const removeRecipeFromFavorite = async (recipeId: string): Promise<void> 
     }
 };
 
-// 5. AI 추천 레시피 목록 로드 (POST /api/recommend/week)
+/**
+ * 5. 특정 레시피 상세 정보 로드 (GET /recipe/detail/{recipeId})
+ * @param recipeId 상세 정보를 가져올 레시피 ID
+ * @returns RecipeDetail - 레시피 상세 정보
+ */
+export const fetchRecipeDetail = async (recipeId: string): Promise<RecipeDetail> => {
+    const token = await getAuthToken();
+    
+    if (!token) {
+        throw new Error("로그인이 필요합니다. 레시피 상세 정보를 불러올 수 없습니다.");
+    }
+    
+    try {
+        const response = await axios.get(`${RAILWAY_BASE_URL}/recipe/detail/${recipeId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // 서버 응답이 { success: true, data: RecipeDetail } 형태라고 가정
+        if (response.data.success && response.data.data) {
+            return response.data.data as RecipeDetail; 
+        } else {
+            throw new Error(response.data.message || "레시피 상세 정보를 불러오는 데 실패했습니다.");
+        }
+    } catch (error) {
+        console.error(`❌ 레시피 상세 정보(${recipeId}) 로드 실패:`, error);
+        throw new Error(axios.isAxiosError(error) ? `상세 정보 로드 실패: ${error.message}` : "서버 오류 발생");
+    }
+};
+
+// 6. AI 추천 레시피 목록 로드 (POST /api/recommend/week)
 export const fetchRecommendedRecipes = async (user_id: string): Promise<RecommendedRecipe[]> => {
     const token = await getAuthToken();
     

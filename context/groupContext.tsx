@@ -85,33 +85,55 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const newScheduleItem: GroupRecipeItem = await addRecipeToSchedule(data);
       
-      // Context 상태 즉시 업데이트
+      // Context 상태 즉시 업데이트 (Optimistic Update)
       setGroupSchedules(prev => {
         const dateObj = new Date(data.date);
+        // weekStartsOn: 0 (일요일) 기준
         const weekStart = format(startOfWeek(dateObj, { weekStartsOn: 0 }), 'yyyy-MM-dd');
-        const currentWeekSchedules = prev[weekStart] || [];
         
-        // 해당 날짜 스케줄 찾기/생성
+        // 1. 해당 주차 데이터 가져오기 (없으면 빈 배열)
+        const currentWeekSchedules = Array.isArray(prev[weekStart]) ? [...prev[weekStart]] : []; 
+        
+        // 2. 해당 날짜의 스케줄 객체 찾기
         const dateIndex = currentWeekSchedules.findIndex(s => s.date === data.date);
         
         if (dateIndex !== -1) {
-          // 기존 날짜에 추가
-          currentWeekSchedules[dateIndex].recipes.push(newScheduleItem);
+          // A. 이미 해당 날짜에 스케줄이 있는 경우
+          const targetSchedule = { ...currentWeekSchedules[dateIndex] };
+          
+          // recipes 배열이 없으면 빈 배열로 초기화 (에러 방지)
+          if (!targetSchedule.recipes) {
+              targetSchedule.recipes = [];
+          }
+          
+          // push 대신 spread 연산자로 안전하게 추가
+          targetSchedule.recipes = [...targetSchedule.recipes, newScheduleItem];
+          currentWeekSchedules[dateIndex] = targetSchedule;
+          
         } else {
-          // 새로운 날짜 생성
-          currentWeekSchedules.push({ date: data.date, recipes: [newScheduleItem] });
+          // B. 해당 날짜에 스케줄이 아예 없는 경우 -> 새로 생성
+          // 여기서 push가 아닌 새로운 배열을 생성하여 업데이트
+          const newSchedule: RecipeSchedule = { 
+              date: data.date, 
+              recipes: [newScheduleItem] 
+          };
+          currentWeekSchedules.push(newSchedule);
         }
 
+        // 상태 불변성 유지하며 리턴
         return {
           ...prev,
-          [weekStart]: [...currentWeekSchedules]
+          [weekStart]: currentWeekSchedules
         };
       });
-      Alert.alert("성공", `${newScheduleItem.recipeName}이(가) 식단에 추가되었습니다.`);
+      
+      // 디버깅 로그 추가
+      console.log(`✅ [${data.date}] 식단 등록 및 Context 업데이트 성공.`);
+
 
     } catch (error) {
-        Alert.alert("오류", `식단 등록에 실패했습니다.`);
-        throw error;
+       Alert.alert("오류", `식단 등록에 실패했습니다. API 응답 확인 필요.`);
+       throw error;
     }
   }, [isAuthenticated]);
 

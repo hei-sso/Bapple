@@ -26,6 +26,17 @@ export interface RecommendedRecipe {
     recipeImageUrl: string | null; // 레시피 사진 URL
 }
 
+//  레시피 상세 인터페이스 (상세 페이지용)
+export interface RecipeDetail {
+    id: string;
+    name: string;
+    recipeImageUrl: string | null;
+    difficulty: string; // 난이도
+    cookTimeMinutes: number; // 조리 시간
+    ingredients: string[]; // 레시피 재료
+    instructions: string[]; // 조리 방법
+}
+
 // 레시피 Context 타입 정의
 export interface RecipeContextType {
     allCategories: Category[]; 
