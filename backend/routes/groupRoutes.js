@@ -23,4 +23,8 @@ router.get('/schedule/my', authenticateToken, groupController.getMySchedules);
 router.post('/schedule', authenticateToken, groupController.addSchedule);
 router.delete('/schedule/:scheduleId', authenticateToken, groupController.deleteSchedule);
 
+// [추가됨] 초대 코드 조회 API
+// 프론트엔드 호출: axios.get(`${RAILWAY_BASE_URL}/groups/${groupId}/invite-code`)
+router.get('/:groupId/invite-code', authenticateToken, groupController.getInviteCode);
+
 export default router;

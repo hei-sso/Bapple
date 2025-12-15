@@ -217,7 +217,7 @@ const groupController = {
         const finalGroupId = (groupId === 'personal' || !groupId) ? null : groupId;
 
         try {
-            // 레시피 이름 등 부가 정보 가져오기 (화면 갱신용)
+            // 레시피 이름 등 부가 정보 가져오기
             let recipeName = 'Unknown Recipe';
             let cookTime = 0;
             try {
@@ -234,13 +234,13 @@ const groupController = {
                 [userId, finalGroupId, recipeId, date, meal_type, title || recipeName, memo]
             );
 
-            // ⭐ [핵심 수정] 프론트엔드 GroupRecipeItem 타입과 100% 일치시킴
+            // 프론트엔드 GroupRecipeItem 타입과 일치
             const newScheduleForFrontend = {
-                id: result.insertId.toString(),      // 프론트: item.id
-                recipeName: recipeName,              // 프론트: item.recipeName
-                groupId: finalGroupId,               // 프론트: item.groupId (중요!)
-                recipeId: recipeId.toString(),       // 프론트: item.recipeId (중요!)
-                memberId: userId.toString(),         // 프론트: item.memberId
+                id: result.insertId.toString(),
+                recipeName: recipeName,
+                groupId: finalGroupId,
+                recipeId: recipeId.toString(),
+                memberId: userId.toString(),
                 rating: 0,
                 cookTimeMinutes: cookTime
             };
@@ -248,7 +248,7 @@ const groupController = {
             res.status(201).json({
                 success: true,
                 message: "식단이 추가되었습니다.",
-                data: newScheduleForFrontend // 이제 프론트가 바로 알아먹습니다!
+                data: newScheduleForFrontend 
             });
 
         } catch (error) {
@@ -263,7 +263,6 @@ const groupController = {
         if (!userId) return res.status(401).json({ success: false, message: "인증 실패" });
 
         try {
-            // ⭐ [핵심 수정] SELECT 절에 mp.recipe_id 추가!
             const query = `
                 SELECT 
                     mp.meal_plan_id, 
@@ -272,7 +271,7 @@ const groupController = {
                     mp.user_id,
                     mp.title,
                     mp.meal_type,
-                    mp.recipe_id,  -- 👈 이거 없으면 프론트에서 NULL로 뜸!
+                    mp.recipe_id, 
                     r.name as recipe_name,
                     r.cooking_time as cook_time 
                 FROM meal_plan mp
@@ -300,10 +299,7 @@ const groupController = {
                     id: row.meal_plan_id.toString(),
                     recipeName: row.recipe_name || row.title || '알 수 없는 레시피',
                     groupId: row.group_id, 
-                    
-                    // ⭐ [핵심 수정] 응답 객체에 recipeId 포함!
                     recipeId: row.recipe_id ? row.recipe_id.toString() : null, 
-                    
                     memberId: row.user_id.toString(),
                     rating: 0,
                     cookTimeMinutes: row.cook_time || 0
@@ -340,6 +336,39 @@ const groupController = {
         } catch (error) {
             console.error('식단 삭제 실패:', error);
             res.status(500).json({ success: false, message: '삭제 실패' });
+        }
+    }, // <--- 콤마 추가됨
+
+    // 8. [프론트엔드 요청 대응] 초대 코드(그룹 ID) 조회
+    // 요청 경로: GET /groups/:groupId/invite-code
+    getInviteCode: async (req, res) => {
+        const userId = req.user.id || req.user.user_id;
+        const { groupId } = req.params;
+
+        console.log(`[DEBUG] 초대 코드 조회 요청: User ${userId}, Group ${groupId}`);
+
+        try {
+            // 1. 보안 체크: 요청한 유저가 실제 그 그룹의 멤버인지 확인
+            const [memberCheck] = await pool.query(
+                'SELECT 1 FROM group_member WHERE group_id = ? AND user_id = ?',
+                [groupId, userId]
+            );
+
+            if (memberCheck.length === 0) {
+                return res.status(403).json({ success: false, message: "그룹 멤버만 초대 코드를 볼 수 있습니다." });
+            }
+
+            // 2. 성공 응답: 그룹 ID가 곧 초대 코드입니다.
+            res.json({ 
+                success: true, 
+                data: {
+                    inviteCode: groupId 
+                }
+            });
+
+        } catch (error) {
+            console.error('초대 코드 조회 실패:', error);
+            res.status(500).json({ success: false, message: '서버 오류' });
         }
     }
 };
