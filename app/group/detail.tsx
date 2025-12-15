@@ -19,6 +19,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// API
+import { fetchInviteCode } from '@/api/groupAPI';
+
 // Style
 import { Header } from '@/components/header';
 import { Calendar } from '@/components/week-calendar';
@@ -47,7 +50,7 @@ interface DayData {
     dayOfWeek: number;
 }
 
-// 일주일 날짜 데이터 생성 (방어 로직 추가)
+// 일주일 날짜 데이터 생성
 const getWeekDays = (
     weekStartString: string, 
     currentSelectedDateString: string, 
@@ -56,17 +59,14 @@ const getWeekDays = (
     const startDay = new Date(weekStartString);
     const days: DayData[] = [];
 
-    // schedules가 배열인지 확인
     const safeSchedules = Array.isArray(schedules) ? schedules : [];
     const schedulesMap = new Map(safeSchedules.map(s => [s.date, s]));
     
     for (let i = 0; i < 7; i++) {
         const day = addDays(startDay, i);
         const dateString = dateToDateString(day);
-        
         const recipeSchedule = schedulesMap.get(dateString);
 
-        // recipes가 배열이 아니면 빈 배열로 처리
         let recipes = recipeSchedule?.recipes;
         if (!Array.isArray(recipes)) recipes = [];
 
@@ -90,12 +90,15 @@ function GroupDetailScreenContent() {
     const insets = useSafeAreaInsets();
     const { fetchSchedulesForWeek, groupSchedules } = useGroups();
 
+    // params 가져오기
     const params = route.params as { groupName?: string; groupId?: string; inviteCode?: string } || {};
     const groupId = params.groupId;
     const groupName = params.groupName || '그룹 상세';
-    const inviteCode = params.inviteCode || null; 
-
+    
+    // 초대 코드 및 로딩 상태
+    const [inviteCode, setInviteCode] = useState<string | null>(params.inviteCode || null);
     const [isShareModalVisible, setIsShareModalVisible] = useState(false);
+    const [isCodeLoading, setIsCodeLoading] = useState(false); // 로딩 상태
 
     useEffect(() => {
         if (!groupId) {
@@ -141,42 +144,57 @@ function GroupDetailScreenContent() {
         });
     }, [currentDateString]);
 
-    // currentRecipes 계산 시 방어 로직 강화
     const currentRecipes = useMemo(() => {
         if (!groupId) return []; 
-        
         const safeSchedules = Array.isArray(schedulesForCurrentWeek) ? schedulesForCurrentWeek : [];
         const selectedDay = safeSchedules.find(s => s.date === currentDateString);
-        
         if (!selectedDay) return [];
-        
-        // recipes가 배열인지 확실하게 체크
         let recipes = selectedDay.recipes;
         if (!Array.isArray(recipes)) recipes = [];
-        
         return recipes.filter(recipe => recipe.groupId === groupId); 
-        
     }, [currentDateString, schedulesForCurrentWeek, groupId]); 
     
     const RECIPE_CARD_WIDTH = width * 0.87;
 
-    // 상세 페이지 이동 시 진짜 recipeId 넘기기
     const handleRecipeDetail = (recipe: GroupRecipeItem) => {
-        // recipe.id는 '식단 스케줄 ID'임
-        // 백엔드에서 recipeId를 보내주면 그 값을 사용하고 없다면 임시로 any로 변환해서 확인
         const realRecipeId = (recipe as any).recipeId || (recipe as any).recipe_id;
-
         if (realRecipeId) {
              router.push({
                 pathname: '/recipe/detail',
                 params: {
-                    id: realRecipeId.toString(), // 진짜 레시피 ID 전달
+                    id: realRecipeId.toString(), 
                     name: recipe.recipeName, 
                 },
             } as RedirectProps['href']);
         } else {
-             // 레시피 ID가 없으면 경고 (NULL 에러 원인 차단)
              Alert.alert("오류", "해당 레시피의 원본 정보를 찾을 수 없습니다.");
+        }
+    };
+
+    // 공유 버튼 클릭 핸들러
+    const handleSharePress = async () => {
+        if (!groupId) return;
+
+        // 1. 이미 코드가 있다면 로딩 없이 바로 모달 표시
+        if (inviteCode) {
+            setIsShareModalVisible(true);
+            return;
+        }
+
+        // 2. 코드가 없다면 로딩 시작 -> API 호출 -> 로딩 종료
+        try {
+            setIsShareModalVisible(true); // 모달을 먼저 띄움
+            setIsCodeLoading(true);       // 로딩바 돌리기 시작
+            
+            const code = await fetchInviteCode(groupId); // API 호출
+            setInviteCode(code);          // 코드 저장
+            
+        } catch (error) {
+            console.error(error);
+            Alert.alert("오류", "초대 코드를 불러오지 못했습니다.");
+            setIsShareModalVisible(false); // 실패 시 모달 닫기
+        } finally {
+            setIsCodeLoading(false);      // 로딩 종료
         }
     };
     
@@ -186,14 +204,14 @@ function GroupDetailScreenContent() {
 
     return (
         <View style={[Styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-
             <View style={[Header.HeaderAlign]}>
                 <TouchableOpacity onPress={handleGoBack} style={Header.BackButton}>
                     <ChevronLeft size={28} color="#000" />
                 </TouchableOpacity>
                 <Text style={Header.Title}>{groupName}</Text>
                 
-                <TouchableOpacity onPress={() => setIsShareModalVisible(true)} style={styles.shareButton}>
+                {/* 공유 버튼 연결 */}
+                <TouchableOpacity onPress={handleSharePress} style={styles.shareButton}>
                     <Share2 size={24} color="#000" />
                 </TouchableOpacity>
             </View>
@@ -214,42 +232,26 @@ function GroupDetailScreenContent() {
                                 </TouchableOpacity>
                             </View>
                         </View>
-
                         <View style={Calendar.dayOfWeekContainer}>
                             {['일', '월', '화', '수', '목', '금', '토'].map(day => (
                                 <Text key={day} style={Calendar.dayOfWeekText}>{day}</Text>
                             ))}
                         </View>
-                        
                         <View style={Calendar.weekCalendarGrid}>
                             {weekDays.map(dayData => {
                                 const cellWidth = (width - (24 * 2) - 1) / 7;
-
-                                // 렌더링 시에도 배열 확인
                                 const safeRecipes = Array.isArray(dayData.recipes) ? dayData.recipes : [];
                                 const recipeCount = safeRecipes.filter(r => r.groupId === groupId).length; 
 
                                 return (
                                 <TouchableOpacity 
                                     key={dayData.dateString}
-                                    style={[
-                                    Calendar.weekCalendarCell,
-                                    { width: cellWidth },
-                                    dayData.isSelected && Calendar.weekSelectedCell,
-                                    dayData.dayOfWeek === 6 && { borderRightWidth: 0 } 
-                                    ]}
+                                    style={[Calendar.weekCalendarCell, { width: cellWidth }, dayData.isSelected && Calendar.weekSelectedCell, dayData.dayOfWeek === 6 && { borderRightWidth: 0 }]}
                                     onPress={() => setCurrentDateString(dayData.dateString)}
                                 >
-                                    <View style={[ 
-                                    Calendar.dayNumberContainer,
-                                    dayData.isSelected && Calendar.todayIndicator, 
-                                    ]}>
-                                    <Text style={[
-                                        Calendar.weekDayNumber,
-                                        dayData.isSelected && Calendar.todayText, 
-                                    ]}>{dayData.date}</Text>
+                                    <View style={[Calendar.dayNumberContainer, dayData.isSelected && Calendar.todayIndicator]}>
+                                        <Text style={[Calendar.weekDayNumber, dayData.isSelected && Calendar.todayText]}>{dayData.date}</Text>
                                     </View>
-                                    
                                     {recipeCount > 0 && (
                                     <View style={Calendar.weekRecipeCountContainer}>
                                         <Text style={Calendar.weekRecipeCountText}>{recipeCount}</Text>
@@ -270,14 +272,7 @@ function GroupDetailScreenContent() {
                             <ScrollView horizontal contentContainerStyle={styles.recipeCardScrollContent}>
                                 {currentRecipes.map((recipeItem, index) => (
                                     <TouchableOpacity onPress={() => handleRecipeDetail(recipeItem)} key={recipeItem.id}>
-                                        <View 
-                                            key={recipeItem.id} 
-                                            style={[
-                                                styles.recipeItemCard,
-                                                { width: RECIPE_CARD_WIDTH }, 
-                                                index < currentRecipes.length - 1 && styles.recipeCardMarginRight 
-                                            ]}
-                                        >
+                                        <View style={[styles.recipeItemCard, { width: RECIPE_CARD_WIDTH }, index < currentRecipes.length - 1 && styles.recipeCardMarginRight]}>
                                             <View style={styles.recipeCardContent}>
                                                 <Text style={styles.recipeName}>{recipeItem.recipeName}</Text> 
                                                 <View style={styles.recipeImagePlaceholder} />
@@ -312,11 +307,13 @@ function GroupDetailScreenContent() {
                 </ScrollView>
             </KeyboardAvoidingView>
             
+            {/* 모달에 isLoading 상태 전달 */}
             <ShareCodeModal 
                 isVisible={isShareModalVisible}
                 onClose={() => setIsShareModalVisible(false)}
                 groupName={groupName}
-                inviteCode={inviteCode}
+                inviteCode={inviteCode} 
+                isLoading={isCodeLoading}
             />
         </View>
     );
@@ -391,8 +388,6 @@ const styles = StyleSheet.create({
         color: '#999',
         marginTop: 30
     },
-
-    // 메모장
     memoSection: {
         marginTop: 20,
         marginBottom: 80

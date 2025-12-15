@@ -1,16 +1,17 @@
 // components/ShareCodeModal.tsx
 
+import * as Clipboard from 'expo-clipboard';
+import { Copy, X } from 'lucide-react-native';
 import React from 'react';
 import {
-    Modal,
-    Text,
+    ActivityIndicator,
     Alert,
-    TouchableOpacity,
-    View,
+    Modal,
     StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { Copy, X } from 'lucide-react-native';
-import * as Clipboard from 'expo-clipboard';
 
 // 초대 코드 공유 모달 컴포넌트
 interface ShareCodeModalProps {
@@ -18,9 +19,16 @@ interface ShareCodeModalProps {
     onClose: () => void;
     groupName: string;
     inviteCode: string | null;
+    isLoading?: boolean; // 로딩 상태 추가 (선택적)
 }
 
-const ShareCodeModal: React.FC<ShareCodeModalProps> = ({ isVisible, onClose, groupName, inviteCode }) => {
+const ShareCodeModal: React.FC<ShareCodeModalProps> = ({ 
+    isVisible, 
+    onClose, 
+    groupName, 
+    inviteCode,
+    isLoading = false // 기본값 false
+}) => {
     
     const handleCopy = async () => {
         if (inviteCode) {
@@ -45,7 +53,13 @@ const ShareCodeModal: React.FC<ShareCodeModalProps> = ({ isVisible, onClose, gro
 
                     <Text style={modalStyles.title}>'{groupName}' 초대하기</Text>
                     
-                    {!inviteCode ? (
+                    {/* 로딩 상태 분기 처리 */}
+                    {isLoading ? (
+                        <View style={modalStyles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#000" />
+                            <Text style={modalStyles.loadingText}>초대 코드를 불러오는 중...</Text>
+                        </View>
+                    ) : !inviteCode ? (
                         <Text style={modalStyles.errorText}>초대 코드를 불러올 수 없습니다.</Text>
                     ) : (
                         <>
@@ -85,7 +99,8 @@ const modalStyles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 4,
-        elevation: 5
+        elevation: 5,
+        minHeight: 200 // 모달 높이 고정 (화면 깜빡임 방지)
     },
     closeButton: {
         position: 'absolute',
@@ -135,7 +150,19 @@ const modalStyles = StyleSheet.create({
     errorText: {
         fontSize: 16,
         color: '#D32F2F',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        marginTop: 20
+    },
+    // 로딩 관련 스타일
+    loadingContainer: {
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    loadingText: {
+        marginTop: 15,
+        color: '#666',
+        fontSize: 14
     }
 });
 

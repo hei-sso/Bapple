@@ -110,6 +110,50 @@ export const toggleGroupPin = async (groupId: string): Promise<void> => {
     }
 };
 
+/**
+ * 특정 그룹의 초대 코드 조회 (GET /groups/{groupId}/invite-code)
+ * @param groupId 초대 코드를 조회할 그룹 ID
+ * @returns inviteCode (string)
+ */
+export const fetchInviteCode = async (groupId: string): Promise<string> => {
+    const token = await getAuthToken();
+    
+    if (!token) {
+        throw new Error("로그인이 필요합니다.");
+    }
+
+    try {
+        const response = await axios.get(`${RAILWAY_BASE_URL}/groups/${groupId}/invite-code`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.data.success && response.data.data) {
+            const data = response.data.data;
+
+            // 데이터가 객체인 경우 처리 강화
+            if (typeof data === 'object') {
+                // 1. 에러 로그에 나온 키 (inviteCode) 확인
+                if (data.inviteCode) return data.inviteCode;
+                
+                // 2. 혹시 모를 스네이크 케이스 (invite_code) 확인
+                if (data.invite_code) return data.invite_code;
+                
+                // 3. 둘 다 아니면 객체를 문자열로 풀어서라도 반환 (에러 방지)
+                console.warn("⚠️ 초대 코드 형식 불일치:", data);
+                return ""; 
+            }
+            
+            // 문자열인 경우 그대로 반환
+            return data as string;
+        } else {
+            throw new Error(response.data.message || "초대 코드를 불러올 수 없습니다.");
+        }
+    } catch (error) {
+        console.error(`❌ 초대 코드 조회 실패 (${groupId}):`, error);
+        throw new Error(axios.isAxiosError(error) ? `코드 조회 실패: ${error.message}` : "서버 오류 발생");
+    }
+};
+
 // 사용자의 전체 그룹 레시피 스케줄 로드 (GET /schedule/my)
 export const fetchAllMyGroupSchedules = async (weekStartString: string): Promise<RecipeSchedule[]> => {
     const token = await getAuthToken();
