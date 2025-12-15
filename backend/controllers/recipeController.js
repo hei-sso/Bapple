@@ -159,8 +159,6 @@ export const getRecipeDetail = async (req, res) => {
   console.log(`[DEBUG] [GET] 레시피 상세 조회 요청 (ID: ${recipeId})`);
 
   try {
-    // 와이어프레임에 있는 데이터만 정확히 조회
-    // DB 이미지 확인 결과: ingredients, cooking_steps가 recipe 테이블 컬럼임
     const query = `
       SELECT 
         recipe_id, 
@@ -168,9 +166,8 @@ export const getRecipeDetail = async (req, res) => {
         img_url, 
         difficulty, 
         cooking_time, 
-        ingredients,      -- 와이어프레임 '레시피 재료'
-        ingredient_qty,   -- 재료 양 (필요 시 표시)
-        cooking_steps     -- 와이어프레임 '조리 방법'
+        ingredients, 
+        cooking_steps
       FROM recipe 
       WHERE recipe_id = ?
     `;
@@ -183,16 +180,30 @@ export const getRecipeDetail = async (req, res) => {
 
     const recipe = rows[0];
 
-    // 프론트엔드 와이어프레임 구조에 맞춘 데이터 매핑
+    // [중요] recipeTypes.ts의 RecipeDetail 인터페이스와 키 값을 100% 일치시킴
     const result = {
       id: recipe.recipe_id,
-      name: recipe.name,                // [와이어프레임 상단] 이름
-      img_url: recipe.img_url,          // [와이어프레임 사진]
-      difficulty: recipe.difficulty,    // [와이어프레임 중간] 난이도
-      cooking_time: recipe.cooking_time,// [와이어프레임 중간] 조리 시간
-      ingredients: recipe.ingredients,  // [와이어프레임 박스1] 재료
-      ingredient_qty: recipe.ingredient_qty, // (참고용) 재료 양
-      instructions: recipe.cooking_steps // [와이어프레임 박스2] 조리 방법
+      name: recipe.name,
+      
+      // 1. 프론트엔드 타입: recipeImageUrl
+      recipeImageUrl: recipe.img_url, 
+      
+      difficulty: recipe.difficulty,
+      
+      // 2. 프론트엔드 타입: cookTimeMinutes
+      cookTimeMinutes: recipe.cooking_time, 
+      
+      // 3. 프론트엔드 타입: ingredients (string[])
+      // DB에 "양파, 마늘" 처럼 저장되어 있다면 배열로 변환해서 줘야 함
+      ingredients: typeof recipe.ingredients === 'string' 
+        ? recipe.ingredients.split(',').map(s => s.trim()) 
+        : recipe.ingredients,
+
+      // 4. 프론트엔드 타입: instructions (string[])
+      // DB 컬럼명 cooking_steps -> 프론트엔드 변수명 instructions
+      instructions: typeof recipe.cooking_steps === 'string'
+        ? recipe.cooking_steps.split('\n').map(s => s.trim()) // 줄바꿈 기준 분리 예시
+        : recipe.cooking_steps
     };
 
     res.status(200).json({ success: true, data: result });
