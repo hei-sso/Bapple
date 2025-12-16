@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
 // API
+import { logoutUser } from '@/api/authAPI';
 import { fetchUserProfile } from '@/api/userAPI';
 
 // Constants
@@ -111,18 +112,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    // 3. 로그아웃 (모든 토큰 삭제)
+    // 3. 로그아웃 (백엔드 요청 + 토큰 삭제)
     const signOut = async () => {
         try {
+            // ① 저장된 토큰 가져오기
+            const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+            
+            // ② 토큰이 있다면 백엔드에 로그아웃 요청 전송
+            if (token) {
+                await logoutUser(token); 
+            }
+
+            // ③ 앱 내부 토큰 삭제 (원래 있던 코드)
             await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
             await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
             
+            // ④ 상태 초기화 및 이동
             setAccessToken(null);
             setUserProfile(null);
             
-            router.replace('/welcome');
+            // "로그아웃 되었습니다" 알림이 필요하면 여기서 Alert.alert() 띄워도 됨
+            router.replace('/welcome'); // 혹은 로그인 화면으로
+            
         } catch (e) {
             console.error("SignOut Error:", e);
+            // 에러가 나도 강제로 로그인 화면으로 보내는 게 안전
+            router.replace('/welcome');
         }
     };
 

@@ -3,8 +3,8 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store'; 
 import { UserProfile } from '@/types/userTypes';
+import { AUTH_TOKEN_KEY } from '@/constants/keys';
 
-const AUTH_TOKEN_KEY = 'user_access_token';
 const RAILWAY_BASE_URL = process.env.EXPO_PUBLIC_RAILWAY_BASE_URL;
 
 // 토큰 가져오기

@@ -14,7 +14,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator // 로딩 표시를 위해 추가
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,9 +25,11 @@ import { Header } from '@/components/header'; // 헤더
 import { KakaoLogin } from '@/components/kakao-login-btn'; // Kakao 로그인 버튼
 import { Styles } from '@/constants/styles'; // 공통
 
+// API
+import { sendVerificationEmail, verifyEmailCode, registerUser } from '@/api/authAPI';
+
 WebBrowser.maybeCompleteAuthSession(); 
 
-// 카카오 관련 상수와 로직 제거 (UI 유지를 위해 RegisterScreen은 유지)
 export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -42,13 +45,54 @@ export default function RegisterScreen() {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [verificationCodeSent, setVerificationCodeSent] = useState(false);
   const [verificationCode, setVerificationCode] = useState(''); 
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleGoBack = () => {
     router.back(); 
   };
   
-  // ⭐ 유효성 체크 (임시)
+  // 1. 인증번호 발송 핸들러
+  const handleSendVerificationCode = async () => {
+    if (!email) { Alert.alert("알림", "이메일을 입력해 주세요."); return; }
+    
+    setIsLoading(true); // 로딩 시작
+    try {
+      // API 호출
+      await sendVerificationEmail(email);
+      
+      setVerificationCodeSent(true); 
+      Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("오류", error.message || "인증번호 발송에 실패했습니다.");
+    } finally {
+      setIsLoading(false); // 로딩 끝
+    }
+  };
+  
+  // 2. 인증번호 확인 핸들러
+  const handleVerifyCode = async () => {
+    if (!verificationCode) { Alert.alert("알림", "인증번호를 입력해 주세요."); return; }
+    
+    setIsLoading(true);
+    try {
+      // API 호출
+      await verifyEmailCode(email, verificationCode);
+
+      setIsEmailVerified(true);
+      setVerificationCodeSent(false);
+      Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다.");
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("인증 실패", error.message || "인증번호가 일치하지 않습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 3. 회원가입 핸들러
   const handleRegister = async () => {
+    // 클라이언트 측 유효성 검사
     if (password.length < 6) {
       Alert.alert("알림", "비밀번호는 6자 이상이어야 합니다.");
       return;
@@ -59,23 +103,29 @@ export default function RegisterScreen() {
        return;
     }
 
-    Alert.alert("성공", "회원가입 성공 (임시)");
-    router.replace('/(auth)/login' as RedirectProps['href']); 
-  };
+    setIsLoading(true);
+    try {
+      // 서버로 보낼 데이터 구성
+      const userData = {
+        nickname,
+        email,
+        password,
+        phoneNumber,
+        birthdate,
+      };
 
-  // ⭐ 인증번호 발송 핸들러
-  const handleSendVerificationCode = async () => {
-    if (!email) { Alert.alert("알림", "이메일을 입력해 주세요."); return; }
-    setVerificationCodeSent(true); 
-    Alert.alert("알림", `${email}로 인증번호가 발송되었습니다.`);
-  };
-  
-  // ⭐ 인증번호 확인 핸들러
-  const handleVerifyCode = async () => {
-    if (!verificationCode) { Alert.alert("알림", "인증번호를 입력해 주세요."); return; }
-    setIsEmailVerified(true);
-    setVerificationCodeSent(false);
-    Alert.alert("인증 완료", "이메일 인증이 성공적으로 완료되었습니다.");
+      // API 호출
+      await registerUser(userData);
+
+      Alert.alert("성공", "회원가입이 완료되었습니다. 로그인해주세요.");
+      router.replace('/(auth)/login' as RedirectProps['href']); 
+      
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("가입 실패", error.message || "회원가입 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 약관/정책 모달 띄우기 핸들러
@@ -87,7 +137,7 @@ export default function RegisterScreen() {
     }
   };
 
-  // 카카오 로그인 버튼 → WebView 스택 페이지
+  // 카카오 로그인 버튼
   const handleKakaoLogin = async () => {
       router.push('/(auth)/kakao-webview' as RedirectProps['href']);
   };
@@ -130,14 +180,26 @@ export default function RegisterScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              editable={!isEmailVerified} // 인증 완료 시 수정 불가
+              // 인증 완료 혹은 로딩 중이면 수정 불가
+              editable={!isEmailVerified && !isLoading} 
             />
             <TouchableOpacity 
-              style={[localStyles.verificationButton, isEmailVerified ? localStyles.verifiedButton : localStyles.unverifiedButton]}
+              style={[
+                localStyles.verificationButton, 
+                isEmailVerified ? localStyles.verifiedButton : localStyles.unverifiedButton,
+                isLoading && { opacity: 0.7 } // 로딩 중 흐리게 처리
+              ]}
               onPress={handleSendVerificationCode}
-              disabled={isEmailVerified}
+              disabled={isEmailVerified || isLoading}
             >
-              <Text style={localStyles.verificationButtonText}>{isEmailVerified ? '인증 완료' : '인증'}</Text>
+              {/* 로딩 중이면 스피너, 아니면 텍스트 표시 */}
+              {isLoading && !verificationCodeSent ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={localStyles.verificationButtonText}>
+                    {isEmailVerified ? '인증 완료' : '인증'}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
           
@@ -154,8 +216,16 @@ export default function RegisterScreen() {
                   keyboardType="numeric"
                   placeholderTextColor="#A9A9A9"
                 />
-                <TouchableOpacity style={[localStyles.verificationButton, localStyles.unverifiedButton]} onPress={handleVerifyCode}>
-                  <Text style={localStyles.verificationButtonText}>확인</Text>
+                <TouchableOpacity 
+                    style={[localStyles.verificationButton, localStyles.unverifiedButton]} 
+                    onPress={handleVerifyCode}
+                    disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={localStyles.verificationButtonText}>확인</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -205,8 +275,16 @@ export default function RegisterScreen() {
           </View>
 
           {/* 회원가입 버튼 */}
-          <TouchableOpacity style={authStyles.primaryButton} onPress={handleRegister}>
-            <Text style={authStyles.primaryButtonText}>회원가입</Text>
+          <TouchableOpacity 
+            style={[authStyles.primaryButton, isLoading && { backgroundColor: '#888' }]} 
+            onPress={handleRegister}
+            disabled={isLoading}
+          >
+             {isLoading ? (
+                <ActivityIndicator color="#fff" />
+             ) : (
+                <Text style={authStyles.primaryButtonText}>회원가입</Text>
+             )}
           </TouchableOpacity>
 
           <View style={localStyles.orContainer}>

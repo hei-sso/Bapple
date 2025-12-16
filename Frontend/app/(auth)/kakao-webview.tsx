@@ -120,7 +120,7 @@ export default function KakaoWebViewScreen() {
                 source={{ uri: KAKAO_AUTH_URL }}
                 
                 // ⭐ 매번 새로운 로그인을 위해 쿠키/캐시 삭제 옵션 추가 (테스트용)
-                incognito={true}             
+                incognito={false}             
                 sharedCookiesEnabled={false}
                 cacheEnabled={false}
                 
