@@ -7,12 +7,16 @@ SET FOREIGN_KEY_CHECKS = 0;
 SET FOREIGN_KEY_CHECKS = @OLD_FK_CHECKS;
 
 CREATE TABLE user_group (
-  group_id      BIGINT AUTO_INCREMENT PRIMARY KEY,
-  name          VARCHAR(100) NOT NULL,             -- 그룹명
-  description   VARCHAR(255) NULL,                 -- 소개글
-  owner_user_id BIGINT NOT NULL,                   -- 생성자
+  group_id      CHAR(8) NOT NULL PRIMARY KEY,
+  name          VARCHAR(100) NOT NULL,
+  description   VARCHAR(255) NULL,
+  owner_user_id BIGINT NOT NULL,
   visibility    ENUM('PRIVATE','INVITE_ONLY','PUBLIC')
-                  NOT NULL DEFAULT 'PRIVATE',      -- 공개 범위
+                NOT NULL DEFAULT 'PRIVATE',
+  
+  group_image_url TEXT NULL,
+  is_fridge_shared VARCHAR(20) DEFAULT 'owner_only',
+
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     ON UPDATE CURRENT_TIMESTAMP,
@@ -24,8 +28,5 @@ CREATE TABLE user_group (
 
 CREATE INDEX idx_user_group_owner ON user_group (owner_user_id);
 
--- 이후 추가된 컬럼
-ALTER TABLE user_group 
-ADD COLUMN invite_code VARCHAR(20) UNIQUE NOT NULL,
-ADD COLUMN group_image_url TEXT,
-ADD COLUMN is_fridge_shared VARCHAR(20) DEFAULT 'owner_only';
+-- 외래키 감시 다시 켜기
+SET FOREIGN_KEY_CHECKS = @OLD_FK_CHECKS;
