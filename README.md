@@ -9,18 +9,13 @@
 - **목적**: 개발 및 기능 구현
 - **설명**: Dev 브랜치는 새로운 기능이나 수정 사항이 포함되어 있으며, 실험적인 변경이 포함될 수 있습니다.
 
-## README 관리 안내
-- `main` 브랜치에 README 관련 Pull Request는 절대 보내지 마세요.
-- 각자 작업 중인 브랜치에서 자유롭게 README.md를 수정해 주세요.
-- 각 브랜치의 README는 해당 브랜치 내에서만 관리하며, `main`에 병합하지 않습니다.
+## Bapple: Dev-Frontend
 
-# Bapple: Dev-Frontend
-
-## 📦 기술 스택
+### 📦 기술 스택
 - React Native (Expo)
 - TypeScript
 
-## 🛠 작업 현황
+### 🛠 작업 현황
 > [작업 시작일 또는 완료일] 작업 내용
 - [2025.10.05] ~~Splash, Welcome, Login 디자인 시작~~
 - [2025.10.06] Splash, Welcome, Login 디자인 완료
