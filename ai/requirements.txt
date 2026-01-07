@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+numpy==1.24.3
+pandas==2.0.3
+tensorflow-cpu==2.15.0
+pydantic
+python-multipart
+typing-extensions>=4.5.0
