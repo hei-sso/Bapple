@@ -9,6 +9,13 @@
 - **목적**: 개발 및 기능 구현
 - **설명**: Dev 브랜치는 새로운 기능이나 수정 사항이 포함되어 있으며, 실험적인 변경이 포함될 수 있습니다.
 
+## Bapple: Dev-AI/ML
+
+### 📦 기술 스택
+- Python
+- FastAPI
+- TensorFlow
+
 ## Bapple: Dev-DB
 
 ### 📦 기술 스택
