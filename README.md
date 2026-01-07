@@ -1,7 +1,7 @@
 # Bapple 밥플
 
 <div align="center">
-  <img src="https://github.com/hei-sso/Bapple/blob/main/Frontend/assets/images/splash-icon.png" alt="Bapple Logo" width="300" />
+  <img src="https://github.com/hei-sso/Bapple/blob/main/Frontend/assets/images/splash-icon.png" alt="Bapple Logo" width="250" />
 </div>
 
 ## 📘 개요
@@ -9,7 +9,7 @@ Bapple은 사용자의 냉장고에 남아있는 식재료를 기반으로 AI가
 TensorFlow 기반 AI 모델과 FastAPI를 활용하여, 사용자가 가진 재료에 맞는 요리 아이디어를 빠르게 제공합니다.
 
 ## 🧩 주요 기능
-- Kakao API 연동으로 간편 로그인
+- Kakao API 연동으로 간편 로그인 가능
 - 사용자가 가진 식재료 추가 및 삭제 기능
 - AI 기반 레시피 추천
 - 추천 레시피 상세 정보 제공 (재료, 조리 방법, 시간 등)
