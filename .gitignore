@@ -1,0 +1,18 @@
+# IDE / Editor
+.vscode/
+.idea/
+
+# Node / Dependencies
+node_modules/
+
+# Environment / Config
+.env
+expo-env.d.ts
+
+# System Files
+.DS_Store
+
+# Build / Output
+.expo/
+dist/
+web-build/
